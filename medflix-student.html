@@ -195,9 +195,9 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);displ
 .ia-note{text-align:center;font-size:.7rem;color:var(--mut2);padding:.3rem 1.5rem .75rem;}
 
 /* ── FLOAT IA ── */
-.float-btn{position:fixed;bottom:1.75rem;right:1.75rem;z-index:200;width:50px;height:50px;border-radius:50%;background:var(--red);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.25rem;box-shadow:0 4px 20px rgba(224,32,32,.4);transition:all .2s;}
+.float-btn{position:fixed;bottom:1.75rem;right:1.75rem;z-index:10001;width:50px;height:50px;border-radius:50%;background:var(--red);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.25rem;box-shadow:0 4px 20px rgba(224,32,32,.4);transition:all .2s;}
 .float-btn:hover{background:var(--redl);transform:scale(1.08);}
-.float-win{position:fixed;bottom:5.25rem;right:1.75rem;z-index:199;width:330px;height:440px;background:var(--sur);border:1px solid var(--redb);border-radius:18px;display:none;flex-direction:column;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.5);}
+.float-win{position:fixed;bottom:5.25rem;right:1.75rem;z-index:10000;width:330px;height:440px;background:var(--sur);border:1px solid var(--redb);border-radius:18px;display:none;flex-direction:column;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.5);}
 .float-win.open{display:flex;}
 .float-head{padding:.95rem 1.25rem;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
 .float-title{display:flex;align-items:center;gap:.55rem;font-weight:700;font-size:.88rem;color:var(--txt);}
@@ -209,6 +209,12 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);displ
 .float-inp:focus{border-color:var(--redb);}
 .float-send{background:var(--red);color:white;border:none;border-radius:9px;width:38px;height:38px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0;transition:background .2s;}
 .float-send:hover{background:var(--redl);}
+
+/* ── PROTECTION DOCUMENTS ── */
+@media print { #doc-viewer-modal, #doc-viewer-iframe { display:none !important; visibility:hidden !important; } body::after { content:'Impression non autorisée — Medflix'; display:flex;align-items:center;justify-content:center;position:fixed;inset:0;font-size:2rem;color:#f87171;background:#0a0a0a;z-index:99999; } }
+#doc-viewer-modal { -webkit-user-select:none; -moz-user-select:none; -ms-user-select:none; user-select:none; }
+.typing-dots { animation: blink 1.2s infinite; color:var(--mut); }
+@keyframes blink { 0%,100%{opacity:.2} 50%{opacity:1} }
 
 /* ── PROFIL ── */
 .profil-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;}
@@ -513,14 +519,11 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);displ
       </div>
       <div class="p-field">
         <label>Code de vérification (4 chiffres)</label>
-        <input type="text" id="phone-code-val" placeholder="Ex: 1234">
+        <input type="text" id="phone-code-val" placeholder="Code reçu par SMS">
       </div>
       <div style="display:flex;gap:.75rem;margin-top:1.5rem;">
         <button class="btn-ps" style="flex:1;background:transparent;border:1px solid var(--line);color:var(--mut);" onclick="document.getElementById('phone-modal').style.display='none'">Annuler</button>
         <button class="btn-ps" style="flex:1;" onclick="verifyOldPhoneCode()">Valider le code</button>
-      </div>
-      <div style="font-size:0.75rem;color:var(--mut2);margin-top:0.75rem;text-align:center;">
-        Simulation : Utilisez le code <strong>1234</strong>
       </div>
     </div>
     
@@ -547,6 +550,23 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);displ
       Ton semestre sera activé sous <strong>24h</strong> maximum après vérification de ton reçu (CIH ou virement instantané). Prévoir <strong>48h ouvrables</strong> pour les autres banques.
     </div>
     <button class="btn-ps" style="width:100%;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);color:#4ade80;" onclick="document.getElementById('success-sem-modal').style.display='none'">Super, merci !</button>
+  </div>
+</div>
+
+<!-- DOCUMENT VIEWER MODAL -->
+<div id="doc-viewer-modal" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.95);display:none;flex-direction:column;" oncontextmenu="return false;">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.5rem;background:var(--sur);border-bottom:1px solid var(--line);flex-shrink:0;">
+    <div style="display:flex;align-items:center;gap:.75rem;min-width:0;flex:1;">
+      <span style="font-size:1.2rem;flex-shrink:0;">📄</span>
+      <span id="doc-viewer-title" style="font-family:'Outfit',sans-serif;font-size:.95rem;font-weight:600;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Document</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:.6rem;flex-shrink:0;">
+      <button onclick="askAssistantAboutDoc()" style="background:rgba(224,32,32,.08);border:1px solid var(--redb);color:var(--redl);font-size:.8rem;font-weight:600;padding:.4rem .85rem;border-radius:8px;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;gap:.4rem;white-space:nowrap;">🤖 Demander à l'assistant</button>
+      <button onclick="closeDocViewer()" style="background:var(--redd);border:1px solid var(--redb);color:var(--redl);font-size:.85rem;font-weight:700;padding:.4rem 1rem;border-radius:8px;cursor:pointer;font-family:'Outfit',sans-serif;">✕ Fermer</button>
+    </div>
+  </div>
+  <div style="flex:1;position:relative;overflow:hidden;">
+    <iframe id="doc-viewer-iframe" src="" style="width:100%;height:100%;border:none;" sandbox="allow-scripts allow-same-origin allow-popups" allowfullscreen></iframe>
   </div>
 </div>
 
@@ -849,9 +869,9 @@ function openUnifiedDoc(sem, mod, smod, files) {
     html += '<div><h4 style="font-family:\'Instrument Serif\',serif;font-size:1.45rem;color:var(--txt);margin-bottom:1.2rem;display:flex;align-items:center;gap:.5rem;"><span style="color:var(--redl);">📄</span> Fichiers de Cours</h4><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;">';
     files.cours.forEach(function(c) {
       var annee = c.annee ? '<span style="background:rgba(255,255,255,.05);border:1px solid var(--line);padding:.2rem .5rem;border-radius:4px;font-size:.65rem;color:var(--mut);font-weight:600;letter-spacing:0.5px;">📅 ' + c.annee + '</span>' : '';
-      html += '<a href="'+(c.lien||'#')+'" target="_blank" onclick="trackActivity(\'cours\', \'' + c.titre.replace(/'/g, "\\'") + '\', \'' + sem.replace(/'/g, "\\'") + '\', \'' + mod.replace(/'/g, "\\'") + '\')" style="text-decoration:none;display:block;background:var(--sur);border:1px solid var(--line);border-radius:12px;padding:1.25rem;transition:all .2s;color:var(--txt);">'
+      html += '<button onclick="openDocViewer(\'' + (c.lien||'').replace(/'/g, "\\'") + '\', \'' + c.titre.replace(/'/g, "\\'") + '\');trackActivity(\'cours\', \'' + c.titre.replace(/'/g, "\\'") + '\', \'' + sem.replace(/'/g, "\\'") + '\', \'' + mod.replace(/'/g, "\\'") + '\')" style="text-align:left;display:block;background:var(--sur);border:1px solid var(--line);border-radius:12px;padding:1.25rem;transition:all .2s;color:var(--txt);cursor:pointer;width:100%;">'
             + '<div style="font-weight:600;font-size:.95rem;margin-bottom:.6rem;line-height:1.4;">'+c.titre+'</div>'
-            + '<div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:.75rem;color:var(--mut2);font-weight:500;">'+(c.desc||'Ouvrir le PDF →')+'</span>'+annee+'</div></a>';
+            + '<div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:.75rem;color:var(--mut2);font-weight:500;">'+(c.desc||'Visualiser le document →')+'</span>'+annee+'</div></button>';
     });
     html += '</div></div>';
   }
@@ -861,9 +881,9 @@ function openUnifiedDoc(sem, mod, smod, files) {
     html += '<div><h4 style="font-family:\'Instrument Serif\',serif;font-size:1.45rem;color:var(--txt);margin-bottom:1.2rem;display:flex;align-items:center;gap:.5rem;"><span style="color:#60a5fa;">🔬</span> Travaux Pratiques & Examens</h4><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;">';
     files.tp.forEach(function(t) {
       var annee = t.annee ? '<span style="background:rgba(255,255,255,.05);border:1px solid rgba(96,165,250,.2);padding:.2rem .5rem;border-radius:4px;font-size:.65rem;color:#60a5fa;font-weight:600;letter-spacing:0.5px;">📅 ' + t.annee + '</span>' : '';
-      html += '<a href="'+(t.lien||'#')+'" target="_blank" onclick="trackActivity(\'tp\', \'' + t.titre.replace(/'/g, "\\'") + '\', \'' + sem.replace(/'/g, "\\'") + '\', \'' + mod.replace(/'/g, "\\'") + '\')" style="text-decoration:none;display:block;background:var(--sur);border:1px solid rgba(96,165,250,.2);border-radius:12px;padding:1.25rem;transition:all .2s;color:var(--txt);">'
+      html += '<button onclick="openDocViewer(\'' + (t.lien||'').replace(/'/g, "\\'") + '\', \'' + t.titre.replace(/'/g, "\\'") + '\');trackActivity(\'tp\', \'' + t.titre.replace(/'/g, "\\'") + '\', \'' + sem.replace(/'/g, "\\'") + '\', \'' + mod.replace(/'/g, "\\'") + '\')" style="text-align:left;display:block;background:var(--sur);border:1px solid rgba(96,165,250,.2);border-radius:12px;padding:1.25rem;transition:all .2s;color:var(--txt);cursor:pointer;width:100%;">'
             + '<div style="font-weight:600;font-size:.95rem;margin-bottom:.6rem;line-height:1.4;">'+t.titre+'</div>'
-            + '<div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:.72rem;color:#60a5fa;background:rgba(96,165,250,.1);padding:.2rem .5rem;border-radius:4px;font-weight:600;text-transform:uppercase;">'+(t.type||'TP')+'</span>'+annee+'</div></a>';
+            + '<div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:.72rem;color:#60a5fa;background:rgba(96,165,250,.1);padding:.2rem .5rem;border-radius:4px;font-weight:600;text-transform:uppercase;">'+(t.type||'TP')+'</span>'+annee+'</div></button>';
     });
     html += '</div></div>';
   }
@@ -887,6 +907,131 @@ function openUnifiedDoc(sem, mod, smod, files) {
   
   html += '</div>';
   panel.innerHTML = html;
+}
+
+// ══ DOCUMENT VIEWER (embedded PDF/Drive) ══
+function getEmbedUrl(url) {
+  if (!url) return '';
+  
+  // Google Drive: /file/d/ID/view → /file/d/ID/preview
+  var driveMatch = url.match(/drive\.google\.com\/file\/d\/([^\/]+)/);
+  if (driveMatch) {
+    return 'https://drive.google.com/file/d/' + driveMatch[1] + '/preview';
+  }
+  
+  // Google Drive: open?id=ID → file/d/ID/preview
+  var driveMatch2 = url.match(/drive\.google\.com\/open\?id=([^&]+)/);
+  if (driveMatch2) {
+    return 'https://drive.google.com/file/d/' + driveMatch2[1] + '/preview';
+  }
+  
+  // Google Docs/Slides/Sheets → embed
+  if (url.includes('docs.google.com')) {
+    return url.replace(/\/edit.*$/, '/preview').replace(/\/view.*$/, '/preview');
+  }
+  
+  // Direct PDF URL → use Google Docs viewer
+  if (url.toLowerCase().endsWith('.pdf') || url.includes('.pdf')) {
+    return 'https://docs.google.com/gview?embedded=true&url=' + encodeURIComponent(url);
+  }
+  
+  // Fallback: wrap in Google Docs viewer
+  return 'https://docs.google.com/gview?embedded=true&url=' + encodeURIComponent(url);
+}
+
+function openDocViewer(url, title) {
+  var embedUrl = getEmbedUrl(url);
+  if (!embedUrl) { alert('Lien du document introuvable.'); return; }
+  
+  document.getElementById('doc-viewer-title').textContent = title || 'Document';
+  document.getElementById('doc-viewer-iframe').src = embedUrl;
+  document.getElementById('doc-viewer-modal').style.display = 'flex';
+}
+
+function closeDocViewer() {
+  document.getElementById('doc-viewer-modal').style.display = 'none';
+  document.getElementById('doc-viewer-iframe').src = '';
+}
+
+// ══ PROTECTION ANTI-COPIE ══
+var _docViewerOpen = false;
+
+var _origOpenDocViewer = openDocViewer;
+openDocViewer = function(url, title) {
+  _docViewerOpen = true;
+  _origOpenDocViewer(url, title);
+};
+
+var _origCloseDocViewer = closeDocViewer;
+closeDocViewer = function() {
+  _docViewerOpen = false;
+  _origCloseDocViewer();
+};
+
+// Bloquer Ctrl+S, Ctrl+P, Ctrl+U, F12, PrintScreen (Ctrl+C autorisé pour copier vers assistant)
+document.addEventListener('keydown', function(e) {
+  if (!_docViewerOpen) return;
+  var tag = (document.activeElement || {}).tagName;
+  if (tag === 'TEXTAREA' || tag === 'INPUT') return;
+
+  if (e.ctrlKey && ['s','p','u'].includes(e.key.toLowerCase())) { e.preventDefault(); return false; }
+  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'i') { e.preventDefault(); return false; }
+  if (e.key === 'PrintScreen' || (e.shiftKey && e.metaKey)) {
+    e.preventDefault();
+    var iframe = document.getElementById('doc-viewer-iframe');
+    if (iframe) { iframe.style.filter = 'blur(30px)'; setTimeout(function(){ if(_docViewerOpen) iframe.style.filter='none'; }, 3000); }
+    try { navigator.clipboard.writeText(''); } catch(ex){}
+    return false;
+  }
+  if (e.key === 'F12') { e.preventDefault(); return false; }
+}, true);
+
+document.addEventListener('contextmenu', function(e) { if (_docViewerOpen) { e.preventDefault(); return false; } }, true);
+
+window.addEventListener('blur', function() {
+  if (!_docViewerOpen) return;
+  // Ne flouter que si on quitte vraiment la page (alt-tab), pas si on clique dans l'iframe
+  setTimeout(function() {
+    if (!document.hasFocus()) {
+      var f = document.getElementById('doc-viewer-iframe');
+      if (f) f.style.filter = 'blur(30px)';
+    }
+  }, 100);
+});
+window.addEventListener('focus', function() { if (!_docViewerOpen) return; var f=document.getElementById('doc-viewer-iframe'); if(f) f.style.filter='none'; });
+document.addEventListener('visibilitychange', function() { if (!_docViewerOpen) return; var f=document.getElementById('doc-viewer-iframe'); if(!f) return; f.style.filter = document.hidden ? 'blur(30px)' : 'none'; });
+
+// ══ DEMANDER À L'ASSISTANT (lecture automatique du presse-papier) ══
+async function askAssistantAboutDoc() {
+  var title = document.getElementById('doc-viewer-title').textContent || 'ce document';
+  var clipText = '';
+  try { clipText = await navigator.clipboard.readText(); } catch(e) {}
+
+  var floatWin = document.getElementById('float-win');
+  if (!floatWin.classList.contains('open')) floatWin.classList.add('open');
+
+  var inp = document.getElementById('float-inp');
+  var msgsDiv = document.getElementById('float-msgs');
+
+  if (clipText && clipText.trim().length > 3) {
+    var truncated = clipText.trim().substring(0, 500);
+    var selBubble = document.createElement('div');
+    selBubble.className = 'msg ai';
+    selBubble.innerHTML = '<div class="msg-bubble" style="font-size:.8rem;background:rgba(224,32,32,.08);border:1px solid var(--redb);border-radius:12px;">'
+      + '<div style="font-size:.68rem;color:var(--redl);font-weight:700;margin-bottom:.4rem;">📋 Extrait de "' + title.replace(/</g,'&lt;') + '" :</div>'
+      + '<div style="color:var(--txt);font-style:italic;line-height:1.5;">« ' + truncated.replace(/</g,'&lt;').replace(/>/g,'&gt;') + ' »</div>'
+      + '<div style="font-size:.68rem;color:var(--mut);margin-top:.5rem;">Posez votre question ci-dessous 👇</div>'
+      + '</div>';
+    msgsDiv.appendChild(selBubble);
+    msgsDiv.scrollTop = 99999;
+    inp.value = '';
+    inp.placeholder = 'Votre question sur cet extrait...';
+    inp.dataset.docContext = '📄 Document: "' + title + '"\nExtrait: « ' + truncated + ' »\n\nQuestion: ';
+  } else {
+    inp.value = 'À propos du document "' + title + '" : ';
+    inp.dataset.docContext = '';
+  }
+  inp.focus();
 }
 
 // ══ QCM ══
@@ -957,24 +1102,87 @@ function nextQ() {
   }
 }
 
-// ══ IA ══
-function iaSend(inputId, msgsId) {
-  var input=document.getElementById(inputId), text=input.value.trim();
-  if(!text) return; input.value='';
-  appendMsg(text,'user',msgsId);
-  setTimeout(function(){ appendMsg("Je suis en cours d'intégration. Une fois l'API connectée, je répondrai à vos questions.",'ai',msgsId); },700);
+// ══ IA (Gemini via Supabase Edge Function) ══
+var iaHistory = []; // Historique de conversation [{role:'user',text:'...'},{role:'ai',text:'...'}]
+
+async function iaSend(inputId, msgsId) {
+  var input = document.getElementById(inputId);
+  var text = input.value.trim();
+  if (!text) return;
+  
+  // Si un contexte de document est attaché, le préfixer
+  var docContext = input.dataset.docContext || '';
+  var fullMessage = docContext ? docContext + text : text;
+  
+  input.value = '';
+  input.placeholder = 'Votre question...';
+  input.dataset.docContext = '';
+  
+  appendMsg(text, 'user', msgsId);
+  
+  // Afficher un indicateur de frappe
+  var typingId = 'typing-' + Date.now();
+  var msgs = document.getElementById(msgsId);
+  var small = msgsId === 'float-msgs';
+  var typingDiv = document.createElement('div');
+  typingDiv.className = 'msg ai';
+  typingDiv.id = typingId;
+  typingDiv.innerHTML = '<div class="msg-bubble"' + (small ? ' style="font-size:.82rem"' : '') + '><span class="typing-dots">●●●</span></div><div class="msg-time">Assistant</div>';
+  msgs.appendChild(typingDiv);
+  msgs.scrollTop = msgs.scrollHeight;
+  
+  try {
+    var res = await fetch(SUPABASE_URL + '/functions/v1/ask-ai', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + SUPABASE_ANON
+      },
+      body: JSON.stringify({
+        message: fullMessage,
+        history: iaHistory.slice(-50) // Garder les 50 derniers échanges pour le contexte
+      })
+    });
+    
+    var data = await res.json();
+    
+    // Retirer l'indicateur de frappe
+    var el = document.getElementById(typingId);
+    if (el) el.remove();
+    
+    if (data.reply) {
+      // Formater la réponse (markdown basique)
+      var formatted = data.reply
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/\n/g, '<br>');
+      appendMsg(formatted, 'ai', msgsId);
+      
+      // Sauvegarder dans l'historique
+      iaHistory.push({ role: 'user', text: fullMessage });
+      iaHistory.push({ role: 'ai', text: data.reply });
+    } else {
+      appendMsg("Désolé, une erreur s'est produite. Réessayez.", 'ai', msgsId);
+    }
+  } catch (err) {
+    var el = document.getElementById(typingId);
+    if (el) el.remove();
+    appendMsg("Erreur de connexion. Vérifiez votre connexion internet.", 'ai', msgsId);
+    console.error('[IA] Erreur:', err);
+  }
 }
-function appendMsg(text,role,msgsId) {
-  var msgs=document.getElementById(msgsId), small=msgsId==='float-msgs';
-  var div=document.createElement('div'); div.className='msg '+role;
-  div.innerHTML='<div class="msg-bubble"'+(small?' style="font-size:.82rem"':'')+'>'+text+'</div><div class="msg-time">'+(role==='ai'?'Assistant':'Vous')+'</div>';
-  msgs.appendChild(div); msgs.scrollTop=msgs.scrollHeight;
+
+function appendMsg(text, role, msgsId) {
+  var msgs = document.getElementById(msgsId), small = msgsId === 'float-msgs';
+  var div = document.createElement('div'); div.className = 'msg ' + role;
+  div.innerHTML = '<div class="msg-bubble"' + (small ? ' style="font-size:.82rem"' : '') + '>' + text + '</div><div class="msg-time">' + (role === 'ai' ? 'Assistant' : 'Vous') + '</div>';
+  msgs.appendChild(div); msgs.scrollTop = msgs.scrollHeight;
 }
-document.getElementById('ia-send-btn').onclick=function(){ iaSend('ia-inp','ia-msgs'); };
-document.getElementById('ia-inp').addEventListener('keydown',function(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); iaSend('ia-inp','ia-msgs'); } });
-document.getElementById('float-send-btn').onclick=function(){ iaSend('float-inp','float-msgs'); };
-document.getElementById('float-inp').addEventListener('keydown',function(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); iaSend('float-inp','float-msgs'); } });
-function toggleFloat(){ document.getElementById('float-win').classList.toggle('open'); }
+document.getElementById('ia-send-btn').onclick = function() { iaSend('ia-inp', 'ia-msgs'); };
+document.getElementById('ia-inp').addEventListener('keydown', function(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); iaSend('ia-inp', 'ia-msgs'); } });
+document.getElementById('float-send-btn').onclick = function() { iaSend('float-inp', 'float-msgs'); };
+document.getElementById('float-inp').addEventListener('keydown', function(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); iaSend('float-inp', 'float-msgs'); } });
+function toggleFloat() { document.getElementById('float-win').classList.toggle('open'); }
 
 // ══ PROFIL ══
 async function saveProfil() {
@@ -1069,11 +1277,15 @@ async function startPhoneChange() {
     
     expectedPhoneCode = Math.floor(1000 + Math.random() * 9000).toString();
     
-    var success = await dbSendSms(SESSION.phone, expectedPhoneCode);
+    // Formater le numéro pour Twilio (06... → +2126...)
+    var phoneForSms = SESSION.phone.replace(/[\s-]/g, '');
+    if (phoneForSms.startsWith('0')) phoneForSms = '+212' + phoneForSms.substring(1);
+    else if (!phoneForSms.startsWith('+')) phoneForSms = '+' + phoneForSms;
+    
+    var success = await dbSendSms(phoneForSms, expectedPhoneCode);
     
     if (success) {
       document.getElementById('phone-modal-desc').textContent = "Par mesure de sécurité, veuillez saisir le code SMS reçu.";
-      document.querySelector('#phone-step-1 > div:last-child').style.display = 'none'; // hide simulation text
     } else {
       document.getElementById('phone-modal-desc').innerHTML = "<span style='color:var(--redl);'>Erreur d'envoi du SMS. Veuillez réessayer plus tard.</span>";
     }
@@ -1086,7 +1298,7 @@ async function startPhoneChange() {
 
 function verifyOldPhoneCode() {
   var code = document.getElementById('phone-code-val').value.trim();
-  if (code !== expectedPhoneCode && code !== "1234") { // temporary fallback to 1234 if Twilio isn't set up yet
+  if (code !== expectedPhoneCode) {
     alert("Code SMS incorrect.");
     return;
   }

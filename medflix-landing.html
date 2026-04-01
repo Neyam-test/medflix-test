@@ -486,7 +486,7 @@ footer a:hover{color:var(--red-l);}
       <div id="fv" style="display:none;">
         <h2 class="mtitle">Vérification SMS</h2>
         <p class="msub">Un code de vérification a été envoyé au <strong id="v-phone-lbl" style="color:var(--txt);"></strong>.</p>
-        <div class="mf"><label>Code (4 chiffres)</label><input type="text" id="v-code" placeholder="Ex: 1234"></div>
+        <div class="mf"><label>Code (4 chiffres)</label><input type="text" id="v-code" placeholder="Code reçu par SMS"></div>
         <button class="mbtn" id="btn-verify-signup"><span id="v-lbl">Valider et créer le compte</span><div class="spin" id="v-spin"></div></button>
         <button id="btn-back-signup" type="button" style="width:100%;margin-top:0.75rem;background:none;border:none;color:var(--mut);font-family:'Outfit',sans-serif;font-size:0.85rem;cursor:pointer;">Modifier le numéro</button>
       </div>
@@ -693,12 +693,11 @@ document.getElementById('btn-verify-signup').addEventListener('click', async fun
   if(!pendingUserSignup) return;
   var c = document.getElementById('v-code').value.trim();
   
-  if (c !== expectedSignupCode && c !== "1234") { // temporary fallback "1234" for tests
+  if (c !== expectedSignupCode) {
     showAlert('Code SMS incorrect.', 'err');
     return;
   }
   
-  setLoad('verify', true); // needs generic or specific loader implementation
   document.getElementById('v-lbl').style.display = 'none';
   document.getElementById('v-spin').style.display = 'block';
   

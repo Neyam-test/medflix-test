@@ -20,18 +20,34 @@ async function dbGetUsers() {
 //  EDGE FUNCTIONS (SMS TWILIO)
 // ══════════════════════════════════
 async function dbSendSms(phone, code) {
-  var { data, error } = await sb.functions.invoke('send-sms', {
-    body: { to: phone, code: code }
-  });
-  if (error) {
-    console.error('Erreur API dbSendSms:', error.message);
+  console.log('[SMS] Appel Edge Function send-sms avec:', phone, code);
+  try {
+    var res = await sb.functions.invoke('send-sms', {
+      body: { to: phone, code: code }
+    });
+    console.log('[SMS] Réponse complète:', JSON.stringify(res));
+    
+    if (res.error) {
+      console.error('[SMS] Erreur Supabase:', res.error.message || res.error);
+      // Si l'erreur contient un contexte (body de la réponse)
+      if (res.error.context) {
+        try {
+          var body = await res.error.context.json();
+          console.error('[SMS] Détails erreur:', JSON.stringify(body));
+        } catch(e) {}
+      }
+      return false;
+    }
+    if (res.data && res.data.error) {
+      console.error('[SMS] Erreur Twilio:', res.data.error, res.data.details || '');
+      return false;
+    }
+    console.log('[SMS] SMS envoyé avec succès !');
+    return true;
+  } catch(e) {
+    console.error('[SMS] Exception:', e);
     return false;
   }
-  if (data && data.error) {
-    console.error('Erreur Twilio interne:', data.error);
-    return false;
-  }
-  return true;
 }
 
 async function dbGetUser(email) {
