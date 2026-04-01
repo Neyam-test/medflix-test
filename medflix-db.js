@@ -16,6 +16,24 @@ async function dbGetUsers() {
   return (data || []).map(dbMapUser);
 }
 
+// ══════════════════════════════════
+//  EDGE FUNCTIONS (SMS TWILIO)
+// ══════════════════════════════════
+async function dbSendSms(phone, code) {
+  var { data, error } = await sb.functions.invoke('send-sms', {
+    body: { to: phone, code: code }
+  });
+  if (error) {
+    console.error('Erreur API dbSendSms:', error.message);
+    return false;
+  }
+  if (data && data.error) {
+    console.error('Erreur Twilio interne:', data.error);
+    return false;
+  }
+  return true;
+}
+
 async function dbGetUser(email) {
   var { data, error } = await sb.from('profiles').select('*').eq('email', email).single();
   if (error) return null;

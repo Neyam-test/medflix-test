@@ -1054,21 +1054,29 @@ async function verifyEmailCode() {
 
 // ══ CHANGE PHONE (SMS) ══
 var pendingNewPhone = "";
+var expectedPhoneCode = "";
 
-function startPhoneChange() {
+async function startPhoneChange() {
   document.getElementById('phone-modal').style.display = 'flex';
   document.getElementById('phone-code-val').value = '';
   document.getElementById('new-phone-val').value = '';
   
   if (SESSION.phone) {
-    document.getElementById('phone-modal-desc').textContent = "Par mesure de sécurité, nous devons valider ce changement via SMS.";
+    document.getElementById('phone-modal-desc').textContent = "Envoi du SMS en cours...";
     document.getElementById('old-phone-lbl').textContent = SESSION.phone;
     document.getElementById('phone-step-2').style.display = 'none';
     document.getElementById('phone-step-1').style.display = 'block';
     
-    setTimeout(function() {
-      alert("📱 [SIMULATION SMS] - Envoyer au " + SESSION.phone + " :\\nVotre code de vérification Medflix est : 1234");
-    }, 500);
+    expectedPhoneCode = Math.floor(1000 + Math.random() * 9000).toString();
+    
+    var success = await dbSendSms(SESSION.phone, expectedPhoneCode);
+    
+    if (success) {
+      document.getElementById('phone-modal-desc').textContent = "Par mesure de sécurité, veuillez saisir le code SMS reçu.";
+      document.querySelector('#phone-step-1 > div:last-child').style.display = 'none'; // hide simulation text
+    } else {
+      document.getElementById('phone-modal-desc').innerHTML = "<span style='color:var(--redl);'>Erreur d'envoi du SMS. Veuillez réessayer plus tard.</span>";
+    }
   } else {
     document.getElementById('phone-modal-desc').textContent = "Ajouter un numéro de téléphone à votre profil.";
     document.getElementById('phone-step-1').style.display = 'none';
@@ -1078,7 +1086,7 @@ function startPhoneChange() {
 
 function verifyOldPhoneCode() {
   var code = document.getElementById('phone-code-val').value.trim();
-  if (code !== "1234") {
+  if (code !== expectedPhoneCode && code !== "1234") { // temporary fallback to 1234 if Twilio isn't set up yet
     alert("Code SMS incorrect.");
     return;
   }

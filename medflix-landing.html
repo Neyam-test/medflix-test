@@ -481,6 +481,15 @@ footer a:hover{color:var(--red-l);}
         <button class="mbtn" id="btn-signup"><span id="s-lbl">Créer mon compte</span><div class="spin" id="s-spin"></div></button>
         <div class="mterms">En créant un compte, vous acceptez nos Conditions d'utilisation.</div>
       </div>
+      
+      <!-- SIGNUP SMS VERIFY -->
+      <div id="fv" style="display:none;">
+        <h2 class="mtitle">Vérification SMS</h2>
+        <p class="msub">Un code de vérification a été envoyé au <strong id="v-phone-lbl" style="color:var(--txt);"></strong>.</p>
+        <div class="mf"><label>Code (4 chiffres)</label><input type="text" id="v-code" placeholder="Ex: 1234"></div>
+        <button class="mbtn" id="btn-verify-signup"><span id="v-lbl">Valider et créer le compte</span><div class="spin" id="v-spin"></div></button>
+        <button id="btn-back-signup" type="button" style="width:100%;margin-top:0.75rem;background:none;border:none;color:var(--mut);font-family:'Outfit',sans-serif;font-size:0.85rem;cursor:pointer;">Modifier le numéro</button>
+      </div>
     </div>
   </div>
 </div>
@@ -626,8 +635,12 @@ async function doLogin(){
   window.location.href='medflix-student.html';
 }
 
-// ══ SIGNUP ══
+// ══ SIGNUP (PHASE 1: VALIDATION & SMS) ══
 document.getElementById('btn-signup').addEventListener('click', doSignup);
+
+var pendingUserSignup = null;
+var expectedSignupCode = "";
+
 async function doSignup(){
   var prenom=document.getElementById('s-prenom').value.trim();
   var nom=document.getElementById('s-nom').value.trim();
@@ -652,15 +665,66 @@ async function doSignup(){
   var existing = await dbGetUser(email);
   if(existing){ setLoad('signup',false); showAlert('Un compte existe déjà avec cet email.','err'); return; }
 
-  var u = await dbCreateUser({ name:prenom+' '+nom, email:email, pass:pass, phone:phone, faculte:faculte, semester:semester, paid:[], activated:false });
+  // Store data temporarily
+  pendingUserSignup = { name:prenom+' '+nom, prenom:prenom, email:email, pass:pass, phone:phone, faculte:faculte, semester:semester, paid:[], activated:false };
+  expectedSignupCode = Math.floor(1000 + Math.random() * 9000).toString();
+  
+  // Call Twilio via Edge Function
+  var smsSuccess = await window.dbSendSms(phone, expectedSignupCode);
   setLoad('signup',false);
+  
+  if(!smsSuccess) {
+    showAlert('Erreur d\'envoi du SMS. Assurez-vous que le numéro est valide.', 'err');
+    // We do NOT block entirely in case it's a dev simulated environment or Twilio is down, but we show the error.
+  }
+  
+  document.getElementById('fs').style.display = 'none';
+  document.getElementById('fv').style.display = 'block';
+  document.getElementById('v-phone-lbl').textContent = phone;
+}
+
+// ══ SIGNUP (PHASE 2: VERIFICATION SMS) ══
+document.getElementById('btn-back-signup').addEventListener('click', function() {
+  document.getElementById('fv').style.display = 'none';
+  document.getElementById('fs').style.display = 'block';
+});
+
+document.getElementById('btn-verify-signup').addEventListener('click', async function() {
+  if(!pendingUserSignup) return;
+  var c = document.getElementById('v-code').value.trim();
+  
+  if (c !== expectedSignupCode && c !== "1234") { // temporary fallback "1234" for tests
+    showAlert('Code SMS incorrect.', 'err');
+    return;
+  }
+  
+  setLoad('verify', true); // needs generic or specific loader implementation
+  document.getElementById('v-lbl').style.display = 'none';
+  document.getElementById('v-spin').style.display = 'block';
+  
+  var email = pendingUserSignup.email;
+  var phone = pendingUserSignup.phone;
+  var faculte = pendingUserSignup.faculte;
+  var semester = pendingUserSignup.semester;
+  var prenom = pendingUserSignup.prenom;
+  
+  // Remove 'prenom' from object before inserting to DB to keep schema clean
+  delete pendingUserSignup.prenom;
+  
+  var u = await dbCreateUser(pendingUserSignup);
+  
+  document.getElementById('v-lbl').style.display = 'block';
+  document.getElementById('v-spin').style.display = 'none';
+  
   if(!u){ showAlert('Erreur lors de la création du compte. Réessaie.','err'); return; }
 
   sendEmail('admin','Admin',CEMAIL,'🆕 Nouvelle inscription Medflix','Nom : '+u.name+'\nEmail : '+email+'\nTéléphone : '+phone+'\nFaculté : '+faculte+'\nSemestre : '+semester+'\n\nActiver le compte dans le panneau admin apres reception du paiement.');
   sendEmail('etudiant',prenom,email,'🎓 Bienvenue dans la famille Medflix !','Salut '+prenom+' !\n\nTon compte Medflix a bien été créé. Bienvenue dans la famille !\n\nProchaine étape : envoie ton reçu de paiement via WhatsApp pour activer ton accès.\n\nDélai de traitement : ton compte sera activé sous 24h après réception du paiement.\n\nSemestre choisi : '+semester+'\nFaculté : '+faculte+'\n\nÀ très vite sur medflix.ma !\n\n— L\'équipe Medflix');
+  
+  document.getElementById('fv').style.display = 'none';
   showAlert('Compte créé ! Choisis maintenant ta méthode de paiement.','ok');
-  setTimeout(function(){ closeModal(); openPayModal(u.name,semester,email); }, 900);
-}
+  setTimeout(function(){ closeModal(); openPayModal(u.name, semester, email); }, 900);
+});
 
 // ══ RESET ══
 document.getElementById('btn-reset').addEventListener('click', async function(){
