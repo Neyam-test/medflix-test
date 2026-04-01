@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Medflix — Espace Étudiant</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="medflix-db.js"></script>
+<style>
+:root{
+  --bg:#07070f;--sur:#0e0e1a;--sur2:#131320;
+  --red:#e02020;--redl:#f05050;--redd:rgba(224,32,32,.1);--redb:rgba(224,32,32,.2);
+  --txt:#ede8e0;--mut:rgba(237,232,224,.5);--mut2:rgba(237,232,224,.22);
+  --line:rgba(255,255,255,.07);
+  --grn:#22c55e;--grnd:rgba(34,197,94,.1);
+  --amb:#f59e0b;
+  --sw:245px;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);display:flex;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:rgba(224,32,32,.3);border-radius:4px;}
+
+/* ── GUARD OVERLAY ── */
+#guard-overlay{
+  position:fixed;inset:0;z-index:9999;background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+}
+.guard-box{
+  background:var(--sur);border:1px solid var(--redb);border-radius:24px;
+  padding:3rem;width:100%;max-width:400px;text-align:center;
+}
+.guard-logo{font-family:'Instrument Serif',serif;font-size:2rem;color:var(--txt);margin-bottom:.25rem;}
+.guard-logo em{font-style:normal;color:var(--redl);}
+.guard-title{font-family:'Instrument Serif',serif;font-size:1.5rem;color:var(--txt);margin:1.5rem 0 .5rem;}
+.guard-sub{font-size:.88rem;color:var(--mut);margin-bottom:2rem;line-height:1.6;}
+.guard-btn{
+  display:block;width:100%;padding:.9rem;background:var(--red);color:white;
+  border:none;border-radius:10px;font-family:'Outfit',sans-serif;
+  font-size:1rem;font-weight:700;cursor:pointer;transition:all .2s;text-decoration:none;
+  margin-bottom:.75rem;
+}
+.guard-btn:hover{background:var(--redl);}
+.guard-btn-out{
+  display:block;width:100%;padding:.9rem;background:transparent;color:var(--mut);
+  border:1px solid var(--line);border-radius:10px;font-family:'Outfit',sans-serif;
+  font-size:.9rem;cursor:pointer;transition:all .2s;text-decoration:none;
+}
+.guard-btn-out:hover{border-color:var(--redb);color:var(--txt);}
+
+/* ── SIDEBAR ── */
+.sb{width:var(--sw);flex-shrink:0;background:var(--sur);border-right:1px solid var(--line);display:flex;flex-direction:column;height:100vh;position:fixed;left:0;top:0;z-index:50;}
+.sb-top{padding:1.25rem 1.5rem 1.1rem;border-bottom:1px solid var(--line);}
+.logo{font-family:'Instrument Serif',serif;font-size:1.5rem;color:var(--txt);text-decoration:none;display:block;letter-spacing:-.3px;}
+.logo em{font-style:normal;color:var(--redl);}
+.sb-nav{flex:1;padding:1rem .75rem;overflow-y:auto;}
+.ns{font-size:.63rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mut2);padding:.8rem .75rem .35rem;}
+.ni{display:flex;align-items:center;gap:.65rem;padding:.6rem .75rem;border-radius:8px;cursor:pointer;transition:all .15s;font-size:.87rem;font-weight:500;color:var(--mut);margin-bottom:.1rem;border:none;background:none;width:100%;text-align:left;font-family:'Outfit',sans-serif;}
+.ni:hover{background:rgba(255,255,255,.04);color:var(--txt);}
+.ni.active{background:var(--redd);color:#f9a8a8;}
+.sb-bot{padding:.75rem;border-top:1px solid var(--line);}
+.btn-out{display:flex;align-items:center;gap:.65rem;padding:.6rem .75rem;border-radius:8px;cursor:pointer;font-size:.84rem;color:var(--mut2);width:100%;border:none;background:none;font-family:'Outfit',sans-serif;transition:all .2s;}
+.btn-out:hover{color:var(--redl);background:var(--redd);}
+
+/* ── MAIN ── */
+.main{margin-left:var(--sw);flex:1;height:100vh;overflow-y:auto;display:flex;flex-direction:column;}
+.topbar{position:sticky;top:0;z-index:40;background:rgba(7,7,15,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--line);padding:0 2rem;height:56px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.tb-title{font-family:'Instrument Serif',serif;font-size:1.15rem;color:var(--txt);}
+.sub-pill{display:flex;align-items:center;gap:.5rem;background:var(--grnd);border:1px solid rgba(34,197,94,.2);border-radius:100px;padding:.28rem .85rem;font-size:.72rem;font-weight:700;color:var(--grn);}
+.sub-dot{width:6px;height:6px;border-radius:50%;background:var(--grn);}
+
+.page{display:none;padding:2rem;}
+.page.active{display:block;}
+
+/* ── WELCOME ── */
+.welcome{background:linear-gradient(120deg,#120208 0%,#1c0505 60%,#0f0f1f 100%);border:1px solid var(--redb);border-radius:18px;padding:2rem 2.5rem;margin-bottom:2rem;position:relative;overflow:hidden;}
+.welcome::before{content:'';position:absolute;right:-80px;top:-80px;width:300px;height:300px;background:radial-gradient(circle,rgba(224,32,32,.08) 0%,transparent 65%);}
+.welcome h2{font-family:'Instrument Serif',serif;font-size:1.8rem;color:var(--txt);margin-bottom:.3rem;position:relative;}
+.welcome p{font-size:.9rem;color:var(--mut);position:relative;}
+
+/* ── STATS ── */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:2rem;}
+.stat{background:var(--sur);border:1px solid var(--line);border-radius:14px;padding:1.25rem 1.4rem;transition:border-color .2s;}
+.stat:hover{border-color:var(--redb);}
+.stat-icon{width:36px;height:36px;border-radius:10px;background:var(--redd);border:1px solid var(--redb);display:flex;align-items:center;justify-content:center;font-size:.95rem;margin-bottom:.85rem;}
+.stat-val{font-family:'Instrument Serif',serif;font-size:2.1rem;color:var(--txt);line-height:1;margin-bottom:.2rem;}
+.stat-lbl{font-size:.75rem;color:var(--mut);}
+.stitle{font-family:'Instrument Serif',serif;font-size:1.4rem;color:var(--txt);margin-bottom:1rem;}
+
+/* ── NO PAYMENT BANNER ── */
+.no-pay-banner{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:14px;padding:1.25rem 1.75rem;margin-bottom:1.75rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;}
+.no-pay-btn{background:var(--amb);color:white;border:none;border-radius:9px;padding:.65rem 1.4rem;font-family:'Outfit',sans-serif;font-weight:700;font-size:.88rem;cursor:pointer;white-space:nowrap;}
+
+/* ── COURSES GRID ── */
+.courses-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem;}
+.cc{background:var(--sur);border:1px solid var(--line);border-radius:16px;overflow:hidden;cursor:pointer;transition:all .25s;}
+.cc:hover{border-color:var(--redb);transform:translateY(-3px);box-shadow:0 10px 30px rgba(0,0,0,.3);}
+.cc-thumb{height:120px;display:flex;align-items:center;justify-content:center;font-size:2.5rem;}
+.cc-body{padding:1.1rem;}
+.cc-spec{font-size:.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:.4rem;}
+.cc-name{font-family:'Instrument Serif',serif;font-size:1.1rem;color:var(--txt);margin-bottom:.6rem;line-height:1.3;}
+.cc-meta{display:flex;gap:1rem;font-size:.77rem;color:var(--mut);margin-bottom:.85rem;}
+.cc-prog{display:flex;align-items:center;gap:.6rem;}
+.cc-track{flex:1;height:4px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;}
+.cc-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--red),var(--redl));}
+.cc-pct{font-size:.74rem;font-weight:700;color:var(--redl);}
+
+/* ── BROWSER LAYOUT ── */
+.browser{display:grid;grid-template-columns:260px 1fr;gap:1.25rem;height:calc(100vh - 130px);}
+.tree-panel{background:var(--sur);border:1px solid var(--line);border-radius:16px;overflow-y:auto;padding:1rem 0;}
+.tree-sem-btn{display:flex;align-items:center;justify-content:space-between;width:100%;padding:.65rem 1.25rem;background:none;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:.85rem;font-weight:700;color:var(--txt);text-align:left;transition:all .15s;}
+.tree-sem-btn:hover{background:rgba(255,255,255,.03);}
+.tree-sem-btn.open{color:var(--redl);}
+.tree-arrow{font-size:.7rem;color:var(--mut2);transition:transform .2s;}
+.tree-sem-btn.open .tree-arrow{transform:rotate(90deg);color:var(--redl);}
+.tree-mods{display:none;}
+.tree-mods.open{display:block;}
+.tree-mod-btn{display:flex;align-items:center;justify-content:space-between;width:100%;padding:.5rem 1.25rem .5rem 2rem;background:none;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:.82rem;color:var(--mut);text-align:left;transition:all .15s;}
+.tree-mod-btn:hover{color:var(--txt);background:rgba(255,255,255,.03);}
+.tree-mod-btn.open{color:var(--redl);}
+.tree-subs{display:none;}
+.tree-subs.open{display:block;}
+.tree-sub-btn{display:flex;align-items:center;gap:.5rem;width:100%;padding:.44rem 1.25rem .44rem 3rem;background:none;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:.8rem;color:var(--mut2);text-align:left;transition:all .15s;}
+.tree-sub-btn:hover{color:var(--txt);}
+.tree-sub-btn.active{color:#f9a8a8;font-weight:600;}
+.tree-locked{display:flex;align-items:center;justify-content:space-between;padding:.65rem 1.25rem;font-size:.85rem;font-weight:700;color:var(--mut2);}
+.lock-tag{font-size:.68rem;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:100px;padding:.2rem .6rem;color:var(--mut2);}
+
+/* ── CONTENT PANEL ── */
+.content-panel{background:var(--sur);border:1px solid var(--line);border-radius:16px;display:flex;flex-direction:column;overflow:hidden;}
+.cp-header{padding:1.2rem 1.75rem;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.cp-header h3{font-family:'Instrument Serif',serif;font-size:1.1rem;color:var(--txt);}
+.cp-header p{font-size:.78rem;color:var(--mut);margin-top:.15rem;}
+.btn-dl{display:flex;align-items:center;gap:.4rem;background:var(--red);color:white;border:none;border-radius:8px;padding:.5rem 1rem;font-family:'Outfit',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s;}
+.btn-dl:hover{background:var(--redl);}
+.pdf-viewer{flex:1;display:flex;align-items:center;justify-content:center;background:#0a0a12;}
+.pdf-placeholder{text-align:center;color:var(--mut2);}
+.pdf-placeholder .pi{font-size:3rem;margin-bottom:1rem;}
+.pdf-placeholder p{font-size:.88rem;line-height:1.6;}
+
+/* ── QUIZ ── */
+.quiz-layout{display:grid;grid-template-columns:270px 1fr;gap:1.25rem;height:calc(100vh - 130px);}
+.quiz-list-panel{background:var(--sur);border:1px solid var(--line);border-radius:16px;overflow-y:auto;padding:1rem;}
+.ql-title{font-size:.68rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mut2);padding:.5rem .5rem .75rem;}
+.qi{padding:.85rem 1rem;border-radius:10px;cursor:pointer;transition:all .15s;margin-bottom:.25rem;border:1px solid transparent;}
+.qi:hover{background:rgba(255,255,255,.04);}
+.qi.active{background:var(--redd);border-color:var(--redb);}
+.qi-title{font-size:.85rem;font-weight:600;color:var(--txt);margin-bottom:.2rem;}
+.qi-meta{font-size:.74rem;color:var(--mut2);}
+.quiz-player{background:var(--sur);border:1px solid var(--line);border-radius:16px;display:flex;flex-direction:column;overflow:hidden;}
+.qp-empty{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--mut2);flex-direction:column;gap:.75rem;font-size:.9rem;}
+.qp-top{padding:1.2rem 1.75rem;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:1.25rem;flex-shrink:0;}
+.qp-title-txt{font-family:'Instrument Serif',serif;font-size:1.1rem;color:var(--txt);}
+.qp-meta-txt{font-size:.77rem;color:var(--mut);margin-top:.15rem;}
+.qp-prog-wrap{flex:1;}
+.qp-prog-lbl{display:flex;justify-content:space-between;font-size:.74rem;color:var(--mut2);margin-bottom:.3rem;}
+.qp-bar{height:4px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;}
+.qp-bar-fill{height:100%;background:linear-gradient(90deg,var(--red),var(--redl));border-radius:3px;transition:width .4s;}
+.qp-body{flex:1;padding:2rem 2.5rem;overflow-y:auto;}
+.qp-question{font-family:'Instrument Serif',serif;font-size:1.35rem;color:var(--txt);line-height:1.4;margin-bottom:2rem;}
+.qp-opts{display:flex;flex-direction:column;gap:.65rem;}
+.qp-opt{display:flex;align-items:center;gap:1rem;padding:.9rem 1.25rem;border:1px solid var(--line);border-radius:12px;cursor:pointer;transition:all .18s;font-size:.9rem;color:var(--mut);background:none;font-family:'Outfit',sans-serif;text-align:left;width:100%;}
+.qp-opt:hover{border-color:var(--redb);background:var(--redd);color:var(--txt);}
+.qp-opt.selected{border-color:var(--red);color:#f9a8a8;background:var(--redd);}
+.qp-opt.correct{border-color:var(--grn);color:var(--grn);background:var(--grnd);}
+.qp-opt.wrong{border-color:#f87171;color:#f87171;background:rgba(248,113,113,.08);}
+.opt-letter{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0;}
+.qp-footer{padding:1.2rem 2.5rem;border-top:1px solid var(--line);display:flex;justify-content:flex-end;flex-shrink:0;}
+.btn-val{background:var(--red);color:white;border:none;border-radius:9px;padding:.72rem 2rem;font-family:'Outfit',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;transition:all .2s;}
+.btn-val:hover{background:var(--redl);}
+.btn-val:disabled{opacity:.4;cursor:not-allowed;}
+
+/* ── IA ── */
+.ia-layout{display:flex;flex-direction:column;height:calc(100vh - 130px);background:var(--sur);border:1px solid var(--line);border-radius:16px;overflow:hidden;}
+.ia-head{padding:1.2rem 1.75rem;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:.85rem;flex-shrink:0;}
+.ia-icon{width:38px;height:38px;border-radius:10px;background:var(--redd);border:1px solid var(--redb);display:flex;align-items:center;justify-content:center;font-size:1.1rem;}
+.ia-name{font-weight:700;font-size:.95rem;color:var(--txt);}
+.ia-status{font-size:.73rem;color:var(--mut);}
+.ia-msgs{flex:1;overflow-y:auto;padding:1.5rem;display:flex;flex-direction:column;gap:1rem;}
+.msg{max-width:72%;display:flex;flex-direction:column;gap:.3rem;}
+.msg.ai{align-self:flex-start;}
+.msg.user{align-self:flex-end;}
+.msg-bubble{padding:.82rem 1.1rem;border-radius:14px;font-size:.87rem;line-height:1.65;}
+.msg.ai .msg-bubble{background:var(--sur2);border:1px solid var(--line);color:var(--txt);border-radius:4px 14px 14px 14px;}
+.msg.user .msg-bubble{background:var(--redd);border:1px solid var(--redb);color:#f9a8a8;border-radius:14px 4px 14px 14px;}
+.msg-time{font-size:.68rem;color:var(--mut2);padding:0 .25rem;}
+.msg.user .msg-time{text-align:right;}
+.ia-input-wrap{padding:1rem 1.5rem;border-top:1px solid var(--line);display:flex;gap:.75rem;flex-shrink:0;}
+.ia-input{flex:1;background:var(--sur2);border:1px solid var(--line);border-radius:10px;padding:.75rem 1rem;font-family:'Outfit',sans-serif;font-size:.88rem;color:var(--txt);outline:none;resize:none;height:44px;transition:border-color .2s;}
+.ia-input:focus{border-color:var(--redb);}
+.ia-send{background:var(--red);color:white;border:none;border-radius:10px;width:44px;height:44px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;transition:background .2s;}
+.ia-send:hover{background:var(--redl);}
+.ia-note{text-align:center;font-size:.7rem;color:var(--mut2);padding:.3rem 1.5rem .75rem;}
+
+/* ── FLOAT IA ── */
+.float-btn{position:fixed;bottom:1.75rem;right:1.75rem;z-index:200;width:50px;height:50px;border-radius:50%;background:var(--red);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.25rem;box-shadow:0 4px 20px rgba(224,32,32,.4);transition:all .2s;}
+.float-btn:hover{background:var(--redl);transform:scale(1.08);}
+.float-win{position:fixed;bottom:5.25rem;right:1.75rem;z-index:199;width:330px;height:440px;background:var(--sur);border:1px solid var(--redb);border-radius:18px;display:none;flex-direction:column;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.5);}
+.float-win.open{display:flex;}
+.float-head{padding:.95rem 1.25rem;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.float-title{display:flex;align-items:center;gap:.55rem;font-weight:700;font-size:.88rem;color:var(--txt);}
+.float-x{background:none;border:none;cursor:pointer;color:var(--mut);font-size:1.2rem;line-height:1;transition:color .2s;}
+.float-x:hover{color:var(--redl);}
+.float-msgs{flex:1;overflow-y:auto;padding:.9rem;display:flex;flex-direction:column;gap:.7rem;}
+.float-inp-wrap{padding:.7rem .9rem;border-top:1px solid var(--line);display:flex;gap:.55rem;flex-shrink:0;}
+.float-inp{flex:1;background:var(--sur2);border:1px solid var(--line);border-radius:9px;padding:.6rem .85rem;font-family:'Outfit',sans-serif;font-size:.83rem;color:var(--txt);outline:none;resize:none;height:38px;transition:border-color .2s;}
+.float-inp:focus{border-color:var(--redb);}
+.float-send{background:var(--red);color:white;border:none;border-radius:9px;width:38px;height:38px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0;transition:background .2s;}
+.float-send:hover{background:var(--redl);}
+
+/* ── PROFIL ── */
+.profil-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;}
+.p-card{background:var(--sur);border:1px solid var(--line);border-radius:16px;padding:1.75rem;}
+.p-card h3{font-family:'Instrument Serif',serif;font-size:1.1rem;color:var(--txt);margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid var(--line);}
+.p-field{margin-bottom:.9rem;}
+.p-field label{display:block;font-size:.76rem;font-weight:600;color:var(--mut);margin-bottom:.35rem;}
+.p-field input,.p-field select{width:100%;padding:.7rem 1rem;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:9px;font-family:'Outfit',sans-serif;font-size:.88rem;color:var(--txt);outline:none;transition:border-color .2s;}
+.p-field input:focus,.p-field select:focus{border-color:var(--redb);}
+.p-field select option{background:var(--sur2);}
+.p-sub-active{display:flex;align-items:center;gap:.6rem;background:var(--grnd);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:.85rem 1rem;margin-bottom:1.5rem;font-size:.85rem;color:var(--grn);font-weight:600;}
+.btn-ps{background:var(--red);color:white;border:none;border-radius:8px;padding:.65rem 1.25rem;font-family:'Outfit',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .2s;width:100%;margin-top:.5rem;}
+.btn-ps:hover{background:var(--redl);}
+.btn-danger{background:none;border:1px solid rgba(248,113,113,.3);color:#f87171;border-radius:8px;padding:.65rem 1.25rem;font-family:'Outfit',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .2s;width:100%;margin-top:.75rem;}
+.btn-danger:hover{background:rgba(248,113,113,.08);}
+@keyframes pop{from{transform:scale(.94) translateY(16px);opacity:0;}to{transform:scale(1) translateY(0);opacity:1;}}
+</style>
+</head>
+<body>
+
+<!-- ── GUARD OVERLAY (affiché si pas connecté) ── -->
+<div id="guard-overlay">
+  <div class="guard-box">
+    <div class="guard-logo">Med<em>flix</em></div>
+    <div class="guard-title">Accès réservé</div>
+    <p class="guard-sub">Vous devez être connecté et avoir un abonnement actif pour accéder à l'espace étudiant.</p>
+    <a class="guard-btn" href="medflix-landing.html">Se connecter ou s'abonner →</a>
+    <a class="guard-btn-out" href="medflix-landing.html">Retour au site</a>
+  </div>
+</div>
+
+<!-- ── SIDEBAR ── -->
+<aside class="sb">
+  <div class="sb-top">
+    <a class="logo" href="medflix-landing.html">Med<em>flix</em></a>
+  </div>
+  <nav class="sb-nav">
+    <div class="ns">Principal</div>
+    <button class="ni active" id="ni-dashboard" onclick="nav('dashboard')">🏠 Tableau de bord</button>
+    <div class="ns">Contenu</div>
+    <button class="ni" id="ni-cours" onclick="nav('cours')">📚 Mes Ressources</button>
+    <button class="ni" id="ni-quiz" onclick="nav('quiz')">✏️ Lecteur QCM Annales</button>
+    <button class="ni" id="ni-ia" onclick="nav('ia')">🤖 IA de révision</button>
+    <div class="ns">Compte</div>
+    <button class="ni" id="ni-profil" onclick="nav('profil')">👤 Mon profil</button>
+  </nav>
+  <div class="sb-bot">
+    <button class="btn-out" onclick="logout()">🚪 Déconnexion</button>
+  </div>
+</aside>
+
+<!-- ── MAIN ── -->
+<div class="main">
+  <div class="topbar">
+    <div class="tb-title" id="tb-title">Tableau de bord</div>
+    <div class="sub-pill" id="sub-pill"><span class="sub-dot"></span>Abonnement actif</div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="welcome">
+      <h2 id="welcome-name">Bonjour 👋</h2>
+      <p>Prêt à réviser ? Reprenez là où vous vous êtes arrêté.</p>
+    </div>
+    <div id="no-pay-banner" style="display:none;" class="no-pay-banner">
+      <div>
+        <div style="font-weight:700;color:var(--amb);margin-bottom:.25rem;">⚠️ Aucun abonnement actif</div>
+        <div style="font-size:.86rem;color:var(--mut);">Abonnez-vous pour accéder aux cours, TP et QCM.</div>
+      </div>
+      <button class="no-pay-btn" onclick="window.location.href='medflix-landing.html'">S'abonner — 199 DH →</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-icon">📄</div><div class="stat-val" id="s-cours">—</div><div class="stat-lbl">Cours consultés</div></div>
+      <div class="stat"><div class="stat-icon">🔬</div><div class="stat-val" id="s-tp">—</div><div class="stat-lbl">TP consultés</div></div>
+      <div class="stat"><div class="stat-icon">✏️</div><div class="stat-val" id="s-quiz">—</div><div class="stat-lbl">QCM effectués</div></div>
+      <div class="stat"><div class="stat-icon">🏆</div><div class="stat-val" id="s-score">—</div><div class="stat-lbl">Score moyen</div></div>
+    </div>
+    <div class="stitle">Reprendre mes cours</div>
+    <div class="courses-grid" id="dashboard-courses-grid">
+      <!-- Will be populated by JS -->
+    </div>
+  </div>
+
+  <!-- COURS -->
+  <div class="page" id="page-cours">
+    <div class="browser">
+      <div class="tree-panel" id="tree-cours"></div>
+      <div class="content-panel" id="panel-cours">
+        <div class="pdf-viewer"><div class="pdf-placeholder"><div class="pi">📄</div><p>Sélectionnez un cours<br>dans le menu à gauche</p></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TP/EXAMENS -->
+  <div class="page" id="page-tp">
+    <div class="browser">
+      <div class="tree-panel" id="tree-tp"></div>
+      <div class="content-panel" id="panel-tp">
+        <div class="pdf-viewer"><div class="pdf-placeholder"><div class="pi">🔬</div><p>Sélectionnez un TP/Examen<br>dans le menu à gauche</p></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QCM -->
+  <div class="page" id="page-quiz">
+    <div class="quiz-layout">
+      <div class="quiz-list-panel"><div class="ql-title">QCM Annales</div><div id="quiz-list"></div></div>
+      <div class="quiz-player" id="quiz-player">
+        <div class="qp-empty"><div style="font-size:2.5rem">✏️</div><p>Sélectionnez un QCM<br>pour commencer</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IA PAGE -->
+  <div class="page" id="page-ia">
+    <div class="ia-layout">
+      <div class="ia-head">
+        <div class="ia-icon">🤖</div>
+        <div><div class="ia-name">Assistant Medflix</div><div class="ia-status">Posez vos questions sur vos cours</div></div>
+      </div>
+      <div class="ia-msgs" id="ia-msgs">
+        <div class="msg ai"><div class="msg-bubble">Bonjour ! Je suis votre assistant de révision Medflix. Posez-moi n'importe quelle question sur vos cours de médecine.</div><div class="msg-time">Assistant</div></div>
+      </div>
+      <div class="ia-note">L'IA peut faire des erreurs. Vérifiez toujours avec vos cours officiels.</div>
+      <div class="ia-input-wrap">
+        <textarea class="ia-input" id="ia-inp" placeholder="Posez votre question..." rows="1"></textarea>
+        <button class="ia-send" id="ia-send-btn">↑</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROFIL -->
+  <div class="page" id="page-profil">
+    <div class="profil-grid">
+      <div class="p-card">
+        <h3>Informations personnelles</h3>
+        <div class="p-field"><label>Nom complet</label><input type="text" id="p-name" placeholder="Votre nom"></div>
+        <div class="p-field">
+          <label style="display:flex;justify-content:space-between;align-items:center;"><span>Email</span> <button onclick="startEmailChange()" style="background:none;border:none;color:var(--redl);font-size:.76rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">Modifier</button></label>
+          <input type="email" id="p-email" placeholder="votre@email.com" readonly style="opacity:.5;cursor:not-allowed;">
+        </div>
+        <div class="p-field">
+          <label style="display:flex;justify-content:space-between;align-items:center;"><span>Téléphone (WhatsApp)</span> <button onclick="startPhoneChange()" style="background:none;border:none;color:var(--redl);font-size:.76rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">Modifier</button></label>
+          <input type="tel" id="p-phone" placeholder="ex: 06..." readonly style="opacity:.5;cursor:not-allowed;">
+        </div>
+        <div class="p-field"><label>Faculté</label><input type="text" value="FMPC — Casablanca" readonly style="opacity:.5;cursor:not-allowed;"></div>
+        <button class="btn-ps" onclick="saveProfil()">Sauvegarder</button>
+      </div>
+      <div>
+        <div class="p-card" style="margin-bottom:1.25rem;">
+          <h3>Mes abonnements</h3>
+          <div class="p-sub-active" id="p-sub-active">✓ Abonnement actif — 199 DH / semestre</div>
+
+          <!-- Per-semester list -->
+          <div id="p-subs-list" style="margin:1rem 0;"></div>
+
+          <div style="font-size:.86rem;color:var(--mut);line-height:1.8;border-top:1px solid var(--line);padding-top:.75rem;">
+            <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--line);"><span>Accès</span><span style="color:var(--txt);font-weight:500;">FMPC Casablanca</span></div>
+            <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--line);"><span>Contenu</span><span style="color:var(--txt);font-weight:500;">Cours · TP/Examens · QCM · IA</span></div>
+            <div style="display:flex;justify-content:space-between;padding:.5rem 0;"><span>Application</span><span style="color:var(--txt);font-weight:500;">iOS &amp; Android</span></div>
+          </div>
+          <button class="btn-ps" style="margin-top:1rem;" onclick="openNewSemModal()">+ S'abonner à un nouveau semestre — 199 DH</button>
+        </div>
+        <div class="p-card">
+          <h3>Sécurité</h3>
+          <div class="p-field"><label>Mot de passe actuel</label><input type="password" id="pw-current" placeholder="••••••••"></div>
+          <div class="p-field"><label>Nouveau mot de passe</label><input type="password" id="pw-new" placeholder="••••••••"></div>
+          <div class="p-field"><label>Confirmer</label><input type="password" id="pw-confirm" placeholder="••••••••"></div>
+          <button class="btn-ps" onclick="changePassword()">Modifier le mot de passe</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOUVEAU SEMESTRE -->
+<div id="newsem-modal" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;padding:1rem;overflow-y:auto;">
+  <div style="background:var(--sur);border:1px solid var(--redb);border-radius:20px;padding:2.5rem;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;animation:pop .25s ease;">
+    <div style="font-family:'Instrument Serif',serif;font-size:1.5rem;color:var(--txt);margin-bottom:.3rem;">S'abonner à un nouveau semestre</div>
+    <div style="font-size:.85rem;color:var(--mut);margin-bottom:1.5rem;">Choisis le semestre, effectue le paiement, envoie le reçu par WhatsApp. Ton accès sera activé sous 24h.</div>
+
+    <div class="p-field"><label>Semestre à débloquer</label>
+      <select id="newsem-select" style="width:100%;padding:.75rem 1rem;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:9px;font-family:'Outfit',sans-serif;font-size:.9rem;color:var(--txt);outline:none;"></select>
+    </div>
+
+    <div style="background:rgba(224,32,32,.08);border:1px solid rgba(224,32,32,.15);border-radius:10px;padding:1rem;margin-bottom:1.25rem;text-align:center;">
+      <div style="font-family:'Instrument Serif',serif;font-size:2rem;color:var(--txt);">199 <small style="font-size:.9rem;color:var(--mut);">DH</small></div>
+      <div style="font-size:.78rem;color:var(--mut);">par semestre</div>
+    </div>
+
+    <!-- Payment methods -->
+    <div style="font-size:.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut);margin-bottom:.75rem;">Méthode de paiement</div>
+    <div style="display:flex;gap:.75rem;margin-bottom:1.25rem;">
+      <button id="ns-tab-rib" onclick="nsSwitchTab('rib')" style="flex:1;padding:.9rem;border:2px solid var(--redl);border-radius:12px;cursor:pointer;background:rgba(224,32,32,.08);font-family:'Outfit',sans-serif;text-align:center;">
+        <div style="font-size:1.3rem;margin-bottom:.3rem;">🏦</div>
+        <div style="font-size:.85rem;font-weight:700;color:var(--txt);">Virement RIB</div>
+      </button>
+      <button id="ns-tab-billet" onclick="nsSwitchTab('billet')" style="flex:1;padding:.9rem;border:2px solid var(--line);border-radius:12px;cursor:pointer;background:none;font-family:'Outfit',sans-serif;text-align:center;">
+        <div style="font-size:1.3rem;margin-bottom:.3rem;">🎟️</div>
+        <div style="font-size:.85rem;font-weight:700;color:var(--txt);">billeterie.ma</div>
+      </button>
+    </div>
+
+    <!-- RIB panel -->
+    <div id="ns-panel-rib" style="background:var(--sur2);border:1px solid var(--line);border-radius:12px;padding:1.25rem;margin-bottom:1rem;">
+      <div style="font-size:.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut);margin-bottom:.75rem;">Coordonnées bancaires</div>
+      <div style="display:flex;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid var(--line);font-size:.85rem;"><span style="color:var(--mut);">Bénéficiaire</span><span style="color:var(--txt);font-weight:600;">Medflix</span></div>
+      <div style="display:flex;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid var(--line);font-size:.85rem;"><span style="color:var(--mut);">Banque</span><span style="color:var(--txt);font-weight:600;" id="ns-bank">CIH Bank</span></div>
+      <div style="display:flex;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid var(--line);font-size:.85rem;"><span style="color:var(--mut);">RIB</span><span style="color:var(--txt);font-weight:600;" id="ns-rib">À configurer</span></div>
+      <div style="display:flex;justify-content:space-between;padding:.45rem 0;font-size:.85rem;"><span style="color:var(--mut);">Montant</span><span style="color:var(--redl);font-weight:600;">199,00 DH</span></div>
+      <div style="font-size:.75rem;color:var(--mut2);margin-top:.5rem;">Mentionnez votre nom et email en objet du virement.</div>
+    </div>
+
+    <!-- Billeterie panel -->
+    <div id="ns-panel-billet" style="display:none;background:var(--sur2);border:1px solid var(--line);border-radius:12px;padding:1.25rem;margin-bottom:1rem;text-align:center;">
+      <div style="font-size:1.5rem;margin-bottom:.5rem;">🎟️</div>
+      <div style="font-size:.85rem;color:var(--mut);margin-bottom:1rem;">Paiement sécurisé en ligne via billeterie.ma</div>
+      <a id="ns-billet-link" href="https://billeterie.ma" target="_blank" style="display:inline-flex;align-items:center;gap:.5rem;background:#7c3aed;color:white;border:none;border-radius:10px;padding:.75rem 1.5rem;font-family:'Outfit',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;text-decoration:none;">Payer sur billeterie.ma →</a>
+    </div>
+
+    <!-- WhatsApp -->
+    <div style="background:rgba(37,211,102,.08);border:1px solid rgba(37,211,102,.2);border-radius:12px;padding:1rem;margin-bottom:1.25rem;">
+      <div style="font-size:.78rem;font-weight:700;color:rgba(37,211,102,.9);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.5px;">📲 Envoyer le reçu</div>
+      <div style="font-size:.8rem;color:var(--mut);margin-bottom:.75rem;">Envoie une capture du reçu par WhatsApp pour activer ton semestre.</div>
+      <button id="ns-wa-btn" onclick="nsWhatsApp()" style="display:flex;align-items:center;justify-content:center;gap:.6rem;width:100%;padding:.75rem;background:#25D366;color:white;border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;">💬 Envoyer le reçu via WhatsApp</button>
+    </div>
+
+    <div style="display:flex;gap:.75rem;">
+      <button class="btn-ps" style="flex:1;background:transparent;border:1px solid var(--line);color:var(--mut);" onclick="closeNewSemModal()">Fermer</button>
+      <button class="btn-ps" style="flex:1;" onclick="requestNewSemester()">✓ J'ai envoyé mon reçu</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL RESILIATION -->
+<div id="resil-modal" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;padding:1rem;overflow-y:auto;">
+  <div style="background:var(--sur);border:1px solid rgba(248,113,113,.4);border-radius:20px;padding:2.5rem;width:100%;max-width:440px;animation:pop .25s ease;">
+    <div style="font-family:'Instrument Serif',serif;font-size:1.8rem;color:#f87171;margin-bottom:.5rem;">Confirmation de résiliation</div>
+    <div style="font-size:.92rem;color:var(--txt);margin-bottom:.5rem;line-height:1.5;">Vous êtes sur le point de résilier l'abonnement : <strong id="resil-target-sem" style="color:var(--redl);"></strong>.</div>
+    <div style="font-size:.85rem;color:var(--mut);margin-bottom:1.75rem;line-height:1.5;">Vous perdrez <strong>immédiatement</strong> l'accès au contenu payant de ce semestre (cours, TP, QCM). Aucun remboursement ne sera effectué pour la période restante.</div>
+    <div style="display:flex;gap:.75rem;">
+      <button class="btn-ps" style="flex:1;background:transparent;border:1px solid var(--line);color:var(--mut);" onclick="document.getElementById('resil-modal').style.display='none'">Annuler</button>
+      <button class="btn-ps" id="btn-confirm-resil" style="flex:1;background:#f87171;border:1px solid #f87171;color:white;" onclick="confirmResilier()">Oui, résilier</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DECONNEXION -->
+<div id="logout-modal" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;padding:1rem;overflow-y:auto;">
+  <div style="background:var(--sur);border:1px solid var(--line);border-radius:20px;padding:2.5rem;width:100%;max-width:400px;animation:pop .25s ease;">
+    <div style="font-family:'Instrument Serif',serif;font-size:1.8rem;color:var(--txt);margin-bottom:.5rem;">Déconnexion</div>
+    <div style="font-size:.92rem;color:var(--mut);margin-bottom:1.75rem;line-height:1.5;">Êtes-vous sûr de vouloir vous déconnecter de Medflix ?</div>
+    <div style="display:flex;gap:.75rem;">
+      <button class="btn-ps" style="flex:1;background:transparent;border:1px solid var(--line);color:var(--mut);" onclick="document.getElementById('logout-modal').style.display='none'">Annuler</button>
+      <button class="btn-ps" style="flex:1;background:#f87171;border:1px solid #f87171;color:white;" onclick="confirmLogout()">Se déconnecter</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CHANGEMENT EMAIL -->
+<div id="email-modal" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;padding:1rem;overflow-y:auto;">
+  <div style="background:var(--sur);border:1px solid var(--redb);border-radius:20px;padding:2.5rem;width:100%;max-width:440px;animation:pop .25s ease;">
+    <div style="font-family:'Instrument Serif',serif;font-size:1.5rem;color:var(--txt);margin-bottom:.3rem;">Changement d'email</div>
+    <div style="font-size:.85rem;color:var(--mut);margin-bottom:1.5rem;" id="email-modal-desc">Saisissez votre nouvelle adresse email.</div>
+    
+    <div id="email-step-1">
+      <div class="p-field">
+        <label>Nouvel Email</label>
+        <input type="email" id="new-email-val" placeholder="nouvelle.adresse@email.com">
+      </div>
+      <div style="display:flex;gap:.75rem;margin-top:1.5rem;">
+        <button class="btn-ps" style="flex:1;background:transparent;border:1px solid var(--line);color:var(--mut);" onclick="document.getElementById('email-modal').style.display='none'">Annuler</button>
+        <button class="btn-ps" style="flex:1;" onclick="sendEmailCode()">Suivant</button>
+      </div>
+    </div>
+
+    <div id="email-step-2" style="display:none;">
+      <div style="background:rgba(224,32,32,.08);border:1px solid var(--redb);border-radius:10px;padding:.85rem;margin-bottom:1.25rem;">
+        <div style="font-size:.8rem;color:var(--txt);text-align:center;">Un code de vérification a été envoyé à :<br><strong id="old-email-lbl" style="color:var(--redl);"></strong></div>
+      </div>
+      <div class="p-field">
+        <label>Code de vérification (6 chiffres)</label>
+        <input type="text" id="email-code-val" placeholder="•• •• ••" maxlength="6" style="text-align:center;letter-spacing:6px;font-size:1.2rem;font-weight:700;">
+      </div>
+      <div style="display:flex;gap:.75rem;margin-top:1.5rem;">
+        <button class="btn-ps" style="flex:1;background:transparent;border:1px solid var(--line);color:var(--mut);" onclick="document.getElementById('email-modal').style.display='none'">Annuler</button>
+        <button class="btn-ps" style="flex:1;" onclick="verifyEmailCode()">Valider</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CHANGEMENT TÉLÉPHONE (SMS) -->
+<div id="phone-modal" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;padding:1rem;overflow-y:auto;">
+  <div style="background:var(--sur);border:1px solid var(--line);border-radius:20px;padding:2.5rem;width:100%;max-width:440px;animation:pop .25s ease;">
+    <div style="font-family:'Instrument Serif',serif;font-size:1.5rem;color:var(--txt);margin-bottom:.3rem;">Numéro de Téléphone</div>
+    <div style="font-size:.85rem;color:var(--mut);margin-bottom:1.5rem;" id="phone-modal-desc">Saisissez votre nouveau numéro WhatsApp.</div>
+    
+    <div id="phone-step-1" style="display:none;">
+      <div style="background:rgba(255,165,0,0.1);padding:1rem;border-radius:10px;margin-bottom:1rem;font-size:0.85rem;color:var(--txt);border:1px solid rgba(255,165,0,0.2);">
+        Avant de modifier votre numéro actuel, veuillez saisir le code SMS de vérification envoyé au <strong><span id="old-phone-lbl"></span></strong>.
+      </div>
+      <div class="p-field">
+        <label>Code de vérification (4 chiffres)</label>
+        <input type="text" id="phone-code-val" placeholder="Ex: 1234">
+      </div>
+      <div style="display:flex;gap:.75rem;margin-top:1.5rem;">
+        <button class="btn-ps" style="flex:1;background:transparent;border:1px solid var(--line);color:var(--mut);" onclick="document.getElementById('phone-modal').style.display='none'">Annuler</button>
+        <button class="btn-ps" style="flex:1;" onclick="verifyOldPhoneCode()">Valider le code</button>
+      </div>
+      <div style="font-size:0.75rem;color:var(--mut2);margin-top:0.75rem;text-align:center;">
+        Simulation : Utilisez le code <strong>1234</strong>
+      </div>
+    </div>
+    
+    <div id="phone-step-2">
+      <div class="p-field">
+        <label>Nouveau Numéro (WhatsApp)</label>
+        <input type="tel" id="new-phone-val" placeholder="Ex: 06...">
+      </div>
+      <div style="display:flex;gap:.75rem;margin-top:1.5rem;">
+        <button class="btn-ps" style="flex:1;background:transparent;border:1px solid var(--line);color:var(--mut);" onclick="document.getElementById('phone-modal').style.display='none'">Annuler</button>
+        <button class="btn-ps" style="flex:1;" onclick="saveNewPhone()">Sauvegarder</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL SUCCESS NOUVEAU SEMESTRE -->
+<div id="success-sem-modal" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;padding:1rem;overflow-y:auto;">
+  <div style="background:var(--sur);border:1px solid rgba(34,197,94,0.3);border-radius:20px;padding:3rem 2.5rem;width:100%;max-width:400px;text-align:center;animation:pop .25s ease;">
+    <div style="font-size:3.5rem;margin-bottom:1rem;">🎉</div>
+    <div style="font-family:'Instrument Serif',serif;font-size:2rem;color:#4ade80;margin-bottom:.75rem;">Dossier bien reçu !</div>
+    <div style="font-size:.92rem;color:var(--mut);margin-bottom:2rem;line-height:1.6;">
+      Ta demande d'abonnement a bien été prise en compte.<br><br>
+      Ton semestre sera activé sous <strong>24h</strong> maximum après vérification de ton reçu (CIH ou virement instantané). Prévoir <strong>48h ouvrables</strong> pour les autres banques.
+    </div>
+    <button class="btn-ps" style="width:100%;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);color:#4ade80;" onclick="document.getElementById('success-sem-modal').style.display='none'">Super, merci !</button>
+  </div>
+</div>
+
+<!-- FLOAT IA -->
+<button class="float-btn" onclick="toggleFloat()" title="Assistant IA">🤖</button>
+<div class="float-win" id="float-win">
+  <div class="float-head">
+    <div class="float-title"><span>🤖</span>Assistant Medflix</div>
+    <button class="float-x" onclick="toggleFloat()">×</button>
+  </div>
+  <div class="float-msgs" id="float-msgs">
+    <div class="msg ai"><div class="msg-bubble" style="font-size:.82rem;">Bonjour ! Posez-moi vos questions sur vos cours de médecine.</div></div>
+  </div>
+  <div class="float-inp-wrap">
+    <textarea class="float-inp" id="float-inp" placeholder="Votre question..." rows="1"></textarea>
+    <button class="float-send" id="float-send-btn">↑</button>
+  </div>
+</div>
+
+<script>
+// ══ CONFIG EMAILJS ══
+var EJS_KEY    = 'SruyH4Rx1G-OS-gqE';
+var EJS_SVC    = 'service_chelsyk';
+emailjs.init({ publicKey: EJS_KEY });
+function sendEmail(tpl,toName,toEmail,subject,message){
+  return emailjs.send(EJS_SVC, tpl==='etudiant'?'template_etudiant':'template_admin', {to_name:toName,to_email:toEmail,subject:subject,message:message});
+}
+
+// ══ GUARD + INIT (async — queries Supabase) ══
+var SESSION = JSON.parse(localStorage.getItem('medflix_session') || 'null');
+var isStudent = false;
+var PAID = [];
+var stats = (SESSION && SESSION.progress) ? SESSION.progress : { cours:0, tp:0, quiz:0, scores:[], latest:[] };
+
+document.addEventListener('DOMContentLoaded', function() {
+  if (SESSION && SESSION.role === 'student' && SESSION.activated) {
+    updateStats();
+    renderLatestCourses();
+  }
+});
+
+(async function(){
+  if (!SESSION || SESSION.role !== 'student' || !SESSION.activated) return;
+
+  // Check FRESH data from Supabase
+  var me = await dbGetUser(SESSION.email);
+  if (!me || me.resiliated || !me.activated) {
+    var gbox = document.querySelector('.guard-box');
+    gbox.querySelector('.guard-title').textContent = 'Abonnement expiré';
+    gbox.querySelector('.guard-sub').innerHTML = 'Ton abonnement a expiré ou a été résilié.<br>Renouvelle ton abonnement pour retrouver l\'accès à tes cours.';
+    gbox.querySelector('.guard-btn').textContent = 'Renouveler mon abonnement →';
+    return;
+  }
+  
+  // Expiration automatique individuelle
+  var now = new Date();
+  var pd = [].concat(me.paidDetails || []);
+  var paidList = [].concat(me.paid || []);
+  var hasChanged = false;
+  
+  if (paidList.length) {
+    paidList.forEach(function(s) {
+      if (!pd.find(function(p){ return p.sem === s; }) && me.expiration) {
+        pd.push({ sem: s, exp: me.expiration });
+      }
+    });
+
+    for (var i = pd.length - 1; i >= 0; i--) {
+      var p = pd[i];
+      if (p.exp || p.status === 'resilie') {
+        var isExpired = false;
+        
+        if (p.status === 'resilie') {
+           isExpired = true;
+        } else if (p.exp) {
+           var expString = p.exp.includes('T') ? p.exp : (p.exp + 'T23:59:59');
+           var expD = new Date(expString);
+           if (now > expD) isExpired = true;
+        }
+        
+        if (isExpired) {
+          pd.splice(i, 1);
+          var idx = paidList.indexOf(p.sem);
+          if (idx > -1) paidList.splice(idx, 1);
+          hasChanged = true;
+        }
+      }
+    }
+    
+    if (hasChanged) {
+      if (!paidList.length) {
+        await dbUpdateUser(me.email, { activated:false, resiliated:true, paid:[], paidDetails:pd });
+        var gbox = document.querySelector('.guard-box');
+        gbox.querySelector('.guard-title').textContent = 'Abonnements expirés ou révoqués';
+        gbox.querySelector('.guard-sub').innerHTML = 'Tes semestres ont expiré ou ont été clôturés.<br>Renouvelle ton abonnement pour retrouver l\'accès.';
+        gbox.querySelector('.guard-btn').textContent = 'Renouveler mon abonnement →';
+        return;
+      } else {
+        await dbUpdateUser(me.email, { paid: paidList, paidDetails: pd });
+        me.paid = paidList;
+        me.paidDetails = pd;
+      }
+    }
+  }
+
+  // ✅ Étudiant valide
+  isStudent = true;
+  PAID = me.paid || [];
+  SESSION = { name:me.name, email:me.email, role:'student', semester:me.semester, faculte:me.faculte, paid:PAID, activated:true, expiration:me.expiration, progress:me.progress };
+  stats = me.progress || { cours:0, tp:0, quiz:0, scores:[], latest:[] };
+  if (!stats.scores) stats.scores = [];
+  if (!stats.latest) stats.latest = [];
+  
+  localStorage.setItem('medflix_session', JSON.stringify(SESSION));
+
+  document.getElementById('guard-overlay').style.display = 'none';
+  var firstName = me.name.split(' ')[0];
+  firstName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+  document.getElementById('welcome-name').textContent = 'Bonjour, ' + firstName + ' 👋';
+  document.getElementById('p-name').value = me.name || '';
+  document.getElementById('p-email').value = me.email || '';
+  document.getElementById('p-phone').value = me.phone || '';
+  if (!PAID.length) { document.getElementById('no-pay-banner').style.display = 'flex'; }
+  
+  updateStats();
+  renderLatestCourses();
+
+  // Load ALL data from Supabase
+  QCM_DATA = await dbGetPublishedQCM();
+  var ALL_COURS = await dbGetPublishedCours();
+  var ALL_TP = await dbGetPublishedTP();
+
+  buildUnifiedTree(ALL_COURS, ALL_TP, QCM_DATA);
+  buildQuizList();
+  updateSubUI();
+})();
+
+function updateStats() {
+  document.getElementById('s-cours').textContent = stats.cours || '0';
+  document.getElementById('s-tp').textContent    = stats.tp    || '0';
+  document.getElementById('s-quiz').textContent  = stats.quiz  || '0';
+  var avg = (stats.scores && stats.scores.length) ? Math.round(stats.scores.reduce(function(a,b){return a+b;},0)/stats.scores.length)+'%' : '—';
+  document.getElementById('s-score').textContent = avg;
+}
+
+function trackActivity(type, title, sem, mod) {
+  if(type==='cours') stats.cours = (stats.cours || 0) + 1;
+  if(type==='tp') stats.tp = (stats.tp || 0) + 1;
+  if(type==='quiz') stats.quiz = (stats.quiz || 0) + 1;
+  
+  var icon = type==='cours' ? '🫀' : type==='tp' ? '🔬' : '✏️';
+  var color = type==='cours' ? '#f87171' : type==='tp' ? '#60a5fa' : '#4ade80';
+  var gradient = type==='cours' ? 'linear-gradient(135deg,#1a0505,#3d0a0a)' : type==='tp' ? 'linear-gradient(135deg,#05051a,#0a0a3d)' : 'linear-gradient(135deg,#05150a,#0a3d1a)';
+  var navTarget = type==='quiz' ? 'quiz' : type==='tp' ? 'tp' : 'cours';
+  
+  if(!stats.latest) stats.latest = [];
+  var existingIdx = stats.latest.findIndex(function(l){ return l.title === title; });
+  if (existingIdx > -1) stats.latest.splice(existingIdx, 1);
+  stats.latest.unshift({ type:type, title:title, sem:sem, mod:mod, icon:icon, color:color, gradient:gradient, nav:navTarget, ts: Date.now() });
+  
+  if (stats.latest.length > 3) stats.latest.pop();
+  
+  updateStats();
+  renderLatestCourses();
+  
+  dbUpdateUser(SESSION.email, { progress: stats });
+  SESSION.progress = stats;
+  localStorage.setItem('medflix_session', JSON.stringify(SESSION));
+}
+
+function renderLatestCourses() {
+  var grid = document.getElementById('dashboard-courses-grid');
+  if (!grid) return;
+  if (!stats.latest || stats.latest.length === 0) {
+    grid.innerHTML = '<div style="color:var(--mut);font-size:.85rem;padding:1rem;">Commencez à explorer vos cours ou TP, ils apparaîtront ici !</div>';
+    return;
+  }
+  
+  grid.innerHTML = stats.latest.map(function(l) {
+    return '<div class="cc" onclick="nav(\'' + l.nav + '\')">'
+      + '<div class="cc-thumb" style="background:'+l.gradient+';">' + l.icon + '</div>'
+      + '<div class="cc-body"><div class="cc-spec" style="color:'+l.color+';">' + (l.mod||'Général') + '</div>'
+      + '<div class="cc-name" style="font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + l.title + '</div>'
+      + '<div class="cc-meta"><span>' + (l.sem||'') + '</span></div>'
+      + '<div class="cc-prog" style="margin-top:.4rem;"><div class="cc-track"><div class="cc-fill" style="width:100%;background:'+l.color+'"></div></div><span class="cc-pct" style="color:'+l.color+';">100%</span></div>'
+      + '</div></div>';
+  }).join('');
+}
+
+// ══ NAV ══
+var PAGE_TITLES = { dashboard:'Tableau de bord', cours:'Mes Ressources', quiz:'Lecteur QCM Annales', ia:'IA de révision', profil:'Mon profil' };
+
+function nav(name) {
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.ni').forEach(function(n){ n.classList.remove('active'); });
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('ni-'+name).classList.add('active');
+  document.getElementById('tb-title').textContent = PAGE_TITLES[name];
+  
+  if (name === 'dashboard') {
+    updateStats();
+    renderLatestCourses();
+  }
+}
+
+function logout() {
+  document.getElementById('logout-modal').style.display = 'flex';
+}
+
+function confirmLogout() {
+  localStorage.removeItem('medflix_session');
+  window.location.href = 'medflix-landing.html';
+}
+
+// ══ ARBRE DYNAMIQUE UNIFIÉ ══
+function buildUnifiedTree(ALL_COURS, ALL_TP, ALL_QCM) {
+  var container = document.getElementById('tree-cours');
+  container.innerHTML = '';
+  
+  var allItems = ALL_COURS.concat(ALL_TP).concat(ALL_QCM);
+  var groups = {};
+  
+  allItems.forEach(function(item) {
+    if (!PAID.includes(item.semestre)) return; // Strict gating (semestres payés uniquement)
+    
+    var sem = item.semestre || 'Sans Semestre';
+    var mod = item.module || 'Général';
+    var smod = item.sous_module || 'Général';
+    if(!groups[sem]) groups[sem] = {};
+    if(!groups[sem][mod]) groups[sem][mod] = {};
+    if(!groups[sem][mod][smod]) groups[sem][mod][smod] = { cours:[], tp:[], qcm:[] };
+    
+    if(item.questions) groups[sem][mod][smod].qcm.push(item);
+    else if(item.type) groups[sem][mod][smod].tp.push(item);
+    else groups[sem][mod][smod].cours.push(item);
+  });
+  
+  var sems = Object.keys(groups).sort(function(a,b) {
+     var numA = parseInt(a.replace(/\\D/g, '')) || 0;
+     var numB = parseInt(b.replace(/\\D/g, '')) || 0;
+     return numA - numB;
+  });
+  
+  if (!sems.length) {
+    container.innerHTML = "<div style='padding:1.5rem;text-align:center;color:var(--mut2);font-size:.85rem;'>Aucun contenu n'est encore disponible ou vos abonnements ont expiré.</div>";
+    return;
+  }
+  
+  sems.forEach(function(sem) {
+    var semBtn = document.createElement('button');
+    semBtn.className = 'tree-sem-btn';
+    semBtn.innerHTML = sem+'<span class="tree-arrow">▶</span>';
+    var modsDiv = document.createElement('div');
+    modsDiv.className = 'tree-mods';
+    
+    Object.keys(groups[sem]).sort().forEach(function(mod) {
+      if(mod !== 'Général') {
+        var modBtn = document.createElement('button');
+        modBtn.className = 'tree-mod-btn';
+        modBtn.innerHTML = '<div style="display:flex;align-items:center;"><span style="color:var(--mut);margin-right:0.4rem;font-size:1rem;">📂</span> ' + mod + '</div><span class="tree-arrow" style="font-size:.65rem">▶</span>';
+        var subsDiv = document.createElement('div');
+        subsDiv.className = 'tree-subs';
+        
+        Object.keys(groups[sem][mod]).sort().forEach(function(smod) {
+          var subBtn = document.createElement('button');
+          subBtn.className = 'tree-sub-btn';
+          subBtn.innerHTML = '<span style="color:var(--mut2);margin-right:0.3rem;font-size:.9rem;">📁</span> ' + smod;
+          var files = groups[sem][mod][smod];
+          
+          subBtn.onclick = function() {
+            document.querySelectorAll('#tree-cours .tree-sub-btn').forEach(function(b){ b.classList.remove('active'); });
+            subBtn.classList.add('active');
+            openUnifiedDoc(sem, mod, smod, files);
+          };
+          subsDiv.appendChild(subBtn);
+        });
+        modBtn.onclick = function(){ modBtn.classList.toggle('open'); subsDiv.classList.toggle('open'); };
+        modsDiv.appendChild(modBtn);
+        modsDiv.appendChild(subsDiv);
+      }
+    });
+    
+    semBtn.onclick = function(){ semBtn.classList.toggle('open'); modsDiv.classList.toggle('open'); };
+    container.appendChild(semBtn);
+    container.appendChild(modsDiv);
+  });
+}
+
+function openUnifiedDoc(sem, mod, smod, files) {
+  var panel = document.getElementById('panel-cours');
+  
+  var html = '<div class="cp-header" style="flex-direction:column;align-items:flex-start;gap:.5rem;padding-bottom:1.5rem;border-bottom:1px solid var(--line);">'
+    + '<div><h3 style="font-size:1.6rem;font-weight:700;">' + smod + '</h3><p style="color:var(--mut);font-size:.9rem;font-weight:500;">' + sem + ' › ' + mod + '</p></div>'
+    + '</div>';
+    
+  html += '<div style="padding:2rem;display:flex;flex-direction:column;gap:3rem;overflow-y:auto;">';
+  
+  // Section Cours
+  if (files.cours.length > 0) {
+    html += '<div><h4 style="font-family:\'Instrument Serif\',serif;font-size:1.45rem;color:var(--txt);margin-bottom:1.2rem;display:flex;align-items:center;gap:.5rem;"><span style="color:var(--redl);">📄</span> Fichiers de Cours</h4><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;">';
+    files.cours.forEach(function(c) {
+      var annee = c.annee ? '<span style="background:rgba(255,255,255,.05);border:1px solid var(--line);padding:.2rem .5rem;border-radius:4px;font-size:.65rem;color:var(--mut);font-weight:600;letter-spacing:0.5px;">📅 ' + c.annee + '</span>' : '';
+      html += '<a href="'+(c.lien||'#')+'" target="_blank" onclick="trackActivity(\'cours\', \'' + c.titre.replace(/'/g, "\\'") + '\', \'' + sem.replace(/'/g, "\\'") + '\', \'' + mod.replace(/'/g, "\\'") + '\')" style="text-decoration:none;display:block;background:var(--sur);border:1px solid var(--line);border-radius:12px;padding:1.25rem;transition:all .2s;color:var(--txt);">'
+            + '<div style="font-weight:600;font-size:.95rem;margin-bottom:.6rem;line-height:1.4;">'+c.titre+'</div>'
+            + '<div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:.75rem;color:var(--mut2);font-weight:500;">'+(c.desc||'Ouvrir le PDF →')+'</span>'+annee+'</div></a>';
+    });
+    html += '</div></div>';
+  }
+  
+  // Section TP & Examens
+  if (files.tp.length > 0) {
+    html += '<div><h4 style="font-family:\'Instrument Serif\',serif;font-size:1.45rem;color:var(--txt);margin-bottom:1.2rem;display:flex;align-items:center;gap:.5rem;"><span style="color:#60a5fa;">🔬</span> Travaux Pratiques & Examens</h4><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;">';
+    files.tp.forEach(function(t) {
+      var annee = t.annee ? '<span style="background:rgba(255,255,255,.05);border:1px solid rgba(96,165,250,.2);padding:.2rem .5rem;border-radius:4px;font-size:.65rem;color:#60a5fa;font-weight:600;letter-spacing:0.5px;">📅 ' + t.annee + '</span>' : '';
+      html += '<a href="'+(t.lien||'#')+'" target="_blank" onclick="trackActivity(\'tp\', \'' + t.titre.replace(/'/g, "\\'") + '\', \'' + sem.replace(/'/g, "\\'") + '\', \'' + mod.replace(/'/g, "\\'") + '\')" style="text-decoration:none;display:block;background:var(--sur);border:1px solid rgba(96,165,250,.2);border-radius:12px;padding:1.25rem;transition:all .2s;color:var(--txt);">'
+            + '<div style="font-weight:600;font-size:.95rem;margin-bottom:.6rem;line-height:1.4;">'+t.titre+'</div>'
+            + '<div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:.72rem;color:#60a5fa;background:rgba(96,165,250,.1);padding:.2rem .5rem;border-radius:4px;font-weight:600;text-transform:uppercase;">'+(t.type||'TP')+'</span>'+annee+'</div></a>';
+    });
+    html += '</div></div>';
+  }
+  
+  // Section QCM
+  if (files.qcm.length > 0) {
+    html += '<div><h4 style="font-family:\'Instrument Serif\',serif;font-size:1.45rem;color:var(--txt);margin-bottom:1.2rem;display:flex;align-items:center;gap:.5rem;"><span style="color:var(--grn);">📝</span> S\'évaluer (QCM)</h4><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;">';
+    files.qcm.forEach(function(q) {
+      var annee = q.annee ? '<span style="background:rgba(255,255,255,.05);border:1px solid rgba(34,197,94,.2);padding:.2rem .5rem;border-radius:4px;font-size:.65rem;color:var(--grn);font-weight:600;letter-spacing:0.5px;">📅 ' + q.annee + '</span>' : '';
+      var globalIdx = QCM_DATA.findIndex(function(gq){ return gq.id === q.id; });
+      html += '<button onclick="nav(\'quiz\');startQuiz('+globalIdx+')" style="text-align:left;display:block;background:var(--sur);border:1px solid rgba(34,197,94,.2);border-radius:12px;padding:1.25rem;transition:all .2s;color:var(--txt);cursor:pointer;width:100%;">'
+            + '<div style="font-weight:600;font-size:.95rem;margin-bottom:.6rem;line-height:1.4;">'+q.titre+'</div>'
+            + '<div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:.72rem;color:var(--grn);background:rgba(34,197,94,.1);padding:.2rem .5rem;border-radius:4px;font-weight:600;text-transform:uppercase;">'+q.questions.length+' questions ▸</span>'+annee+'</div></button>';
+    });
+    html += '</div></div>';
+  }
+  
+  if (files.cours.length === 0 && files.tp.length === 0 && files.qcm.length === 0) {
+     html += "<div style='text-align:center;color:var(--mut2);font-size:.95rem;padding:3rem;border:1px dashed var(--line);border-radius:12px;'>Aucun contenu n'est encore disponible pour ce sous-module.</div>";
+  }
+  
+  html += '</div>';
+  panel.innerHTML = html;
+}
+
+// ══ QCM ══
+var QCM_DATA = []; // Loaded from Supabase in async init
+var activeQuiz=null, curQ=0, answers=[], answered=false;
+
+function buildQuizList() {
+  var c = document.getElementById('quiz-list');
+  if (!QCM_DATA.length) { c.innerHTML='<div style="padding:1rem;font-size:.84rem;color:var(--mut2);text-align:center;">Aucun QCM disponible<br>pour le moment.</div>'; return; }
+  QCM_DATA.forEach(function(q,idx) {
+    var el=document.createElement('div'); el.className='qi';
+    el.innerHTML='<div class="qi-title">'+q.titre+'</div><div class="qi-meta">'+q.semestre+' · '+q.questions.length+' questions</div>';
+    el.onclick=function(){ startQuiz(idx); };
+    c.appendChild(el);
+  });
+}
+
+function startQuiz(idx) {
+  activeQuiz=QCM_DATA[idx];
+  document.querySelectorAll('.qi').forEach(function(el,i){ el.classList.toggle('active',i===idx); });
+  if (!activeQuiz.questions.length) { document.getElementById('quiz-player').innerHTML='<div class="qp-empty"><div style="font-size:2.5rem">⏳</div><p>Questions bientôt disponibles.</p></div>'; return; }
+  curQ=0; answers=new Array(activeQuiz.questions.length).fill(null); answered=false; renderQ();
+}
+
+function renderQ() {
+  var q=activeQuiz.questions[curQ], total=activeQuiz.questions.length, pct=Math.round((curQ/total)*100);
+  var opts=q.opts.map(function(o,i){ return '<button class="qp-opt" id="opt-'+i+'" onclick="selOpt('+i+')"><span class="opt-letter">'+String.fromCharCode(65+i)+'</span>'+o+'</button>'; }).join('');
+  document.getElementById('quiz-player').innerHTML=
+    '<div class="qp-top"><div><div class="qp-title-txt">'+activeQuiz.titre+'</div><div class="qp-meta-txt">'+activeQuiz.semestre+'</div></div>'
+    +'<div class="qp-prog-wrap"><div class="qp-prog-lbl"><span>Question '+(curQ+1)+' / '+total+'</span><span>'+pct+'%</span></div>'
+    +'<div class="qp-bar"><div class="qp-bar-fill" style="width:'+pct+'%"></div></div></div></div>'
+    +'<div class="qp-body"><div class="qp-question">'+q.texte+'</div><div class="qp-opts">'+opts+'</div></div>'
+    +'<div class="qp-footer"><button class="btn-val" id="btn-val" disabled onclick="valOpt()">Valider</button></div>';
+}
+
+function selOpt(i) {
+  if(answered) return;
+  document.querySelectorAll('.qp-opt').forEach(function(o){ o.classList.remove('selected'); });
+  document.getElementById('opt-'+i).classList.add('selected');
+  answers[curQ]=i; document.getElementById('btn-val').disabled=false;
+}
+
+function valOpt() {
+  var q=activeQuiz.questions[curQ];
+  var correct=['A','B','C','D'].indexOf(q.bonne);
+  answered=true;
+  document.getElementById('opt-'+correct).classList.add('correct');
+  if(answers[curQ]!==correct) document.getElementById('opt-'+answers[curQ]).classList.add('wrong');
+  var btn=document.getElementById('btn-val');
+  btn.textContent=curQ<activeQuiz.questions.length-1?'Suivant →':'Résultats →';
+  btn.disabled=false; btn.onclick=nextQ;
+}
+
+function nextQ() {
+  answered=false;
+  if(curQ<activeQuiz.questions.length-1){ curQ++; renderQ(); } else {
+    var ok=answers.filter(function(a,i){ return a===['A','B','C','D'].indexOf(activeQuiz.questions[i].bonne); }).length;
+    var pct=Math.round((ok/activeQuiz.questions.length)*100);
+    stats.scores.push(pct);
+    trackActivity('quiz', activeQuiz.titre.replace(/'/g, "\\'"), activeQuiz.semestre.replace(/'/g, "\\'"), activeQuiz.module ? activeQuiz.module.replace(/'/g, "\\'") : 'Général');
+    document.getElementById('quiz-player').innerHTML=
+      '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2.5rem;">'
+      +'<div style="font-size:3rem;margin-bottom:1rem;">'+(pct>=60?'🏆':'📚')+'</div>'
+      +'<div style="font-family:\'Instrument Serif\',serif;font-size:4rem;font-weight:800;letter-spacing:-2px;color:'+(pct>=60?'var(--grn)':'#f87171')+';margin-bottom:.5rem;">'+pct+'%</div>'
+      +'<div style="font-size:.9rem;color:var(--mut);margin-bottom:2rem;">'+ok+' / '+activeQuiz.questions.length+' bonnes réponses</div>'
+      +'<button class="btn-val" onclick="startQuiz('+QCM_DATA.indexOf(activeQuiz)+')">Réessayer</button>'
+      +'</div>';
+  }
+}
+
+// ══ IA ══
+function iaSend(inputId, msgsId) {
+  var input=document.getElementById(inputId), text=input.value.trim();
+  if(!text) return; input.value='';
+  appendMsg(text,'user',msgsId);
+  setTimeout(function(){ appendMsg("Je suis en cours d'intégration. Une fois l'API connectée, je répondrai à vos questions.",'ai',msgsId); },700);
+}
+function appendMsg(text,role,msgsId) {
+  var msgs=document.getElementById(msgsId), small=msgsId==='float-msgs';
+  var div=document.createElement('div'); div.className='msg '+role;
+  div.innerHTML='<div class="msg-bubble"'+(small?' style="font-size:.82rem"':'')+'>'+text+'</div><div class="msg-time">'+(role==='ai'?'Assistant':'Vous')+'</div>';
+  msgs.appendChild(div); msgs.scrollTop=msgs.scrollHeight;
+}
+document.getElementById('ia-send-btn').onclick=function(){ iaSend('ia-inp','ia-msgs'); };
+document.getElementById('ia-inp').addEventListener('keydown',function(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); iaSend('ia-inp','ia-msgs'); } });
+document.getElementById('float-send-btn').onclick=function(){ iaSend('float-inp','float-msgs'); };
+document.getElementById('float-inp').addEventListener('keydown',function(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); iaSend('float-inp','float-msgs'); } });
+function toggleFloat(){ document.getElementById('float-win').classList.toggle('open'); }
+
+// ══ PROFIL ══
+async function saveProfil() {
+  if(!SESSION || !isStudent) return;
+  var newName = document.getElementById('p-name').value;
+  await dbUpdateUser(SESSION.email, { name:newName });
+  SESSION.name = newName;
+  localStorage.setItem('medflix_session',JSON.stringify(SESSION));
+  document.getElementById('welcome-name').textContent='Bonjour, '+newName.split(' ')[0]+' 👋';
+  alert('Profil sauvegardé !');
+}
+
+// ══ CHANGE EMAIL ══
+var pendingNewEmail = "";
+var expectedEmailCode = "";
+
+function startEmailChange() {
+  document.getElementById('new-email-val').value = "";
+  document.getElementById('email-code-val').value = "";
+  document.getElementById('email-step-1').style.display = 'block';
+  document.getElementById('email-step-2').style.display = 'none';
+  document.getElementById('email-modal-desc').textContent = "Saisissez votre nouvelle adresse email.";
+  document.getElementById('email-modal').style.display = 'flex';
+}
+
+function sendEmailCode() {
+  var nw = document.getElementById('new-email-val').value.trim();
+  if(!nw || !nw.includes('@')) { alert("Email invalide."); return; }
+  if(nw === SESSION.email) { alert("C'est déjà votre adresse email actuelle."); return; }
+  
+  pendingNewEmail = nw;
+  expectedEmailCode = Math.floor(100000 + Math.random() * 900000).toString();
+  
+  var toName = SESSION.name ? SESSION.name.split(' ')[0] : 'Étudiant';
+  sendEmail('etudiant', toName, SESSION.email, 'Code de vérification Medflix', 'Ton code pour valider le changement d\'email est : ' + expectedEmailCode + '\n\nSi tu n\'as pas demandé cette modification, ignore ce message.')
+    .then(function() {
+      alert("✉️ Un code de vérification a été envoyé à ton adresse actuelle : " + SESSION.email);
+    })
+    .catch(function(err) {
+      alert("Erreur lors de l'envoi de l'email de vérification.");
+      console.error(err);
+    });
+  
+  document.getElementById('old-email-lbl').textContent = SESSION.email;
+  document.getElementById('email-step-1').style.display = 'none';
+  document.getElementById('email-step-2').style.display = 'block';
+  document.getElementById('email-modal-desc').textContent = "Par mesure de sécurité, nous devons valider cet accès.";
+}
+
+async function verifyEmailCode() {
+  var code = document.getElementById('email-code-val').value.trim();
+  if(code !== expectedEmailCode) {
+    alert("Code incorrect.");
+    return;
+  }
+  
+  var oldEmail = SESSION.email;
+  await dbUpdateUser(oldEmail, { email: pendingNewEmail });
+  
+  // Mettre aussi à jour l'email dans l'historique des abonnements pour que l'admin garde la trace
+  if (window.sb) {
+    await window.sb.from('abonnements').update({ email: pendingNewEmail }).eq('email', oldEmail);
+  }
+  
+  SESSION.email = pendingNewEmail;
+  localStorage.setItem('medflix_session', JSON.stringify(SESSION));
+  
+  document.getElementById('p-email').value = pendingNewEmail;
+  document.getElementById('email-modal').style.display = 'none';
+  
+  var toName = SESSION.name ? SESSION.name.split(' ')[0] : 'Étudiant';
+  sendEmail('etudiant', toName, pendingNewEmail, 'Adresse email modifiée avec succès', 'Ton adresse email a été modifiée avec succès sur Medflix.\n\nTa nouvelle adresse de connexion est : ' + pendingNewEmail)
+    .then(function() {
+      alert("✅ Email modifié avec succès !\\n\\n✉️ Un email de confirmation a été envoyé sur ta nouvelle adresse.");
+    });
+}
+
+// ══ CHANGE PHONE (SMS) ══
+var pendingNewPhone = "";
+
+function startPhoneChange() {
+  document.getElementById('phone-modal').style.display = 'flex';
+  document.getElementById('phone-code-val').value = '';
+  document.getElementById('new-phone-val').value = '';
+  
+  if (SESSION.phone) {
+    document.getElementById('phone-modal-desc').textContent = "Par mesure de sécurité, nous devons valider ce changement via SMS.";
+    document.getElementById('old-phone-lbl').textContent = SESSION.phone;
+    document.getElementById('phone-step-2').style.display = 'none';
+    document.getElementById('phone-step-1').style.display = 'block';
+    
+    setTimeout(function() {
+      alert("📱 [SIMULATION SMS] - Envoyer au " + SESSION.phone + " :\\nVotre code de vérification Medflix est : 1234");
+    }, 500);
+  } else {
+    document.getElementById('phone-modal-desc').textContent = "Ajouter un numéro de téléphone à votre profil.";
+    document.getElementById('phone-step-1').style.display = 'none';
+    document.getElementById('phone-step-2').style.display = 'block';
+  }
+}
+
+function verifyOldPhoneCode() {
+  var code = document.getElementById('phone-code-val').value.trim();
+  if (code !== "1234") {
+    alert("Code SMS incorrect.");
+    return;
+  }
+  document.getElementById('phone-step-1').style.display = 'none';
+  document.getElementById('phone-step-2').style.display = 'block';
+  document.getElementById('phone-modal-desc').textContent = "Code validé ! Saisissez votre nouveau numéro.";
+  document.getElementById('new-phone-val').value = '';
+}
+
+async function saveNewPhone() {
+  var nw = document.getElementById('new-phone-val').value.trim();
+  if(!nw) { alert("Veuillez saisir un numéro de téléphone."); return; }
+  if(nw === SESSION.phone) { alert("C'est déjà votre numéro actuel."); return; }
+  
+  await dbUpdateUser(SESSION.email, { phone: nw });
+  
+  SESSION.phone = nw;
+  localStorage.setItem('medflix_session', JSON.stringify(SESSION));
+  document.getElementById('p-phone').value = nw;
+  document.getElementById('phone-modal').style.display = 'none';
+  alert("✅ Numéro de téléphone modifié avec succès !");
+}
+
+// ══ CHANGE PASSWORD ══
+async function changePassword() {
+  if(!SESSION) return;
+  var cur = document.getElementById('pw-current').value;
+  var nw  = document.getElementById('pw-new').value;
+  var cnf = document.getElementById('pw-confirm').value;
+  if(!cur || !nw || !cnf){ alert('Veuillez remplir tous les champs.'); return; }
+  if(nw.length < 8){ alert('Le nouveau mot de passe doit contenir au moins 8 caractères.'); return; }
+  if(nw !== cnf){ alert('Les mots de passe ne correspondent pas.'); return; }
+  var user = await dbGetUser(SESSION.email);
+  if(!user){ alert('Utilisateur introuvable.'); return; }
+  if(user.pass !== cur){ alert('Mot de passe actuel incorrect.'); return; }
+  await dbUpdateUser(SESSION.email, { pass: nw });
+  document.getElementById('pw-current').value='';
+  document.getElementById('pw-new').value='';
+  document.getElementById('pw-confirm').value='';
+  
+  var toName = SESSION.name ? SESSION.name.split(' ')[0] : 'Étudiant';
+  sendEmail('etudiant', toName, SESSION.email, 'Modification de mot de passe', 'Ton mot de passe Medflix a été modifié avec succès.\n\nSi tu n\'es pas à l\'origine de cette action, contacte immédiatement le support à travers la page d\'accueil.')
+    .then(function() {
+      alert('🔒 Mot de passe modifié avec succès !\\n\\n✉️ Un email récapitulatif a été envoyé sur ton adresse.');
+    })
+    .catch(function(err) {
+      alert('🔒 Mot de passe modifié avec succès !');
+      console.error(err);
+    });
+}
+
+// ══ RESILIER UN ABONNEMENT ══
+var _semToCancel = "";
+function resilierUn(sem) {
+  _semToCancel = sem;
+  document.getElementById('resil-target-sem').textContent = sem;
+  document.getElementById('resil-modal').style.display = 'flex';
+}
+
+async function confirmResilier() {
+  if (!_semToCancel) return;
+  var sem = _semToCancel;
+  
+  var btn = document.getElementById('btn-confirm-resil');
+  var oldTxt = btn.textContent;
+  btn.textContent = 'En cours...';
+  btn.style.opacity = '0.7';
+  btn.disabled = true;
+
+  var me = await dbGetUser(SESSION.email);
+  var pd = (me && me.paidDetails) || [];
+  
+  pd.forEach(function(p) {
+    if(p.sem === sem && getPaidDetailStatus(p) === 'actif') {
+       p.status = 'resilie';
+       p.by = 'Étudiant';
+       p.dateResil = new Date().toISOString();
+       var d = new Date(); 
+       var offset = d.getTimezoneOffset() * 60000;
+       p.exp = (new Date(d - offset)).toISOString().slice(0, 16);
+    }
+  });
+  
+  var newPaid = pd.filter(function(p) { return getPaidDetailStatus(p) === 'actif'; }).map(function(p) { return p.sem; });
+  var hasActive = newPaid.length > 0;
+  
+  if (!hasActive) {
+     await dbUpdateUser(SESSION.email, { activated:false, resiliated:true, paid:newPaid, paidDetails:pd });
+     localStorage.removeItem('medflix_session');
+     window.location.href = 'medflix-landing.html';
+  } else {
+     await dbUpdateUser(SESSION.email, { paid:newPaid, paidDetails:pd });
+     SESSION.paid = newPaid;
+     localStorage.setItem('medflix_session', JSON.stringify(SESSION));
+     window.location.reload();
+  }
+}
+
+// ══ UPDATE SUBSCRIPTION UI ══
+var _currentPaidDetails = [];
+
+async function updateSubUI() {
+  if(!isStudent) return;
+  var pill = document.getElementById('sub-pill');
+  var subActive = document.getElementById('p-sub-active');
+  var subsList = document.getElementById('p-subs-list');
+
+  // Fetch fresh paidDetails
+  var me = await dbGetUser(SESSION.email);
+  var rawList = [].concat((me && me.paidDetails) || []);
+  if (PAID && PAID.length) {
+    PAID.forEach(function(s) {
+      if (!rawList.find(function(p){ return p.sem === s; })) {
+        rawList.push({ sem: s, exp: SESSION.expiration });
+      }
+    });
+  }
+  
+  var deduped = [];
+  rawList.forEach(function(p) {
+    var existing = deduped.find(function(e){ return e.sem === p.sem; });
+    if (!existing) deduped.push(JSON.parse(JSON.stringify(p)));
+    else {
+      var stP = getPaidDetailStatus(p);
+      var stE = getPaidDetailStatus(existing);
+      if (stP === 'actif' && stE !== 'actif') { Object.assign(existing, p); }
+      else if (stP === stE) {
+         var ep = p.exp ? new Date(p.exp) : new Date(0);
+         var ee = existing.exp ? new Date(existing.exp) : new Date(0);
+         if (ep > ee) Object.assign(existing, p);
+      }
+    }
+  });
+  _currentPaidDetails = deduped;
+
+  var activeCount = _currentPaidDetails.filter(function(p){ return getPaidDetailStatus(p) === 'actif'; }).length;
+
+  if(activeCount > 0){
+    pill.innerHTML = '<span class="sub-dot"></span>Abonnement actif';
+    pill.style.background = 'var(--grnd)';
+    pill.style.borderColor = 'rgba(34,197,94,.2)';
+    pill.style.color = 'var(--grn)';
+    subActive.innerHTML = '✓ ' + activeCount + ' semestre(s) actif(s)';
+    subActive.style.background = 'var(--grnd)';
+    subActive.style.borderColor = 'rgba(34,197,94,.2)';
+    subActive.style.color = 'var(--grn)';
+  } else {
+    pill.innerHTML = '<span class="sub-dot" style="background:var(--amb)"></span>Aucun semestre actif';
+    pill.style.background = 'rgba(245,158,11,.1)';
+    pill.style.borderColor = 'rgba(245,158,11,.2)';
+    pill.style.color = 'var(--amb)';
+    subActive.innerHTML = '⚠️ Aucun semestre actif';
+    subActive.style.background = 'rgba(245,158,11,.1)';
+    subActive.style.borderColor = 'rgba(245,158,11,.25)';
+    subActive.style.color = 'var(--amb)';
+  }
+
+  // Render per-semester cards
+  if (!_currentPaidDetails.length && PAID.length) {
+    // Legacy: paid exists but no details, show simple list
+    subsList.innerHTML = PAID.map(function(s) {
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:.7rem 1rem;background:var(--sur2);border:1px solid var(--line);border-radius:10px;margin-bottom:.5rem;">'
+        + '<span style="font-size:.88rem;font-weight:600;color:var(--txt);">📚 ' + s + '</span>'
+        + '<span class="bg" style="font-size:.72rem;">Actif</span></div>';
+    }).join('');
+  } else if (_currentPaidDetails.length) {
+    subsList.innerHTML = _currentPaidDetails.map(function(p) {
+      var stat = getPaidDetailStatus(p);
+      var tr = getTimeRemaining(p.exp);
+      if(stat === 'expire') { tr.text = 'Expiré'; tr.cls = 'br'; }
+      else if(stat === 'resilie') { tr.text = 'Résilié'; tr.cls = 'br'; }
+      
+      var expStr = p.exp ? new Date(p.exp).toLocaleDateString('fr-FR') : '—';
+      var flexEnd = '<span class="' + tr.cls + '" style="font-size:.72rem;">' + tr.text + '</span>';
+      
+      if (stat === 'actif') {
+         flexEnd = '<div style="display:flex;align-items:center;gap:0.75rem;">' + flexEnd + 
+                   '<button onclick="resilierUn(\'' + p.sem + '\')" style="background:var(--redd);border:1px solid var(--redb);color:var(--redl);font-size:0.75rem;cursor:pointer;padding:0.25rem 0.6rem;border-radius:6px;font-family:\'Outfit\',sans-serif;transition:all 0.2s;" onmouseover="this.style.background=\'rgba(248,113,113,0.15)\'" onmouseout="this.style.background=\'var(--redd)\'">Résilier</button></div>';
+      }
+      
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:.7rem 1rem;background:var(--sur2);border:1px solid var(--line);border-radius:10px;margin-bottom:.5rem;">'
+        + '<div><div style="font-size:.88rem;font-weight:600;color:var(--txt);">📚 ' + p.sem + '</div>'
+        + '<div style="font-size:.72rem;color:var(--mut);margin-top:.15rem;">Expire le ' + expStr + '</div></div>'
+        + flexEnd + '</div>';
+    }).join('');
+  } else {
+    subsList.innerHTML = '<div style="text-align:center;padding:1rem;font-size:.85rem;color:var(--mut2);">Aucun abonnement actif</div>';
+  }
+}
+
+// ══ NEW SEMESTER MODAL ══
+var WA_NUM = '212667344496';
+var RIB = 'VOTRE_RIB_ICI';
+var BANK_NAME = 'CIH Bank';
+var BILLET_URL = 'https://billeterie.ma';
+
+function openNewSemModal() {
+  var sel = document.getElementById('newsem-select');
+  sel.innerHTML = '';
+  var ALL_SEMS = [];
+  for (var i = 1; i <= 14; i++) ALL_SEMS.push('Semestre ' + i);
+  var available = ALL_SEMS.filter(function(s) { return !PAID.includes(s); });
+  if (!available.length) {
+    alert('Tu es déjà abonné à tous les semestres !');
+    return;
+  }
+  available.forEach(function(s) {
+    var opt = document.createElement('option');
+    opt.value = s; opt.textContent = s;
+    sel.appendChild(opt);
+  });
+  document.getElementById('ns-rib').textContent = RIB;
+  document.getElementById('ns-bank').textContent = BANK_NAME;
+  document.getElementById('ns-billet-link').href = BILLET_URL;
+  nsSwitchTab('rib');
+  document.getElementById('newsem-modal').style.display = 'flex';
+}
+
+function closeNewSemModal() {
+  document.getElementById('newsem-modal').style.display = 'none';
+}
+
+function nsSwitchTab(tab) {
+  document.getElementById('ns-panel-rib').style.display = tab === 'rib' ? 'block' : 'none';
+  document.getElementById('ns-panel-billet').style.display = tab === 'billet' ? 'block' : 'none';
+  document.getElementById('ns-tab-rib').style.borderColor = tab === 'rib' ? 'var(--redl)' : 'var(--line)';
+  document.getElementById('ns-tab-rib').style.background = tab === 'rib' ? 'rgba(224,32,32,.08)' : 'none';
+  document.getElementById('ns-tab-billet').style.borderColor = tab === 'billet' ? 'var(--redl)' : 'var(--line)';
+  document.getElementById('ns-tab-billet').style.background = tab === 'billet' ? 'rgba(224,32,32,.08)' : 'none';
+}
+
+function nsWhatsApp() {
+  var sem = document.getElementById('newsem-select').value;
+  var method = document.getElementById('ns-tab-rib').style.borderColor.includes('redl') || document.getElementById('ns-panel-rib').style.display !== 'none' ? 'Virement bancaire (RIB)' : 'billeterie.ma';
+  var msg = 'Bonjour Medflix !\n\nJe souhaite ajouter un nouveau semestre à mon abonnement.\n\n'
+    + 'Nom : ' + (SESSION.name || '') + '\nEmail : ' + (SESSION.email || '') + '\nNouveau semestre : ' + sem + '\nMontant : 199 DH\nMéthode : ' + method
+    + '\n\nCi-joint mon reçu de paiement. Merci d\'activer ce semestre !';
+  window.open('https://wa.me/' + WA_NUM + '?text=' + encodeURIComponent(msg), '_blank');
+}
+
+async function requestNewSemester() {
+  var sem = document.getElementById('newsem-select').value;
+  if (!sem) return;
+
+  await dbAddAbonnement({
+    nom: SESSION.name, email: SESSION.email, semestre: sem,
+    montant: 199, methode: 'En attente de paiement', statut: 'En attente'
+  });
+
+  closeNewSemModal();
+  document.getElementById('success-sem-modal').style.display = 'flex';
+}
+
+// Build is handled in async init above
+</script>
+</body>
+</html>

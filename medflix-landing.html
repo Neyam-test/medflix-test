@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Medflix — L'app de médecine des étudiants marocains</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="medflix-db.js"></script>
+<style>
+:root{
+  --bg:#07070f;--surface:#0e0e1a;--surface2:#131320;
+  --red:#e02020;--red-l:#f05050;--red-d:rgba(224,32,32,0.12);--red-b:rgba(224,32,32,0.22);
+  --txt:#ede8e0;--mut:rgba(237,232,224,0.5);--mut2:rgba(237,232,224,0.25);
+  --line:rgba(255,255,255,0.07);--grn:#22c55e;--grn-d:rgba(34,197,94,0.1);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);overflow-x:hidden;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:var(--red);border-radius:4px;}
+.nav{position:fixed;top:0;left:0;right:0;z-index:999;display:flex;align-items:center;justify-content:space-between;padding:0 4rem;height:68px;background:rgba(7,7,15,0.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--line);}
+.logo{font-family:'Instrument Serif',serif;font-size:1.75rem;color:var(--txt);letter-spacing:-0.5px;text-decoration:none;}
+.logo em{font-style:normal;color:var(--red-l);}
+.nav-links{display:flex;align-items:center;gap:1rem;}
+.nl{color:var(--mut);text-decoration:none;font-size:0.9rem;font-weight:500;transition:color 0.2s;}
+.nl:hover{color:var(--txt);}
+.btn-n{background:var(--red);color:#fff;border:none;border-radius:8px;padding:0.6rem 1.4rem;font-family:'Outfit',sans-serif;font-size:0.88rem;font-weight:600;cursor:pointer;transition:all 0.2s;}
+.btn-n:hover{background:var(--red-l);box-shadow:0 0 20px rgba(224,32,32,0.4);}
+.btn-o{background:transparent;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:0.6rem 1.4rem;font-family:'Outfit',sans-serif;font-size:0.88rem;font-weight:500;cursor:pointer;transition:all 0.2s;}
+.btn-o:hover{border-color:var(--red-b);color:var(--red-l);}
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:9rem 2rem 5rem;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;top:10%;left:50%;transform:translateX(-50%);width:700px;height:400px;background:radial-gradient(ellipse,rgba(224,32,32,0.09) 0%,transparent 70%);pointer-events:none;}
+.hero-tag{display:inline-flex;align-items:center;gap:0.5rem;background:var(--grn-d);border:1px solid rgba(34,197,94,0.3);border-radius:100px;padding:0.35rem 1rem;font-size:0.78rem;font-weight:600;color:var(--grn);margin-bottom:2rem;text-transform:uppercase;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--grn);animation:blink 1.8s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.2;}}
+.hero h1{font-family:'Instrument Serif',serif;font-size:clamp(2.8rem,6vw,5.5rem);line-height:1.08;letter-spacing:-1.5px;margin-bottom:1.5rem;max-width:820px;}
+.hero h1 span{color:var(--red-l);}
+.hero-sub{font-size:1.05rem;line-height:1.75;color:var(--mut);max-width:540px;margin-bottom:2.5rem;}
+.hero-cta{display:flex;gap:1rem;align-items:center;justify-content:center;flex-wrap:wrap;}
+.btn-p{background:var(--red);color:#fff;border:none;border-radius:10px;padding:0.9rem 2.2rem;font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:all 0.22s;}
+.btn-p:hover{background:var(--red-l);box-shadow:0 0 30px rgba(224,32,32,0.4);transform:translateY(-2px);}
+.btn-ol{background:transparent;color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:0.9rem 2rem;font-family:'Outfit',sans-serif;font-size:1rem;font-weight:500;cursor:pointer;transition:all 0.2s;}
+.btn-ol:hover{border-color:var(--red-b);color:var(--red-l);}
+.hero-note{margin-top:1.25rem;font-size:0.8rem;color:var(--mut2);}
+.platform-badges{display:flex;gap:0.75rem;margin-top:2.5rem;justify-content:center;flex-wrap:wrap;}
+.pbadge{display:flex;align-items:center;gap:0.5rem;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:0.6rem 1.1rem;font-size:0.82rem;color:var(--mut);}
+section{padding:6rem 4rem;border-top:1px solid var(--line);}
+.slabel{font-size:0.72rem;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--red-l);margin-bottom:0.75rem;display:block;}
+.stitle{font-family:'Instrument Serif',serif;font-size:clamp(2rem,4vw,3rem);line-height:1.1;letter-spacing:-0.5px;margin-bottom:3.5rem;}
+.inc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.5px;background:var(--line);border:1px solid var(--line);border-radius:18px;overflow:hidden;}
+.inc-card{background:var(--surface);padding:2.5rem 2rem;transition:background 0.25s;position:relative;}
+.inc-card:hover{background:var(--surface2);}
+.inc-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--red),transparent);opacity:0;transition:opacity 0.3s;}
+.inc-card:hover::after{opacity:1;}
+.inc-icon{width:50px;height:50px;border-radius:14px;background:var(--red-d);border:1px solid var(--red-b);display:flex;align-items:center;justify-content:center;font-size:1.35rem;margin-bottom:1.5rem;}
+.inc-title{font-family:'Instrument Serif',serif;font-size:1.2rem;color:var(--txt);margin-bottom:0.65rem;}
+.inc-desc{font-size:0.85rem;color:var(--mut);line-height:1.65;}
+.fac-card{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--red-b);border-radius:20px;padding:2.5rem 3rem;margin-top:2.5rem;position:relative;overflow:hidden;}
+.fac-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--red);}
+.fac-name{font-family:'Instrument Serif',serif;font-size:2rem;margin-bottom:0.5rem;color:var(--txt);}
+.fac-sub{font-size:0.9rem;color:var(--mut);margin-bottom:1.5rem;}
+.fac-tags{display:flex;gap:0.6rem;flex-wrap:wrap;}
+.ftag{background:var(--red-d);border:1px solid var(--red-b);border-radius:100px;padding:0.3rem 0.9rem;font-size:0.78rem;font-weight:600;color:#f9a8a8;}
+.soon{margin-top:2rem;padding:1.25rem 1.75rem;background:rgba(255,255,255,0.03);border:1px dashed rgba(255,255,255,0.1);border-radius:12px;font-size:0.88rem;color:var(--mut2);display:flex;align-items:center;gap:0.75rem;}
+#pricing{text-align:center;}
+.price-card{max-width:460px;margin:3rem auto 0;background:var(--surface);border:1px solid var(--red-b);border-radius:24px;padding:3rem;position:relative;}
+.price-top{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:var(--red);color:#fff;font-size:0.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:0.3rem 1.1rem;border-radius:100px;}
+.price-amt{font-family:'Instrument Serif',serif;font-size:5rem;line-height:1;letter-spacing:-3px;color:var(--txt);margin:1rem 0 0.25rem;}
+.price-amt small{font-size:1.5rem;letter-spacing:-1px;vertical-align:top;margin-top:1.2rem;display:inline-block;font-family:'Outfit',sans-serif;font-weight:300;color:var(--mut);}
+.price-per{font-size:0.88rem;color:var(--mut);margin-bottom:2.5rem;}
+.price-list{list-style:none;text-align:left;border-top:1px solid var(--line);padding-top:2rem;margin-bottom:2rem;}
+.price-list li{display:flex;align-items:center;gap:0.8rem;padding:0.65rem 0;border-bottom:1px solid var(--line);font-size:0.92rem;color:var(--mut);}
+.price-list li:last-child{border-bottom:none;}
+.price-list li::before{content:'checkmark';content:'✓';color:var(--red-l);font-weight:700;flex-shrink:0;}
+.price-ctas{display:flex;flex-direction:column;gap:0.75rem;}
+#faq{max-width:860px;margin:0 auto;}
+/* FAQ styles handled by JS accordion below */
+#contact{max-width:1100px;margin:0 auto;}
+.contact-grid{display:grid;grid-template-columns:1fr 1.4fr;gap:4rem;align-items:start;}
+.ci h3{font-family:'Instrument Serif',serif;font-size:1.8rem;color:var(--txt);margin-bottom:1rem;line-height:1.2;}
+.ci p{font-size:0.92rem;color:var(--mut);line-height:1.75;margin-bottom:2rem;}
+.cd{display:flex;align-items:center;gap:0.85rem;margin-bottom:1rem;}
+.cd-icon{width:38px;height:38px;border-radius:10px;background:var(--red-d);border:1px solid var(--red-b);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;}
+.cd-text{font-size:0.88rem;color:var(--mut);}
+.cd-text strong{display:block;color:var(--txt);font-weight:600;margin-bottom:0.1rem;}
+.cf{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:2.5rem;}
+.cfield{margin-bottom:1.1rem;}
+.cfield label{display:block;font-size:0.78rem;font-weight:600;color:var(--mut);margin-bottom:0.4rem;}
+.cfield input,.cfield select,.cfield textarea{width:100%;padding:0.8rem 1rem;background:rgba(255,255,255,0.04);border:1px solid var(--line);border-radius:10px;font-family:'Outfit',sans-serif;font-size:0.9rem;color:var(--txt);outline:none;transition:all 0.2s;}
+.cfield input:focus,.cfield select:focus,.cfield textarea:focus{border-color:var(--red-b);background:var(--red-d);}
+.cfield input::placeholder,.cfield textarea::placeholder{color:var(--mut2);}
+.cfield textarea{resize:vertical;min-height:130px;}
+.cfield select option{background:var(--surface2);}
+.cf-row{display:grid;grid-template-columns:1fr 1fr;gap:0.85rem;}
+.btn-c{width:100%;padding:0.9rem;background:var(--red);color:white;border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:all 0.2s;margin-top:0.5rem;}
+.btn-c:hover{background:var(--red-l);}
+.c-ok{display:none;background:var(--grn-d);border:1px solid rgba(34,197,94,0.25);border-radius:10px;padding:1rem;font-size:0.88rem;color:var(--grn);margin-top:1rem;text-align:center;}
+.c-ok.show{display:block;}
+.c-err{display:none;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.25);border-radius:10px;padding:1rem;font-size:0.88rem;color:#f87171;margin-top:1rem;text-align:center;}
+.c-err.show{display:block;}
+footer{border-top:1px solid var(--line);padding:2.5rem 4rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;}
+.fl{font-family:'Instrument Serif',serif;font-size:1.3rem;color:var(--txt);}
+.fl em{font-style:normal;color:var(--red-l);}
+footer p{font-size:0.8rem;color:var(--mut2);}
+footer a{font-size:0.8rem;color:var(--mut);text-decoration:none;transition:color 0.2s;}
+footer a:hover{color:var(--red-l);}
+
+/* PAYMENT MODAL */
+.pov{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);backdrop-filter:blur(16px);display:none;align-items:center;justify-content:center;padding:1rem;}
+.pov.open{display:flex;}
+.pbox{position:relative;background:var(--surface);border:1px solid var(--red-b);border-radius:24px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;}
+@keyframes pop{from{transform:scale(.93) translateY(16px);opacity:0;}to{transform:scale(1) translateY(0);opacity:1;}}
+.pbox{animation:pop .25s cubic-bezier(.34,1.56,.64,1);}
+.pbox-inner{padding:2.5rem;}
+.p-header{text-align:center;margin-bottom:2rem;}
+.p-icon{font-size:2.5rem;margin-bottom:0.75rem;}
+.p-title{font-family:'Instrument Serif',serif;font-size:1.8rem;color:var(--txt);margin-bottom:0.4rem;}
+.p-sub{font-size:0.88rem;color:var(--mut);line-height:1.6;}
+.p-amt-box{background:var(--red-d);border:1px solid var(--red-b);border-radius:14px;padding:1.25rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:1.75rem;}
+.p-amt-lbl{font-size:0.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--red-l);margin-bottom:0.25rem;}
+.p-amt-n{font-family:'Instrument Serif',serif;font-size:2.5rem;color:var(--txt);line-height:1;letter-spacing:-1px;}
+.p-amt-n small{font-size:1rem;font-family:'Outfit',sans-serif;color:var(--mut);letter-spacing:0;}
+.p-sem-tag{display:inline-flex;align-items:center;gap:0.4rem;background:rgba(255,255,255,0.06);border:1px solid var(--line);border-radius:100px;padding:0.3rem 0.85rem;font-size:0.8rem;color:var(--mut);}
+.pay-tabs{display:flex;gap:1rem;margin-bottom:1.75rem;}
+.pay-tab{flex:1;padding:1.1rem;border:2px solid var(--line);border-radius:14px;cursor:pointer;transition:all 0.2s;background:none;font-family:'Outfit',sans-serif;text-align:center;}
+.pay-tab:hover{border-color:var(--red-b);}
+.pay-tab.active{border-color:var(--red);background:var(--red-d);}
+.pay-tab-icon{font-size:1.5rem;margin-bottom:0.4rem;}
+.pay-tab-name{font-size:0.9rem;font-weight:700;color:var(--txt);}
+.pay-tab-desc{font-size:0.75rem;color:var(--mut);margin-top:0.15rem;}
+.pay-panel{display:none;}
+.pay-panel.show{display:block;}
+.rib-box{background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:1.5rem;margin-bottom:1.25rem;}
+.rib-title{font-size:0.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut);margin-bottom:1rem;}
+.rib-row{display:flex;justify-content:space-between;align-items:center;padding:0.55rem 0;border-bottom:1px solid var(--line);font-size:0.88rem;}
+.rib-row:last-child{border-bottom:none;}
+.rib-key{color:var(--mut);}
+.rib-val{color:var(--txt);font-weight:600;}
+.rib-copy{background:var(--red-d);border:1px solid var(--red-b);border-radius:6px;padding:0.2rem 0.6rem;font-size:0.72rem;color:var(--red-l);cursor:pointer;font-family:'Outfit',sans-serif;transition:all 0.2s;}
+.rib-note{font-size:0.8rem;color:var(--mut2);line-height:1.6;margin-top:0.75rem;}
+.billet-box{background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:1.5rem;margin-bottom:1.25rem;text-align:center;}
+.billet-desc{font-size:0.88rem;color:var(--mut);line-height:1.6;margin-bottom:1.25rem;}
+.btn-billet{display:inline-flex;align-items:center;gap:0.6rem;background:#7c3aed;color:white;border:none;border-radius:10px;padding:0.85rem 2rem;font-family:'Outfit',sans-serif;font-size:0.95rem;font-weight:700;cursor:pointer;transition:all 0.2s;text-decoration:none;}
+.btn-billet:hover{background:#6d28d9;transform:translateY(-1px);}
+.wa-section{background:rgba(37,211,102,0.08);border:1px solid rgba(37,211,102,0.2);border-radius:14px;padding:1.25rem;margin-bottom:1.25rem;}
+.wa-title{font-size:0.8rem;font-weight:700;color:rgba(37,211,102,0.9);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.5px;}
+.wa-desc{font-size:0.82rem;color:var(--mut);margin-bottom:1rem;line-height:1.5;}
+.btn-wa{display:flex;align-items:center;justify-content:center;gap:0.75rem;width:100%;padding:0.9rem;background:#25D366;color:white;border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-size:0.95rem;font-weight:700;cursor:pointer;transition:all 0.2s;}
+.btn-wa:hover{background:#1ebe57;transform:translateY(-1px);}
+.btn-confirm-sent{width:100%;padding:0.9rem;background:var(--grn-d);color:var(--grn);border:1px solid rgba(34,197,94,0.3);border-radius:10px;font-family:'Outfit',sans-serif;font-size:0.92rem;font-weight:600;cursor:pointer;transition:all 0.2s;margin-top:0.5rem;}
+.btn-confirm-sent:hover{background:rgba(34,197,94,0.2);}
+.pending-info{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:12px;padding:1.25rem;text-align:center;display:none;margin-top:0.75rem;}
+.pending-info.show{display:block;}
+.pending-info p{font-size:0.88rem;color:rgba(245,158,11,0.9);line-height:1.7;}
+
+/* AUTH MODAL */
+.ov{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.8);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;padding:1rem;}
+.ov.open{display:flex;}
+.mbox{background:var(--surface);border:1px solid var(--red-b);border-radius:24px;width:100%;max-width:460px;max-height:92vh;overflow-y:auto;position:relative;animation:pop .25s cubic-bezier(.34,1.56,.64,1);}
+.mi{padding:2.5rem;}
+.mx{position:absolute;top:1.25rem;right:1.25rem;background:rgba(255,255,255,0.06);border:none;width:32px;height:32px;border-radius:8px;cursor:pointer;color:var(--mut);font-size:1.1rem;display:flex;align-items:center;justify-content:center;transition:all 0.2s;z-index:10;}
+.mx:hover{background:var(--red-d);color:var(--red-l);}
+.atabs{display:flex;background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:3px;margin-bottom:1.75rem;}
+.atab{flex:1;padding:0.65rem;background:none;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:0.88rem;font-weight:600;color:var(--mut);border-radius:8px;transition:all 0.2s;}
+.atab.active{background:var(--red);color:white;}
+.mtitle{font-family:'Instrument Serif',serif;font-size:1.7rem;color:var(--txt);margin-bottom:0.3rem;}
+.msub{font-size:0.85rem;color:var(--mut);margin-bottom:1.75rem;}
+.mf{margin-bottom:1rem;}
+.mf label{display:block;font-size:0.76rem;font-weight:600;color:var(--mut);margin-bottom:0.35rem;}
+.mf input,.mf select{width:100%;padding:0.75rem 1rem;background:rgba(255,255,255,0.05);border:1px solid var(--line);border-radius:9px;font-family:'Outfit',sans-serif;font-size:0.9rem;color:var(--txt);outline:none;transition:all 0.2s;}
+.mf input:focus,.mf select:focus{border-color:var(--red-b);background:var(--red-d);}
+.mf input::placeholder{color:var(--mut2);}
+.mf select option{background:var(--surface2);}
+.mf-row{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;}
+.mbtn{width:100%;padding:0.9rem;background:var(--red);color:white;border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:all 0.2s;margin-top:0.5rem;display:flex;align-items:center;justify-content:center;gap:0.5rem;}
+.mbtn:hover{background:var(--red-l);}
+.mbtn:disabled{opacity:0.5;cursor:not-allowed;}
+.malert{padding:0.8rem 1rem;border-radius:9px;font-size:0.83rem;margin-bottom:1rem;display:none;line-height:1.55;}
+.malert.err{background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.25);color:#f87171;display:block;}
+.malert.ok{background:var(--grn-d);border:1px solid rgba(34,197,94,0.25);color:var(--grn);display:block;}
+.malert.warn{background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);color:#fbbf24;display:block;}
+.mdiv{display:flex;align-items:center;gap:0.75rem;margin:1.25rem 0;color:var(--mut2);font-size:0.78rem;}
+.mdiv::before,.mdiv::after{content:'';flex:1;height:1px;background:var(--line);}
+.sbar{height:3px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:0.4rem;}
+.sfill{height:100%;border-radius:3px;transition:all 0.3s;width:0;}
+.slbl{font-size:0.7rem;margin-top:0.25rem;}
+.mterms{font-size:0.72rem;color:var(--mut2);text-align:center;margin-top:1rem;line-height:1.6;}
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:sp .7s linear infinite;display:none;}
+@keyframes sp{to{transform:rotate(360deg);}}
+@media(max-width:900px){
+  .nav{padding:0 1.5rem;}
+  .inc-grid{grid-template-columns:1fr 1fr;}
+  .fac-card{flex-direction:column;gap:2rem;padding:2rem;}
+  .contact-grid,.pay-tabs{flex-direction:column;}
+  .cf-row{grid-template-columns:1fr;}
+  section,footer{padding-left:1.5rem;padding-right:1.5rem;}
+  footer{flex-direction:column;text-align:center;}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="logo" href="#">Med<em>flix</em></a>
+  <div class="nav-links">
+    <a class="nl" href="#included">Ce qui est inclus</a>
+    <a class="nl" href="#pricing">Tarifs</a>
+    <a class="nl" href="#faq">FAQ</a>
+    <a class="nl" href="#contact">Contact</a>
+    <button class="btn-o" id="nav-logout" style="display:none; border-color:var(--red-b); color:var(--red-l);" onclick="landingLogout()">Se déconnecter</button>
+    <button class="btn-o" id="nav-login">Se connecter</button>
+    <button class="btn-n" id="nav-signup">S'abonner — 199 DH</button>
+  </div>
+</nav>
+
+<section class="hero" id="hero" style="border-top:none;">
+  <div class="hero-tag"><span class="live-dot"></span>Disponible — FMPC Casablanca</div>
+  <h1>Medflix : C'est <span>mon site,<br>mon app</span> de médecine ;<br>libre de téléchargement !</h1>
+  <p class="hero-sub">Cours PDF, QCM d'annales et IA de révision — tout ce dont tu as besoin pour réussir à la FMPC, dans une seule plateforme.</p>
+  <div class="hero-cta">
+    <button class="btn-p" id="hero-signup">S'abonner — 199 DH</button>
+    <button class="btn-ol" id="hero-login">Se connecter</button>
+  </div>
+  <div class="hero-note">✓ 199 DH / semestre &nbsp;·&nbsp; ✓ Accès après validation &nbsp;·&nbsp; ✓ Application gratuite</div>
+  <div class="platform-badges">
+    <div class="pbadge">🌐 Site web</div>
+    <div class="pbadge">📱 Application iOS</div>
+    <div class="pbadge">🤖 Application Android</div>
+  </div>
+</section>
+
+<section id="included">
+  <span class="slabel">Ce qui est inclus</span>
+  <h2 class="stitle">Tout ce qu'il te faut<br>pour réussir.</h2>
+  <div class="inc-grid">
+    <div class="inc-card"><div class="inc-icon">📄</div><div class="inc-title">Cours PDF téléchargeables</div><div class="inc-desc">Accède à tous tes cours en format PDF, téléchargeables pour réviser même sans connexion.</div></div>
+    <div class="inc-card"><div class="inc-icon">🗂️</div><div class="inc-title">Cours &amp; TP des semestres précédents</div><div class="inc-desc">Accède aux cours et travaux pratiques des semestres antérieurs pour consolider tes bases.</div></div>
+    <div class="inc-card"><div class="inc-icon">✏️</div><div class="inc-title">QCM d'annales</div><div class="inc-desc">Entraîne-toi sur les QCM des années précédentes avec corrections détaillées.</div></div>
+    <div class="inc-card"><div class="inc-icon">🤖</div><div class="inc-title">IA intégrée</div><div class="inc-desc">Un assistant IA disponible 24h/24 pour t'aider à comprendre un cours ou préparer un examen.</div></div>
+  </div>
+</section>
+
+<section id="faculty">
+  <span class="slabel">Disponibilité</span>
+  <h2 class="stitle">Actuellement disponible</h2>
+  <div class="fac-card">
+    <div>
+      <div class="fac-name">FMPC — Casablanca</div>
+      <div class="fac-sub">Faculté de Médecine et de Pharmacie de Casablanca</div>
+      <div class="fac-tags">
+        <span class="ftag">📄 Cours PDF</span><span class="ftag">🔬 TP/Examens</span>
+        <span class="ftag">✏️ QCM Annales</span><span class="ftag">🤖 IA de révision</span><span class="ftag">✅ Disponible</span>
+      </div>
+    </div>
+    <button class="btn-p" id="fac-signup">Accéder →</button>
+  </div>
+  <div class="soon">🕐 &nbsp;D'autres facultés arrivent prochainement — reste connecté sur medflix.ma</div>
+</section>
+
+<section id="pricing">
+  <span class="slabel">Tarif</span>
+  <h2 class="stitle">Simple, transparent,<br>accessible.</h2>
+  <div class="price-card">
+    <div class="price-top">1 SEUL ABONNEMENT</div>
+    <div style="font-size:0.82rem;color:var(--mut);letter-spacing:1px;text-transform:uppercase;font-weight:600;margin-top:0.5rem;">Accès complet</div>
+    <div class="price-amt"><small>DH </small>199</div>
+    <div class="price-per">par semestre · accès après validation · application gratuite</div>
+    <ul class="price-list">
+      <li>Tous les cours PDF téléchargeables</li>
+      <li>Cours &amp; TP/Examens des semestres précédents</li>
+      <li>QCM annales illimités</li>
+      <li>IA de révision intégrée</li>
+      <li>Accès web + application mobile (iOS &amp; Android)</li>
+      <li>Mises à jour de contenu incluses</li>
+    </ul>
+    <div class="price-ctas">
+      <button class="btn-p" id="price-signup" style="width:100%;font-size:1.05rem;">S'abonner maintenant →</button>
+      <button class="btn-ol" id="price-login" style="width:100%;">J'ai déjà un compte — Se connecter</button>
+    </div>
+    <p style="font-size:0.78rem;color:var(--mut2);margin-top:1rem;text-align:center;">Accès activé sous 24h après réception du paiement</p>
+  </div>
+</section>
+
+<section id="faq" style="max-width:860px;margin:0 auto;">
+  <span class="slabel">FAQ</span>
+  <h2 class="stitle" style="margin-bottom:2.5rem;">Questions fréquentes</h2>
+  <div id="faq-list"></div>
+</section>
+
+<section id="contact">
+  <span class="slabel">Contact</span>
+  <h2 class="stitle">Une question ?<br>On est là.</h2>
+  <div class="contact-grid">
+    <div class="ci">
+      <h3>Contacte-nous,<br>on répond vite.</h3>
+      <p>Une question sur l'abonnement, un problème technique ? Envoie-nous un message, on te répond dans les 24h.</p>
+      <div class="cd"><div class="cd-icon">📧</div><div class="cd-text"><strong>Email</strong><span id="cemail"></span></div></div>
+      <div class="cd"><div class="cd-icon">💬</div><div class="cd-text"><strong>WhatsApp</strong>+212 6 67 34 44 96</div></div>
+      <div class="cd"><div class="cd-icon">🌐</div><div class="cd-text"><strong>Site web</strong>medflix.ma</div></div>
+    </div>
+    <div class="cf">
+      <div class="cf-row">
+        <div class="cfield"><label>Prénom</label><input type="text" id="c-prenom" placeholder="Ton prénom"></div>
+        <div class="cfield"><label>Nom</label><input type="text" id="c-nom" placeholder="Ton nom"></div>
+      </div>
+      <div class="cfield"><label>Email</label><input type="email" id="c-email" placeholder="ton@email.com"></div>
+      <div class="cfield"><label>Sujet</label>
+        <select id="c-sujet">
+          <option value="">— Sélectionner un sujet —</option>
+          <option>Question sur l'abonnement</option>
+          <option>Problème technique</option>
+          <option>Contenu / cours manquant</option>
+          <option>Partenariat / collaboration</option>
+          <option>Autre</option>
+        </select>
+      </div>
+      <div class="cfield"><label>Message</label><textarea id="c-message" placeholder="Écris ton message ici..."></textarea></div>
+      <button class="btn-c" id="btn-contact">Envoyer le message</button>
+      <div class="c-ok" id="c-ok">Message envoyé ! On te répond dans les 24h.</div>
+      <div class="c-err" id="c-err"></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="fl">Med<em>flix</em></div>
+  <p>2026 Medflix · medflix.ma</p>
+  <div style="display:flex;gap:1.5rem;align-items:center;">
+    <span id="femail" style="font-size:0.8rem;color:var(--mut);"></span>
+    <a class="nl" href="#contact" style="font-size:0.8rem;">Contact</a>
+  </div>
+</footer>
+
+<!-- PAYMENT MODAL -->
+<div class="pov" id="pov">
+  <div class="pbox">
+    <button onclick="closePay()" style="position:absolute;top:1.25rem;right:1.5rem;background:none;border:none;color:var(--mut);font-size:1.8rem;cursor:pointer;line-height:1;transition:color 0.2s;z-index:2;" onmouseover="this.style.color='var(--red-l)'" onmouseout="this.style.color='var(--mut)'">×</button>
+    <div class="pbox-inner">
+    <div class="p-header">
+      <div class="p-icon">🎓</div>
+      <h2 class="p-title">Finaliser l'abonnement</h2>
+      <p class="p-sub">Compte créé ! Choisis ta méthode de paiement, envoie le reçu par WhatsApp. Ton accès sera activé sous 24h.</p>
+    </div>
+    <div class="p-amt-box">
+      <div>
+        <div class="p-amt-lbl">Abonnement Medflix</div>
+        <div class="p-amt-n"><small>DH </small>199</div>
+        <div style="font-size:0.78rem;color:var(--mut);margin-top:0.2rem;">par semestre</div>
+      </div>
+      <div class="p-sem-tag" id="p-sem-tag">Semestre 1</div>
+    </div>
+    <div style="font-size:0.78rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut);margin-bottom:0.75rem;">Méthode de paiement</div>
+    <div class="pay-tabs">
+      <button class="pay-tab active" id="tab-rib" onclick="switchPayTab('rib')">
+        <div class="pay-tab-icon">🏦</div>
+        <div class="pay-tab-name">Virement bancaire</div>
+        <div class="pay-tab-desc">Payer par RIB</div>
+      </button>
+      <button class="pay-tab" id="tab-billet" onclick="switchPayTab('billet')">
+        <div class="pay-tab-icon">🎟️</div>
+        <div class="pay-tab-name">billeterie.ma</div>
+        <div class="pay-tab-desc">Paiement en ligne</div>
+      </button>
+    </div>
+
+    <!-- RIB panel -->
+    <div class="pay-panel show" id="panel-rib">
+      <div class="rib-box">
+        <div class="rib-title">Coordonnées bancaires</div>
+        <div class="rib-row"><span class="rib-key">Bénéficiaire</span><span class="rib-val">Aymane Benyahya</span></div>
+        <div class="rib-row"><span class="rib-key">Banque</span><span class="rib-val" id="p-bank">À configurer</span></div>
+        <div class="rib-row">
+          <span class="rib-key">RIB</span>
+          <div style="display:flex;align-items:center;gap:0.5rem;position:relative;">
+            <span class="rib-val" id="p-rib">⚠️ À configurer</span>
+            <button class="rib-copy" onclick="copyRIB(this)" style="transition:transform 0.15s ease;">Copier</button>
+            <span id="rib-copied" style="position:absolute;left:100%;margin-left:8px;font-size:0.75rem;font-weight:700;color:#4ade80;background:rgba(74,222,128,0.15);padding:0.2rem 0.6rem;border-radius:6px;opacity:0;transform:translateY(5px);transition:all 0.3s;pointer-events:none;white-space:nowrap;">Copié ✓</span>
+          </div>
+        </div>
+        <div class="rib-row"><span class="rib-key">Montant</span><span class="rib-val" style="color:var(--red-l);">199,00 DH</span></div>
+        <div class="rib-note" style="line-height:1.5;">
+          <strong>Important :</strong> Précisez dans le champ motif du virement le nom, prénom et/ou l'adresse mail de l'étudiant.<br>
+          <span style="opacity:0.85;font-size:0.9em;display:inline-block;margin-top:0.3rem;">Traitement en 24h pour les utilisateurs de la banque CIH, et 48h ouvrables si virement non instantané via une autre banque.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Billeterie panel -->
+    <div class="pay-panel" id="panel-billet">
+      <div class="billet-box">
+        <div style="font-size:2rem;margin-bottom:0.75rem;">🎟️</div>
+        <div class="billet-desc">Paiement sécurisé en ligne via billeterie.ma — carte bancaire, CIH Pay ou autre moyen de paiement électronique.</div>
+        <a class="btn-billet" id="billet-link" href="https://billeterie.ma" target="_blank">Payer sur billeterie.ma →</a>
+        <div style="font-size:0.75rem;color:var(--mut2);margin-top:0.75rem;">Après le paiement, envoie le reçu via WhatsApp.</div>
+      </div>
+    </div>
+
+    <!-- WhatsApp -->
+    <div class="wa-section">
+      <div class="wa-title">📲 Envoyer le reçu de paiement</div>
+      <div class="wa-desc">Une fois le paiement effectué, envoie une capture d'écran du reçu via WhatsApp pour que ton accès soit activé rapidement.</div>
+      <button class="btn-wa" id="btn-wa">💬 &nbsp;Envoyer le reçu via WhatsApp</button>
+    </div>
+
+    <button class="btn-confirm-sent" id="btn-confirm-sent">
+      J'ai envoyé mon reçu — En attente d'activation
+    </button>
+    <div class="pending-info" id="pending-info">
+      <p>🕐 <strong>Dossier bien reçu !</strong><br>Ton accès sera activé dans les 24h après vérification du paiement. Tu recevras un email de confirmation.</p>
+    </div>
+  </div></div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="ov" id="ov">
+  <div class="mbox">
+    <button class="mx" id="mx">×</button>
+    <div class="mi">
+      <div class="atabs">
+        <button class="atab active" id="tab-l">Se connecter</button>
+        <button class="atab" id="tab-s">Créer un compte</button>
+      </div>
+      <div class="malert" id="malert"></div>
+
+      <!-- LOGIN -->
+      <form id="fl">
+        <h2 class="mtitle">Bon retour !</h2>
+        <p class="msub">Connectez-vous pour accéder à vos cours.</p>
+        <div class="mf"><label>Email</label><input type="email" id="l-email" autocomplete="username" placeholder="vous@example.com" required></div>
+        <div class="mf"><label>Mot de passe</label><input type="password" id="l-pass" autocomplete="current-password" placeholder="••••••••" required></div>
+        <div style="text-align:right;margin-bottom:1.25rem;"><button type="button" id="btn-forgot" style="background:none;border:none;font-size:0.78rem;color:var(--red-l);cursor:pointer;font-family:'Outfit',sans-serif;">Mot de passe oublié ?</button></div>
+        <button type="submit" class="mbtn" id="btn-login"><span id="l-lbl">Se connecter</span><div class="spin" id="l-spin"></div></button>
+      </form>
+
+      <!-- RESET -->
+      <div id="fr" style="display:none;">
+        <h2 class="mtitle">Mot de passe oublié</h2>
+        <p class="msub">Entrez votre email pour recevoir un mot de passe temporaire.</p>
+        <div class="mf"><label>Email</label><input type="email" id="r-email" placeholder="vous@example.com"></div>
+        <button class="mbtn" id="btn-reset">Envoyer</button>
+        <button id="btn-back" style="width:100%;margin-top:0.75rem;background:none;border:none;color:var(--mut);font-family:'Outfit',sans-serif;font-size:0.85rem;cursor:pointer;">Retour à la connexion</button>
+      </div>
+
+      <!-- SIGNUP -->
+      <div id="fs" style="display:none;">
+        <h2 class="mtitle">Créer un compte</h2>
+        <p class="msub">Rejoignez Medflix et commencez à réviser.</p>
+        <div class="mf-row">
+          <div class="mf"><label>Prénom</label><input type="text" id="s-prenom" placeholder="Prénom"></div>
+          <div class="mf"><label>Nom</label><input type="text" id="s-nom" placeholder="Nom"></div>
+        </div>
+        <div class="mf-row">
+          <div class="mf"><label>Email</label><input type="email" id="s-email" placeholder="vous@example.com"></div>
+          <div class="mf"><label>Téléphone (WhatsApp)</label><input type="tel" id="s-phone" placeholder="ex: 06..."></div>
+        </div>
+        <div class="mf"><label>Faculté</label>
+          <select id="s-fac">
+            <option value="">— Sélectionner —</option>
+            <option value="FMPC">FMPC — Casablanca</option>
+            <option value="FMPR" disabled>FMPR — Rabat (bientôt)</option>
+          </select>
+        </div>
+        <div class="mf"><label>Semestre en cours</label>
+          <select id="s-sem">
+            <option value="">— Sélectionner —</option>
+            <option>Semestre 1</option><option>Semestre 2</option><option>Semestre 3</option>
+            <option>Semestre 4</option><option>Semestre 5</option><option>Semestre 6</option>
+            <option>Semestre 7</option><option>Semestre 8</option><option>Semestre 9</option>
+            <option>Semestre 10</option><option>Semestre 11</option><option>Semestre 12</option>
+            <option>Semestre 13</option><option>Semestre 14</option>
+          </select>
+        </div>
+        <div class="mf">
+          <label>Mot de passe</label>
+          <input type="password" id="s-pass" placeholder="Minimum 8 caractères">
+          <div class="sbar"><div class="sfill" id="sfill"></div></div>
+          <div class="slbl" id="slbl"></div>
+        </div>
+        <div class="mf"><label>Confirmer</label><input type="password" id="s-pass2" placeholder="••••••••"></div>
+        <button class="mbtn" id="btn-signup"><span id="s-lbl">Créer mon compte</span><div class="spin" id="s-spin"></div></button>
+        <div class="mterms">En créant un compte, vous acceptez nos Conditions d'utilisation.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DECONNEXION LANDING -->
+<div id="landing-logout-modal" class="pov">
+  <div class="pbox" style="max-width:400px;text-align:center;padding:1.5rem;">
+    <div class="p-title" style="color:var(--txt);margin-bottom:.5rem;">Déconnexion</div>
+    <div class="p-sub" style="margin-bottom:1.5rem;">Êtes-vous sûr de vouloir vous déconnecter de Medflix ?</div>
+    <div style="display:flex;gap:.75rem;">
+      <button class="btn-o" style="flex:1;" onclick="document.getElementById('landing-logout-modal').classList.remove('open')">Annuler</button>
+      <button class="btn-n" style="flex:1;background:var(--red-d);border-color:var(--red);color:white;" onclick="confirmLandingLogout()">Se déconnecter</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══ CONFIG ══
+var EJS_KEY    = 'SruyH4Rx1G-OS-gqE';
+var EJS_SVC    = 'service_chelsyk';
+var WA_NUM     = '212667344496';
+var RIB        = '230 780 6080018211032500 06';
+var BANK_NAME  = 'CIH Bank';
+var BILLET_URL = 'https://billeterie.ma'; // ⚠️ Remplace par ton lien billeterie
+
+var CEMAIL = 'neyamcontact' + '@' + 'gmail.com';
+document.getElementById('cemail').textContent = CEMAIL;
+document.getElementById('femail').textContent = CEMAIL;
+document.getElementById('p-rib').textContent  = RIB;
+document.getElementById('p-bank').textContent = BANK_NAME;
+document.getElementById('billet-link').href   = BILLET_URL;
+emailjs.init({ publicKey: EJS_KEY });
+
+// ══ MODAL AUTH ══
+var ov = document.getElementById('ov');
+function openModal(tab) {
+  ov.style.display='flex';
+  setTimeout(function(){ ov.classList.add('open'); }, 10);
+  showTab(tab||'login'); clearAlert();
+}
+function closeModal() {
+  ov.classList.remove('open');
+  setTimeout(function(){ ov.style.display='none'; }, 200);
+}
+
+['nav-login','hero-login','price-login'].forEach(function(id){
+  document.getElementById(id).addEventListener('click', function(){
+    if (window._connected) {
+      window.location.href = window._connectedRole === 'admin' ? 'medflix-admin.html' : 'medflix-student.html';
+      return;
+    }
+    openModal('login');
+  });
+});
+['nav-signup','hero-signup','fac-signup','price-signup'].forEach(function(id){
+  document.getElementById(id).addEventListener('click', function(){ openModal('signup'); });
+});
+document.getElementById('mx').addEventListener('click', closeModal);
+ov.addEventListener('click', function(e){ if(e.target===ov) closeModal(); });
+document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ closeModal(); closePay(); }});
+
+function showTab(tab) {
+  document.getElementById('fl').style.display = tab==='login'  ? 'block':'none';
+  document.getElementById('fs').style.display = tab==='signup' ? 'block':'none';
+  document.getElementById('fr').style.display = tab==='reset'  ? 'block':'none';
+  document.getElementById('tab-l').className  = 'atab'+(tab==='login' ?' active':'');
+  document.getElementById('tab-s').className  = 'atab'+(tab==='signup'?' active':'');
+  clearAlert();
+}
+document.getElementById('tab-l').addEventListener('click', function(){ showTab('login'); });
+document.getElementById('tab-s').addEventListener('click', function(){ showTab('signup'); });
+document.getElementById('btn-forgot').addEventListener('click', function(){ showTab('reset'); });
+document.getElementById('btn-back').addEventListener('click', function(){ showTab('login'); });
+function showAlert(msg,type){ var e=document.getElementById('malert'); e.innerHTML=msg; e.className='malert '+type; }
+function clearAlert(){ document.getElementById('malert').className='malert'; }
+
+document.getElementById('s-pass').addEventListener('input', function(){
+  var v=this.value,s=0;
+  if(v.length>=8)s++; if(/[A-Z]/.test(v))s++; if(/[0-9]/.test(v))s++; if(/[^a-zA-Z0-9]/.test(v))s++;
+  var m=[{w:'0%',c:'transparent',t:''},{w:'25%',c:'#f87171',t:'Trop faible'},{w:'50%',c:'#fb923c',t:'Faible'},{w:'75%',c:'#facc15',t:'Moyen'},{w:'100%',c:'#4ade80',t:'Fort'}];
+  document.getElementById('sfill').style.cssText='width:'+m[s].w+';background:'+m[s].c+';height:100%;border-radius:3px;transition:all .3s';
+  var l=document.getElementById('slbl'); l.textContent=m[s].t; l.style.color=m[s].c;
+});
+
+function setLoad(p,on){
+  document.getElementById('btn-'+p).disabled=on;
+  document.getElementById(p[0]+'-lbl').style.display=on?'none':'inline';
+  document.getElementById(p[0]+'-spin').style.display=on?'block':'none';
+}
+
+// ══ LOGIN — vérifie activation ══
+document.getElementById('fl').addEventListener('submit', function(e){ e.preventDefault(); doLogin(); });
+async function doLogin(){
+  var email=document.getElementById('l-email').value.trim();
+  var pass=document.getElementById('l-pass').value.trim();
+  if(!email||!pass){ showAlert('Veuillez remplir tous les champs.','err'); return; }
+  setLoad('login',true); clearAlert();
+
+  // Admin check (hardcoded)
+  if(email==='admin@medflix.ma'&&pass==='admin1234'){
+    localStorage.setItem('medflix_session',JSON.stringify({name:'Aymane Benyahya',email:email,role:'admin',paid:[]}));
+    window.location.href='medflix-admin.html'; return;
+  }
+
+  // Pre-fetch user by email alone to show account status warnings FIRST (before password check)
+  var userByEmail = await dbGetUser(email);
+  if (userByEmail) {
+    var checkCount = (userByEmail.paidDetails || []).filter(function(p){ return getPaidDetailStatus(p) === 'actif'; }).length;
+    var checkResils = (userByEmail.paidDetails || []).filter(function(p){ return getPaidDetailStatus(p) === 'resilie'; });
+    var checkExps = (userByEmail.paidDetails || []).filter(function(p){ return getPaidDetailStatus(p) === 'expire'; });
+    
+    // Si l'utilisateur a déjà été validé mais n'a AUCUN actif
+    if (userByEmail.activated || userByEmail.resiliated || checkResils.length > 0 || checkExps.length > 0) {
+       if (checkCount === 0) {
+          setLoad('login',false);
+          if (userByEmail.resiliated || checkResils.length > 0) {
+             var lastResil = checkResils.length > 0 ? checkResils[checkResils.length - 1] : {by: 'Étudiant'};
+             var origin = (lastResil.by === 'Admin') ? 'par un administrateur' : 'par vous-même';
+             showAlert('🔒 <strong>Ton abonnement a été résilié ' + origin + '.</strong><br>Veuillez contacter Medflix pour plus d\'informations.', 'warn');
+             return;
+          }
+          if (userByEmail.expiration || checkExps.length > 0) {
+             showAlert('🔒 <strong>Ton abonnement a expiré.</strong><br>Contacte Medflix pour renouveler ton accès.', 'warn');
+             return;
+          }
+       }
+    }
+  }
+
+  // Si on passe ici, l'utilisateur est soit nouveau (attente validation) soit actif. On vérifie LE MOT DE PASSE.
+  var user = await dbFindUser(email, pass);
+  setLoad('login',false);
+  if(!user){ showAlert('Email ou mot de passe incorrect.','err'); return; }
+
+  var actCount = user.paidDetails.filter(function(p){ return getPaidDetailStatus(p) === 'actif'; }).length;
+
+  if (!user.activated && actCount === 0) {
+    showAlert('⏳ <strong>Compte en attente de validation.</strong><br>Ton paiement est en cours de vérification. Tu recevras un email dès que ton accès sera activé (sous 24h).', 'warn');
+    return;
+  }
+  
+  localStorage.setItem('medflix_session',JSON.stringify({name:user.name,email:email,role:'student',semester:user.semester,faculte:user.faculte,paid:user.paid||[user.semester],activated:true,expiration:user.expiration||null,progress:user.progress||{cours:0,tp:0,quiz:0,score:0,latest:[]}}));
+  window.location.href='medflix-student.html';
+}
+
+// ══ SIGNUP ══
+document.getElementById('btn-signup').addEventListener('click', doSignup);
+async function doSignup(){
+  var prenom=document.getElementById('s-prenom').value.trim();
+  var nom=document.getElementById('s-nom').value.trim();
+  var email=document.getElementById('s-email').value.trim().toLowerCase();
+  var phone=document.getElementById('s-phone').value.trim();
+  var faculte=document.getElementById('s-fac').value;
+  var semester=document.getElementById('s-sem').value;
+  var pass=document.getElementById('s-pass').value;
+  var pass2=document.getElementById('s-pass2').value;
+  if(!prenom||!nom||!email||!phone||!faculte||!semester||!pass||!pass2){ showAlert('Veuillez remplir tous les champs.','err'); return; }
+  
+  var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  if(!emailRegex.test(email)){ showAlert('Format de l\'adresse email invalide.','err'); return; }
+  var fictiveDomains = ['yopmail.com','yopmail.fr','yopmail.net','mailinator.com','10minutemail.com','tempmail.com','guerillamail.com','throwawaymail.com','burnermail.io','dropmail.me','temp-mail.org','trashmail.com','anonymbox.com','getnada.com','nada.ltd','mohmal.com','tempmail.net','emailondeck.com','sharklasers.com','guerrillamail.info','grr.la'];
+  if(fictiveDomains.includes(email.split('@')[1])){ showAlert('Les adresses email jetables/fictives sont interdites.','err'); return; }
+
+  if(pass.length<8){ showAlert('Mot de passe : 8 caractères minimum.','err'); return; }
+  if(pass!==pass2){ showAlert('Les mots de passe ne correspondent pas.','err'); return; }
+  if(faculte!=='FMPC'){ showAlert('Seule la FMPC est disponible pour le moment.','err'); return; }
+  setLoad('signup',true); clearAlert();
+
+  var existing = await dbGetUser(email);
+  if(existing){ setLoad('signup',false); showAlert('Un compte existe déjà avec cet email.','err'); return; }
+
+  var u = await dbCreateUser({ name:prenom+' '+nom, email:email, pass:pass, phone:phone, faculte:faculte, semester:semester, paid:[], activated:false });
+  setLoad('signup',false);
+  if(!u){ showAlert('Erreur lors de la création du compte. Réessaie.','err'); return; }
+
+  sendEmail('admin','Admin',CEMAIL,'🆕 Nouvelle inscription Medflix','Nom : '+u.name+'\nEmail : '+email+'\nTéléphone : '+phone+'\nFaculté : '+faculte+'\nSemestre : '+semester+'\n\nActiver le compte dans le panneau admin apres reception du paiement.');
+  sendEmail('etudiant',prenom,email,'🎓 Bienvenue dans la famille Medflix !','Salut '+prenom+' !\n\nTon compte Medflix a bien été créé. Bienvenue dans la famille !\n\nProchaine étape : envoie ton reçu de paiement via WhatsApp pour activer ton accès.\n\nDélai de traitement : ton compte sera activé sous 24h après réception du paiement.\n\nSemestre choisi : '+semester+'\nFaculté : '+faculte+'\n\nÀ très vite sur medflix.ma !\n\n— L\'équipe Medflix');
+  showAlert('Compte créé ! Choisis maintenant ta méthode de paiement.','ok');
+  setTimeout(function(){ closeModal(); openPayModal(u.name,semester,email); }, 900);
+}
+
+// ══ RESET ══
+document.getElementById('btn-reset').addEventListener('click', async function(){
+  var email=document.getElementById('r-email').value.trim();
+  if(!email){ showAlert('Entrez votre email.','err'); return; }
+  var user = await dbGetUser(email);
+  if(!user){ showAlert('Aucun compte trouvé.','err'); return; }
+  var tmp=Math.random().toString(36).slice(-8);
+  await dbUpdateUser(email, { pass: tmp });
+  sendEmail('etudiant',user.name,email,'Réinitialisation mot de passe Medflix','Ton mot de passe temporaire : '+tmp+'\n\nChange-le dans ton profil après connexion.');
+  showAlert('Mot de passe temporaire envoyé !','ok');
+  setTimeout(function(){ showTab('login'); },2500);
+});
+
+// ══ PAYMENT MODAL ══
+var pov=document.getElementById('pov');
+var curUser={};
+function openPayModal(name,semester,email){
+  curUser={name:name,semester:semester,email:email};
+  document.getElementById('p-sem-tag').textContent='📚 '+semester;
+  updateWA();
+  pov.style.display='flex';
+  setTimeout(function(){ pov.classList.add('open'); },10);
+}
+function closePay(){
+  pov.classList.remove('open');
+  setTimeout(function(){ pov.style.display='none'; },200);
+}
+function switchPayTab(tab){
+  document.getElementById('panel-rib').className='pay-panel'+(tab==='rib'?' show':'');
+  document.getElementById('panel-billet').className='pay-panel'+(tab==='billet'?' show':'');
+  document.getElementById('tab-rib').className='pay-tab'+(tab==='rib'?' active':'');
+  document.getElementById('tab-billet').className='pay-tab'+(tab==='billet'?' active':'');
+  updateWA();
+}
+function updateWA(){
+  var method=document.getElementById('tab-rib').classList.contains('active')?'Virement bancaire (RIB)':'billeterie.ma';
+  var msg='Bonjour Medflix !\n\nJe viens de m\'inscrire et j\'ai effectue mon paiement.\n\n'+'Nom : '+(curUser.name||'')+'\nEmail : '+(curUser.email||'')+'\nSemestre : '+(curUser.semester||'')+'\nMontant : 199 DH\nMéthode : '+method+'\n\nCi-joint mon recu de paiement. Merci d\'activer mon compte !';
+  document.getElementById('btn-wa').onclick=function(){ window.open('https://wa.me/'+WA_NUM+'?text='+encodeURIComponent(msg),'_blank'); };
+}
+function copyRIB(btn){
+  if(navigator.clipboard){ 
+    navigator.clipboard.writeText(RIB).then(function(){ 
+      var badge = document.getElementById('rib-copied');
+      if(btn) { btn.style.transform = 'scale(0.9)'; setTimeout(function(){ btn.style.transform = 'scale(1)'; }, 150); }
+      if(badge) {
+        badge.style.opacity = '1';
+        badge.style.transform = 'translateY(0)';
+        setTimeout(function(){ badge.style.opacity = '0'; badge.style.transform = 'translateY(5px)'; }, 2000);
+      }
+    }); 
+  }
+}
+document.getElementById('btn-confirm-sent').addEventListener('click', function(){
+  document.getElementById('pending-info').classList.add('show');
+  this.style.display='none';
+  sendEmail('admin','Admin',CEMAIL,'📲 Reçu envoyé WhatsApp — Medflix','L\'étudiant '+curUser.name+' ('+curUser.email+') a envoyé son reçu de paiement via WhatsApp.\n\nSemestre : '+curUser.semester+'\n\nVérifie le paiement et active le compte dans le panneau admin.');
+});
+
+// ══ CONTACT ══
+document.getElementById('btn-contact').addEventListener('click', function(){
+  var prenom=document.getElementById('c-prenom').value.trim();
+  var nom=document.getElementById('c-nom').value.trim();
+  var email=document.getElementById('c-email').value.trim();
+  var sujet=document.getElementById('c-sujet').value;
+  var msg=document.getElementById('c-message').value.trim();
+  if(!prenom||!nom||!email||!sujet||!msg){ document.getElementById('c-err').textContent='Veuillez remplir tous les champs.'; document.getElementById('c-err').className='c-err show'; return; }
+  document.getElementById('c-err').className='c-err';
+  var self=this; self.disabled=true; self.textContent='Envoi...';
+  sendEmail('admin',prenom+' '+nom,CEMAIL,'Contact Medflix : '+sujet,'De : '+prenom+' '+nom+' ('+email+')\n\n'+msg)
+  .then(function(){ 
+    sendEmail('etudiant', prenom, email, 'Accusé de réception — Medflix', 'Salut ' + prenom + ',\n\nNous avons bien reçu ton message concernant : "' + sujet + '".\n\nNotre équipe va le traiter et nous te répondrons dans un délai maximum de 24h.\n\nMerci de ta patience !\n— L\'équipe Medflix');
+    document.getElementById('c-ok').className='c-ok show'; ['c-prenom','c-nom','c-email','c-message'].forEach(function(i){ document.getElementById(i).value=''; }); document.getElementById('c-sujet').selectedIndex=0; 
+  })
+  .catch(function(){ window.location.href='mailto:'+CEMAIL+'?subject='+encodeURIComponent(sujet)+'&body='+encodeURIComponent(prenom+' '+nom+' - '+msg); })
+  .finally(function(){ self.disabled=false; self.textContent='Envoyer le message'; });
+});
+
+// ══ EMAIL ══
+function sendEmail(tpl,toName,toEmail,subject,message){
+  return emailjs.send(EJS_SVC, tpl==='etudiant'?'template_etudiant':'template_admin', {to_name:toName,to_email:toEmail,subject:subject,message:message});
+}
+
+// ══ FAQ ACCORDION ══
+var FAQS = [
+  { q:"C'est quoi Medflix ?", a:"Medflix est une plateforme d'apprentissage en ligne conçue pour les étudiants en médecine marocains. Disponible sur medflix.ma et en application mobile iOS et Android, gratuitement en téléchargement." },
+  { q:"L'abonnement donne accès à quoi exactement ?", a:"Avec l'abonnement à 199 DH/semestre, tu accèdes aux cours PDF téléchargeables, aux TP/Examens, aux QCM d'annales illimités et à l'IA de révision — le tout disponible sur web et mobile." },
+  { q:"Comment fonctionne le paiement ?", a:"Tu peux payer par virement bancaire (RIB) ou via billeterie.ma. Envoie ensuite le reçu via WhatsApp. Ton accès est activé sous 24h après vérification." },
+  { q:"Comment télécharger l'application ?", a:"L'application Medflix est disponible gratuitement sur l'App Store (iOS) et le Google Play Store (Android). Télécharge-la, crée ton compte et abonne-toi pour accéder au contenu." },
+  { q:"L'IA intégrée, ça sert à quoi ?", a:"L'IA est un assistant de révision disponible directement dans l'application. Tu peux lui poser des questions sur tes cours, lui demander d'expliquer une notion difficile, ou générer des questions d'entraînement." }
+];
+
+var faqList = document.getElementById('faq-list');
+FAQS.forEach(function(item, i) {
+  var div = document.createElement('div');
+  div.style.cssText = 'border-bottom:1px solid var(--line);';
+  div.innerHTML =
+    '<div onclick="toggleFAQ(' + i + ')" style="display:flex;justify-content:space-between;align-items:center;padding:1.4rem 0;cursor:pointer;font-size:1rem;font-weight:600;color:var(--txt);gap:1rem;user-select:none;" id="fq-q-' + i + '">' +
+      '<span>' + item.q + '</span>' +
+      '<span id="fq-icon-' + i + '" style="font-size:1.3rem;color:var(--mut);flex-shrink:0;transition:color .2s;">+</span>' +
+    '</div>' +
+    '<div id="fq-a-' + i + '" style="max-height:0;overflow:hidden;transition:max-height .35s ease,padding .3s;font-size:.92rem;color:var(--mut);line-height:1.75;">' + item.a + '</div>';
+  faqList.appendChild(div);
+});
+
+function toggleFAQ(i) {
+  FAQS.forEach(function(_, j) {
+    var ans  = document.getElementById('fq-a-' + j);
+    var icon = document.getElementById('fq-icon-' + j);
+    var q    = document.getElementById('fq-q-' + j);
+    if (j === i) {
+      var isOpen = ans.style.maxHeight !== '0px' && ans.style.maxHeight !== '';
+      ans.style.maxHeight   = isOpen ? '0px' : '300px';
+      ans.style.paddingBottom = isOpen ? '0' : '1.4rem';
+      icon.textContent = isOpen ? '+' : '×';
+      icon.style.color = isOpen ? 'var(--mut)' : 'var(--red-l)';
+      q.style.color    = isOpen ? 'var(--txt)' : 'var(--red-l)';
+    } else {
+      ans.style.maxHeight = '0px';
+      ans.style.paddingBottom = '0';
+      icon.textContent = '+';
+      icon.style.color = 'var(--mut)';
+      q.style.color = 'var(--txt)';
+    }
+  });
+}
+
+function landingLogout() { document.getElementById('landing-logout-modal').classList.add('open'); }
+function confirmLandingLogout() { localStorage.removeItem('medflix_session'); window.location.reload(); }
+
+// ══ AUTH STATE — sans cloneNode ══
+var sess = JSON.parse(localStorage.getItem('medflix_session') || 'null');
+if (sess && sess.name && sess.role) {
+  // Modifier les boutons quand connecté
+  var navL = document.getElementById('nav-login');
+  navL.textContent = 'Accéder à Medflix';
+  navL.className = 'btn-n';
+
+  // Hero: remplacer les 2 boutons par un seul "Accéder"
+  var heroLogin = document.getElementById('hero-login');
+  heroLogin.textContent = 'Accéder à mon espace →';
+  heroLogin.className = 'btn-p';
+  var heroSignup = document.getElementById('hero-signup');
+  heroSignup.style.display = 'none';
+
+  // Nav: cacher le bouton s'abonner et afficher déconnexion
+  document.getElementById('nav-signup').style.display = 'none';
+  document.getElementById('nav-logout').style.display = 'inline-block';
+
+  window._connected = true;
+  window._connectedRole = sess.role;
+}
+</script>
+</body>
+</html>
