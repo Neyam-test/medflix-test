@@ -21,6 +21,14 @@ serve(async (req) => {
       });
     }
 
+    // Formater automatiquement les numéros marocains (06/07 → +2126/+2127)
+    let formattedTo = to.replace(/\s+/g, '').replace(/-/g, '');
+    if (formattedTo.startsWith('0')) {
+      formattedTo = '+212' + formattedTo.substring(1);
+    } else if (!formattedTo.startsWith('+')) {
+      formattedTo = '+' + formattedTo;
+    }
+
     // Récupérer les clés depuis les secrets (Ne pas mettre en dur ici !)
     const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
     const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
@@ -39,7 +47,7 @@ serve(async (req) => {
     // Appel à l'API Rest Twilio
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
     const formData = new URLSearchParams();
-    formData.append('To', to);
+    formData.append('To', formattedTo);
     formData.append('From', fromNumber);
     formData.append('Body', message);
 

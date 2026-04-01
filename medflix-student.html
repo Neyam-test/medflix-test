@@ -655,7 +655,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // ✅ Étudiant valide
   isStudent = true;
   PAID = me.paid || [];
-  SESSION = { name:me.name, email:me.email, role:'student', semester:me.semester, faculte:me.faculte, paid:PAID, activated:true, expiration:me.expiration, progress:me.progress };
+  SESSION = { name:me.name, email:me.email, phone:me.phone||'', role:'student', semester:me.semester, faculte:me.faculte, paid:PAID, activated:true, expiration:me.expiration, progress:me.progress };
   stats = me.progress || { cours:0, tp:0, quiz:0, scores:[], latest:[] };
   if (!stats.scores) stats.scores = [];
   if (!stats.latest) stats.latest = [];
