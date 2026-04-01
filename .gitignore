@@ -1,0 +1,6 @@
+# Exécutables et binaires
+supabase.exe
+*.exe
+
+# Fichiers temporaires Supabase CLI
+supabase/.temp/
