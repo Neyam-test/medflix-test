@@ -1132,25 +1132,20 @@ async function iaSend(inputId, msgsId) {
   msgs.scrollTop = msgs.scrollHeight;
   
   try {
-    var res = await fetch(SUPABASE_URL + '/functions/v1/ask-ai', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + SUPABASE_ANON
-      },
-      body: JSON.stringify({
+    var { data, error } = await sb.functions.invoke('ask-ai', {
+      body: {
         message: fullMessage,
-        history: iaHistory.slice(-50) // Garder les 50 derniers échanges pour le contexte
-      })
+        history: iaHistory.slice(-50)
+      }
     });
-    
-    var data = await res.json();
     
     // Retirer l'indicateur de frappe
     var el = document.getElementById(typingId);
     if (el) el.remove();
     
-    if (data.reply) {
+    if (error) throw error;
+    
+    if (data && data.reply) {
       // Formater la réponse (markdown basique)
       var formatted = data.reply
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
