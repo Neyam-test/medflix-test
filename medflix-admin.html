@@ -178,6 +178,10 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
     <button class="ni" id="ni-cours" onclick="nav('cours')">📄 Upload Cours</button>
     <button class="ni" id="ni-tp" onclick="nav('tp')">🔬 Upload TP / Examens</button>
     <button class="ni" id="ni-qcm" onclick="nav('qcm')">✏️ Créateur de QCM</button>
+    <button class="ni" id="ni-comments" onclick="nav('comments')">
+      💬 Commentaires
+      <span class="ni-badge" id="nb-comments" style="background:var(--redb);color:var(--redl);"></span>
+    </button>
 
     <div class="ns">Facturation</div>
     <button class="ni" id="ni-abonnements" onclick="nav('abonnements')">💳 Abonnements</button>
@@ -576,6 +580,41 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
         <tbody id="backup-history"></tbody>
       </table>
     </div>
+    </div>
+  </div>
+
+  <!-- ════ COMMENTS ════ -->
+  <div class="page" id="page-comments">
+    <h1 class="ptitle">💬 Commentaires</h1>
+    <p class="psub">Modération des commentaires étudiants par cours</p>
+
+    <div style="display:flex;gap:1rem;margin-bottom:1.5rem;align-items:center;flex-wrap:wrap;">
+      <input type="text" id="cmt-search" placeholder="🔍 Rechercher par auteur ou contenu..."
+        oninput="renderCommentsAdmin()"
+        style="background:var(--sur);border:1px solid var(--line);border-radius:9px;padding:.7rem 1rem;font-family:'Outfit',sans-serif;font-size:.87rem;color:var(--txt);outline:none;flex:1;max-width:400px;">
+      <select id="cmt-filter-course" onchange="renderCommentsAdmin()"
+        style="background:var(--sur);border:1px solid var(--line);border-radius:9px;padding:.7rem 1rem;font-family:'Outfit',sans-serif;font-size:.87rem;color:var(--txt);outline:none;">
+        <option value="">Tous les cours</option>
+      </select>
+      <select id="cmt-filter-type" onchange="renderCommentsAdmin()"
+        style="background:var(--sur);border:1px solid var(--line);border-radius:9px;padding:.7rem 1rem;font-family:'Outfit',sans-serif;font-size:.87rem;color:var(--txt);outline:none;">
+        <option value="">Tous (commentaires + réponses)</option>
+        <option value="root">Commentaires racines</option>
+        <option value="reply">Réponses uniquement</option>
+      </select>
+      <button class="btn-ghost" onclick="loadCommentsAdmin()" style="padding:.65rem 1rem;">&#x21bb; Rafraîchir</button>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">💬 Tous les commentaires</span>
+        <span id="cmt-admin-count" style="font-size:.8rem;color:var(--mut);font-weight:600;"></span>
+      </div>
+      <table>
+        <thead><tr><th>Auteur</th><th>Cours</th><th>Commentaire</th><th>Score</th><th>Date</th><th>Action</th></tr></thead>
+        <tbody id="comments-admin-tbody"></tbody>
+      </table>
+    </div>
   </div>
 
 </div><!-- /main -->
@@ -702,7 +741,7 @@ function confirmAdminLogout() {
 // ══════════════════════════════════
 //  NAV
 // ══════════════════════════════════
-var PAGE_TITLES = { dashboard:'Dashboard', activation:'Activation des comptes', etudiants:'Tous les étudiants', cours:'Upload Cours', tp:'Upload TP / Examens', qcm:'Créateur de QCM', abonnements:'Abonnements', parametres:'Paramètres', backup:'Sauvegarde' };
+var PAGE_TITLES = { dashboard:'Dashboard', activation:'Activation des comptes', etudiants:'Tous les étudiants', cours:'Upload Cours', tp:'Upload TP / Examens', qcm:'Créateur de QCM', abonnements:'Abonnements', parametres:'Paramètres', backup:'Sauvegarde', comments:'Commentaires' };
 
 function nav(name) {
   document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
@@ -715,7 +754,7 @@ function nav(name) {
     updateDataLists();
   }
   
-  var renders = { dashboard:refreshDashboard, activation:renderActivation, etudiants:renderAllStudents, cours:renderCours, tp:renderTP, qcm:renderQCMList, abonnements:renderAbonnements, parametres:renderParametres, backup:renderBackup };
+  var renders = { dashboard:refreshDashboard, activation:renderActivation, etudiants:renderAllStudents, cours:renderCours, tp:renderTP, qcm:renderQCMList, abonnements:renderAbonnements, parametres:renderParametres, backup:renderBackup, comments:loadCommentsAdmin };
   if (renders[name]) renders[name]();
 }
 
@@ -1778,6 +1817,101 @@ function toast(msg, type) {
 //  INIT
 // ══════════════════════════════════
 refreshDashboard();
+
+// ══════════════════════════════════
+//  COMMENTS ADMIN
+// ══════════════════════════════════
+var _allComments = [];
+
+async function loadCommentsAdmin() {
+  var tbody = document.getElementById('comments-admin-tbody');
+  tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Chargement...</td></tr>';
+  _allComments = await dbGetAllComments();
+
+  // Populate course filter
+  var courses = {};
+  _allComments.forEach(function(c) { if (c.course_title) courses[c.course_title] = true; });
+  var sel = document.getElementById('cmt-filter-course');
+  var curr = sel.value;
+  sel.innerHTML = '<option value="">Tous les cours</option>';
+  Object.keys(courses).sort().forEach(function(t) {
+    var opt = document.createElement('option');
+    opt.value = t; opt.textContent = t;
+    if (t === curr) opt.selected = true;
+    sel.appendChild(opt);
+  });
+
+  // Badge count
+  var nb = document.getElementById('nb-comments');
+  if (_allComments.length > 0) {
+    nb.textContent = _allComments.length;
+    nb.style.display = 'inline';
+  } else { nb.style.display = 'none'; }
+
+  renderCommentsAdmin();
+}
+
+function renderCommentsAdmin() {
+  var tbody  = document.getElementById('comments-admin-tbody');
+  var search = (document.getElementById('cmt-search') || {}).value || '';
+  var fCourse= (document.getElementById('cmt-filter-course') || {}).value || '';
+  var fType  = (document.getElementById('cmt-filter-type') || {}).value || '';
+  var q      = search.toLowerCase();
+
+  var filtered = _allComments.filter(function(c) {
+    if (fCourse && c.course_title !== fCourse) return false;
+    if (fType === 'root'  && c.parent_id)  return false;
+    if (fType === 'reply' && !c.parent_id) return false;
+    if (q && !c.author.toLowerCase().includes(q) && !c.content.toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  document.getElementById('cmt-admin-count').textContent = filtered.length + ' commentaire(s)';
+
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Aucun commentaire trouvé</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(function(c) {
+    var score   = (c.upvotes||0) - (c.downvotes||0);
+    var scoreHtml = '<span class="' + (score > 0 ? 'bg' : score < 0 ? 'br' : 'ba') + '">' +
+      (score > 0 ? '&#9650; ' : score < 0 ? '&#9660; ' : '') + score + '</span>';
+    var typeHtml = c.parent_id
+      ? '<span class="ba" style="font-size:.65rem;">Réponse</span>'
+      : '<span class="bg" style="font-size:.65rem;">Commentaire</span>';
+    var date = c.created_at ? new Date(c.created_at).toLocaleDateString('fr-FR') + ' ' +
+      new Date(c.created_at).toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'}) : '—';
+    var preview = (c.content || '').length > 90 ? c.content.substring(0,90) + '…' : c.content;
+    return '<tr>' +
+      '<td style="color:var(--txt);font-weight:600;min-width:130px;">' + escAdmin(c.author) + '<br>' +
+        '<span style="font-size:.72rem;color:var(--mut2);font-weight:400;">' + escAdmin(c.email) + '</span></td>' +
+      '<td style="max-width:160px;font-size:.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + escAdmin(c.course_title||'') + '">' +
+        escAdmin(c.course_title || '—') + '</td>' +
+      '<td style="max-width:300px;font-size:.83rem;">' + typeHtml + ' ' + escAdmin(preview) + '</td>' +
+      '<td style="text-align:center;">' + scoreHtml + '</td>' +
+      '<td style="font-size:.78rem;white-space:nowrap;">' + date + '</td>' +
+      '<td><button class="btn-del" onclick="adminDeleteComment(\'' + c.id + '\')">✕ Supprimer</button></td>' +
+    '</tr>';
+  }).join('');
+}
+
+function escAdmin(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function adminDeleteComment(id) {
+  if (!confirm('Supprimer ce commentaire et toutes ses réponses ?')) return;
+  await dbDeleteComment(id);
+  _allComments = _allComments.filter(function(c){ return c.id !== id && c.parent_id !== id; });
+  // update badge
+  var nb = document.getElementById('nb-comments');
+  if (_allComments.length > 0) { nb.textContent = _allComments.length; nb.style.display = 'inline'; }
+  else { nb.style.display = 'none'; }
+  renderCommentsAdmin();
+  toast('Commentaire supprimé', 'ok');
+}
 
 </script>
 </body>

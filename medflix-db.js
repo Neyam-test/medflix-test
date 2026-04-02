@@ -394,6 +394,17 @@ async function dbSetConfig(dureeJours) {
   if (error) console.error('dbSetConfig:', error);
 }
 
+async function dbGetBannedWords() {
+  var { data, error } = await sb.from('config').select('*').eq('key', 'banned_words').single();
+  if (error || !data) return [];
+  try { return JSON.parse(data.value) || []; } catch(e) { return []; }
+}
+
+async function dbSetBannedWords(words) {
+  var { error } = await sb.from('config').upsert({ key: 'banned_words', value: JSON.stringify(words) });
+  if (error) console.error('dbSetBannedWords:', error);
+}
+
 // ══════════════════════════════════
 //  HELPERS
 // ══════════════════════════════════
@@ -434,4 +445,90 @@ function getLatestExpiration(paidDetails) {
     if (p.status !== 'resilie' && p.exp && (!latest || p.exp > latest)) latest = p.exp;
   });
   return latest;
+}
+
+// ══════════════════════════════════
+//  COMMENTS
+// ══════════════════════════════════
+async function dbGetComments(courseId) {
+  var { data, error } = await sb.from('comments')
+    .select('*')
+    .eq('course_id', courseId)
+    .order('created_at', { ascending: true });
+  if (error) { console.error('dbGetComments:', error); return []; }
+  return data || [];
+}
+
+async function dbGetAllComments() {
+  var { data, error } = await sb.from('comments')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) { console.error('dbGetAllComments:', error); return []; }
+  return data || [];
+}
+
+async function dbAddComment(c) {
+  var payload = {
+    course_id:    c.course_id,
+    course_title: c.course_title || '',
+    author:       c.author,
+    email:        c.email,
+    content:      c.content,
+    parent_id:    c.parent_id || null,
+    upvotes:      0,
+    downvotes:    0,
+    upvoters:     [],
+    downvoters:   []
+  };
+  var { data, error } = await sb.from('comments').insert(payload).select().single();
+  if (error) { console.error('dbAddComment:', error); return null; }
+  return data;
+}
+
+async function dbVoteComment(id, email, dir) {
+  // dir: 'up' | 'down'
+  var { data: row, error } = await sb.from('comments').select('upvoters,downvoters,upvotes,downvotes').eq('id', id).single();
+  if (error || !row) return;
+
+  var upvoters   = row.upvoters   || [];
+  var downvoters = row.downvoters || [];
+  var upvotes    = row.upvotes    || 0;
+  var downvotes  = row.downvotes  || 0;
+
+  if (dir === 'up') {
+    if (upvoters.includes(email)) {
+      // toggle off
+      upvoters   = upvoters.filter(function(e){ return e !== email; });
+      upvotes    = Math.max(0, upvotes - 1);
+    } else {
+      upvoters.push(email);
+      upvotes++;
+      // remove downvote if any
+      if (downvoters.includes(email)) {
+        downvoters = downvoters.filter(function(e){ return e !== email; });
+        downvotes  = Math.max(0, downvotes - 1);
+      }
+    }
+  } else {
+    if (downvoters.includes(email)) {
+      downvoters = downvoters.filter(function(e){ return e !== email; });
+      downvotes  = Math.max(0, downvotes - 1);
+    } else {
+      downvoters.push(email);
+      downvotes++;
+      if (upvoters.includes(email)) {
+        upvoters = upvoters.filter(function(e){ return e !== email; });
+        upvotes  = Math.max(0, upvotes - 1);
+      }
+    }
+  }
+
+  await sb.from('comments').update({ upvotes: upvotes, downvotes: downvotes, upvoters: upvoters, downvoters: downvoters }).eq('id', id);
+}
+
+async function dbDeleteComment(id) {
+  // delete replies too
+  await sb.from('comments').delete().eq('parent_id', id);
+  var { error } = await sb.from('comments').delete().eq('id', id);
+  if (error) console.error('dbDeleteComment:', error);
 }
