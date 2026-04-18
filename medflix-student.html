@@ -2089,7 +2089,7 @@
       // ✅ Étudiant valide
       isStudent = true;
       PAID = me.paid || [];
-      SESSION = { name: me.name, email: me.email, phone: me.phone || '', role: 'student', semester: me.semester, faculte: me.faculte, paid: PAID, activated: true, expiration: me.expiration, progress: me.progress };
+      SESSION = { name: me.name, email: me.email, phone: me.phone || '', role: 'student', semester: me.semester, faculte: me.faculte, paid: PAID, activated: true, expiration: me.expiration, progress: me.progress, comment_banned_until: me.comment_banned_until };
       stats = me.progress || { cours: 0, tp: 0, quiz: 0, scores: [], latest: [] };
       if (!stats.scores) stats.scores = [];
       if (!stats.latest) stats.latest = [];
@@ -2971,6 +2971,43 @@
     var _cmtCourseTitle = '';
     var _cmtData        = [];  // flat list from DB
     var _cmtPanelOpen   = false;
+    var _cmtBannedWords = [];
+
+    // Load banned words once
+    (async function() {
+      _cmtBannedWords = await dbGetBannedWords();
+    })();
+
+    function isCommentBanned() {
+      if (!SESSION || !SESSION.comment_banned_until) return false;
+      var until = new Date(SESSION.comment_banned_until);
+      if (until > new Date()) {
+        var diff = until - new Date();
+        var mins = Math.ceil(diff / 60000);
+        var hours = Math.floor(mins / 60);
+        var remMins = mins % 60;
+        var timeStr = hours > 0 ? hours + "h " + remMins + "min" : mins + "min";
+        alert("🔒 Tes privilèges de commentaires ont été suspendus.\n\nDéblocage dans : " + timeStr + "\nMotif : Utilisation de termes non autorisés ou comportement inapproprié.");
+        return true;
+      }
+      return false;
+    }
+
+    async function checkContentForBannedWords(text) {
+      if (!text) return false;
+      var low = text.toLowerCase();
+      var found = _cmtBannedWords.find(function(w) { return low.includes(w.toLowerCase()); });
+      if (found) {
+        // Apply 4 hour ban
+        var until = new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString();
+        await dbUpdateUser(SESSION.email, { comment_banned_until: until });
+        SESSION.comment_banned_until = until;
+        localStorage.setItem('medflix_session', JSON.stringify(SESSION));
+        alert("⚠️ Ton message contient un terme non autorisé : \"" + found + "\".\n\nTes privilèges de commentaires ont été suspendus pour 4 heures par mesure de sécurité.");
+        return true;
+      }
+      return false;
+    }
 
     // ── Patch openDocViewer to capture course id + show comment btn ──
     (function() {
@@ -3125,10 +3162,20 @@
     // ── Submit reply ──
     async function submitReply(parentId) {
       if (!SESSION || !SESSION.email) return;
+      if (isCommentBanned()) return;
+
       var ta = document.getElementById('ri-' + parentId);
       if (!ta) return;
       var content = ta.value.trim();
       if (!content) return;
+
+      if (await checkContentForBannedWords(content)) {
+        ta.value = '';
+        var form = document.getElementById('rf-' + parentId);
+        if (form) form.classList.remove('open');
+        return;
+      }
+
       ta.disabled = true;
       await dbAddComment({
         course_id:    _cmtCourseId,
@@ -3148,10 +3195,18 @@
     // ── Submit root comment ──
     async function submitComment() {
       if (!SESSION || !SESSION.email) return;
+      if (isCommentBanned()) return;
       if (!_cmtCourseId) { alert('Ouvrez d\'abord un cours pour commenter.'); return; }
+      
       var ta = document.getElementById('cmt-inp');
       var content = ta.value.trim();
       if (!content) return;
+
+      if (await checkContentForBannedWords(content)) {
+        ta.value = '';
+        return;
+      }
+
       ta.disabled = true;
       await dbAddComment({
         course_id:    _cmtCourseId,

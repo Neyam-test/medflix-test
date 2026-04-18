@@ -211,7 +211,8 @@ function dbMapUser(row) {
     paidDetails: pd,
     activatedDate: row.activated_date || null,
     date: row.created_at ? new Date(row.created_at).toLocaleDateString('fr-FR') : '',
-    progress: row.progress || { cours: 0, tp: 0, quiz: 0, score: 0, latest: [] }
+    progress: row.progress || { cours: 0, tp: 0, quiz: 0, score: 0, latest: [] },
+    comment_banned_until: row.comment_banned_until || null
   };
 }
 

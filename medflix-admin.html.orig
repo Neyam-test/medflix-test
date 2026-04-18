@@ -119,20 +119,6 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
 .toast.err{background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.3);color:#f87171;}
 @keyframes su{from{transform:translateY(10px);opacity:0;}to{transform:translateY(0);opacity:1;}}
 @keyframes pop{from{transform:scale(.94) translateY(16px);opacity:0;}to{transform:scale(1) translateY(0);opacity:1;}}
-
-/* ── NEW UI COMPONENTS ── */
-.pv-method-btn{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:1rem;font-family:'Outfit';font-size:.88rem;color:var(--mut);cursor:pointer;transition:all .2s;text-align:center;display:flex;flex-direction:column;align-items:center;gap:.4rem;}
-.pv-method-btn:hover{background:rgba(255,255,255,.06);border-color:var(--mut2);}
-.pv-method-btn.active{background:var(--redd);border-color:var(--red);color:var(--txt);box-shadow:0 0 15px rgba(224,32,32,0.15);}
-
-.spin{display:inline-block;animation:rot 1s linear infinite;}
-@keyframes rot{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
-
-.dz-active{border-color:var(--red) !important;background:var(--redd) !important;box-shadow:inset 0 0 20px rgba(224,32,32,0.1);}
-
-.bw-chip{display:inline-flex;align-items:center;gap:.5rem;padding:.35rem .75rem;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2);color:#f87171;border-radius:8px;font-size:0.8rem;font-weight:600;}
-.bw-chip span{cursor:pointer;opacity:.6;transition:all .2s;font-size:1.1rem;line-height:1;}
-.bw-chip span:hover{opacity:1;color:white;}
 </style>
 </head>
 <body>
@@ -142,7 +128,7 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
 
 <!-- ══ SIDEBAR ══ -->
 <!-- ══ ADMIN LOGIN SCREEN ══ -->
-<div id="admin-login-screen" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:none;align-items:center;justify-content:center;pointer-events:none;">
+<div id="admin-login-screen" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;">
   <form style="background:var(--sur);border:1px solid var(--redb);border-radius:24px;padding:3rem;width:100%;max-width:420px;animation:pop .3s ease;" onsubmit="event.preventDefault(); doAdminLogin();">
     <div style="text-align:center;margin-bottom:2rem;">
       <div style="font-family:'Instrument Serif',serif;font-size:2rem;color:var(--txt);margin-bottom:.25rem;">Med<em style="font-style:normal;color:var(--redl);">flix</em></div>
@@ -192,14 +178,9 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
     <button class="ni" id="ni-cours" onclick="nav('cours')">📄 Upload Cours</button>
     <button class="ni" id="ni-tp" onclick="nav('tp')">🔬 Upload TP / Examens</button>
     <button class="ni" id="ni-qcm" onclick="nav('qcm')">✏️ Créateur de QCM</button>
-    <button class="ni" id="ni-comments" onclick="nav('comments')">
-      💬 Commentaires
-      <span class="ni-badge" id="nb-comments" style="background:var(--redb);color:var(--redl);"></span>
-    </button>
 
     <div class="ns">Facturation</div>
     <button class="ni" id="ni-abonnements" onclick="nav('abonnements')">💳 Abonnements</button>
-    <button class="ni" id="ni-renouvellements" onclick="nav('renouvellements')">🔄 Renouvellements</button>
 
     <div class="ns">Système</div>
     <button class="ni" id="ni-parametres" onclick="nav('parametres')">⚙️ Paramètres</button>
@@ -298,20 +279,6 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
       </table>
     </div>
 
-    <!-- Historique des activations -->
-    <div class="card" style="margin-bottom:2rem;">
-      <div class="card-head">
-        <span class="card-title">📜 Historique des activations</span>
-        <span id="act-hist-count" style="font-size:.75rem;color:var(--mut2);">0 activation(s)</span>
-      </div>
-      <div style="max-height:400px;overflow-y:auto;">
-        <table>
-          <thead style="position:sticky;top:0;background:var(--sur);z-index:10;"><tr><th>Étudiant</th><th>Semestre</th><th>Méthode</th><th>Admin</th><th>Le</th><th>Reçu</th></tr></thead>
-          <tbody id="act-history-tbody"></tbody>
-        </table>
-      </div>
-    </div>
-
     <div class="form-card">
       <h3>➕ Ajouter un étudiant manuellement</h3>
       <p style="font-size:.84rem;color:var(--mut);margin-bottom:1.5rem;">Pour les étudiants qui ont payé directement — crée et active leur compte immédiatement.</p>
@@ -338,18 +305,10 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
         </div>
         <div class="field"><label>Méthode de paiement</label>
           <select id="a-methode">
-            <option>Virement RIB (Banque)</option>
+            <option>Virement bancaire (RIB)</option>
             <option>billeterie.ma</option>
-            <option>WhatsApp / Direct / Cash</option>
-            <option>Promotion / Offert</option>
+            <option>WhatsApp / Direct</option>
           </select>
-        </div>
-      </div>
-      <div class="field">
-        <label>📎 Joindre le reçu de paiement (Obligatoire pour activer)</label>
-        <div id="a-recu-dropzone" style="border:2px dashed var(--line);border-radius:12px;padding:1.5rem;text-align:center;cursor:pointer;background:rgba(255,255,255,.02);" onclick="document.getElementById('a-recu').click()">
-           <span id="a-recu-label" style="font-size:.85rem;color:var(--mut);">Cliquez pour joindre un fichier (PDF, image...)</span>
-           <input type="file" id="a-recu" style="display:none;" onchange="document.getElementById('a-recu-label').textContent = this.files[0].name">
         </div>
       </div>
       <div class="form-actions">
@@ -405,27 +364,7 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
           <div class="field"><label>Année</label><input type="text" id="c-annee" list="db-annees" placeholder="Ex : 2023–2024" autocomplete="off"></div>
         </div>
         <div class="field"><label>Titre du cours</label><input type="text" id="c-titre" placeholder="Ex : Appareil locomoteur — Ostéologie"></div>
-        <div class="field"><label>Lien Vidéo (Loom / Drive / OneDrive)</label><input type="url" id="c-link" placeholder="https://www.loom.com/share/..."></div>
-        
-        <div class="field">
-          <label>📜 PDF du cours (Hébergement Medflix direct)</label>
-          <div id="cours-dropzone" class="dz" 
-               onover="this.classList.add('dz-active')" 
-               onleave="this.classList.remove('dz-active')"
-               onclick="document.getElementById('cours-pdf-input').click()"
-               ondragover="event.preventDefault();this.classList.add('dz-active')"
-               ondragleave="this.classList.remove('dz-active')"
-               ondrop="handlePDFDrop(event,'cours-dropzone','c-pdf-link')"
-               style="border:2px dashed var(--line);border-radius:14px;padding:2rem;text-align:center;cursor:pointer;transition:all .2s;background:rgba(255,255,255,.02);">
-            <div id="cours-dropzone-label">
-              <span style="font-size:1.5rem;display:block;margin-bottom:.5rem;">📄</span>
-              <span style="font-size:.85rem;color:var(--mut);">Glissez le PDF ici ou <strong>cliquez pour héberger</strong></span>
-            </div>
-            <div id="cours-dropzone-progress" style="display:none;font-size:0.9rem;font-weight:600;"></div>
-            <input type="file" id="cours-pdf-input" style="display:none;" accept="application/pdf" onchange="handlePDFFileSelect(this.files[0],'cours-dropzone','c-pdf-link')">
-          </div>
-          <input type="hidden" id="c-pdf-link">
-        </div>
+        <div class="field"><label>Lien Google Drive / OneDrive</label><input type="url" id="c-link" placeholder="https://drive.google.com/file/..."></div>
         <div class="field"><label>Description (optionnel)</label><textarea id="c-desc" placeholder="Résumé du contenu..."></textarea></div>
         <div class="form-actions">
           <button class="btn-ghost" onclick="saveCours('brouillon')">Sauver brouillon</button>
@@ -470,25 +409,6 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
           <div class="field"><label>Titre</label><input type="text" id="tp-titre" placeholder="Ex : TP 1 — Observation microscopique"></div>
         </div>
         <div class="field"><label>Lien Google Drive / OneDrive</label><input type="url" id="tp-link" placeholder="https://drive.google.com/file/..."></div>
-        
-        <div class="field">
-          <label>📁 Hébergement direct (PDF Medflix)</label>
-          <div id="tp-dropzone" class="dz" 
-               onover="this.classList.add('dz-active')" 
-               onleave="this.classList.remove('dz-active')"
-               onclick="document.getElementById('tp-pdf-input').click()"
-               ondragover="event.preventDefault();this.classList.add('dz-active')"
-               ondragleave="this.classList.remove('dz-active')"
-               ondrop="handlePDFDrop(event,'tp-dropzone','tp-link')"
-               style="border:2px dashed var(--line);border-radius:14px;padding:2rem;text-align:center;cursor:pointer;transition:all .2s;background:rgba(255,255,255,.02);">
-            <div id="tp-dropzone-label">
-              <span style="font-size:1.5rem;display:block;margin-bottom:.5rem;">📂</span>
-              <span style="font-size:.85rem;color:var(--mut);">Glissez le document ici ou <strong>cliquez pour héberger</strong></span>
-            </div>
-            <div id="tp-dropzone-progress" style="display:none;font-size:0.9rem;font-weight:600;"></div>
-            <input type="file" id="tp-pdf-input" style="display:none;" accept="application/pdf" onchange="handlePDFFileSelect(this.files[0],'tp-dropzone','tp-link')">
-          </div>
-        </div>
         <div class="form-actions">
           <button class="btn-ghost" onclick="saveTP('brouillon')">Sauver brouillon</button>
           <button class="btn-red" id="btn-save-tp" onclick="saveTP('publier')">✓ Publier</button>
@@ -581,103 +501,6 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
     </div>
   </div>
 
-  <!-- ════ RENOUVELLEMENTS ════ -->
-  <div class="page" id="page-renouvellements">
-    <h1 class="ptitle">Gestion des Renouvellements (Fin de semestre)</h1>
-    <p class="psub">Désactivez en masse l'accès à un semestre spécifique et notifiez les étudiants par email.</p>
-    
-    <div style="display:grid;grid-template-columns:300px 1fr;gap:1.5rem;align-items:start;">
-      <div class="form-card">
-        <h3>🎯 Sélection du semestre</h3>
-        <p style="font-size:.85rem;color:var(--mut);line-height:1.5;margin-bottom:1.5rem;">Choisissez le semestre dont la saison vient de se terminer. Tous les élèves y ayant accès seront affichés.</p>
-        
-        <div class="field">
-          <label>Semestre à clôturer</label>
-          <select id="rn-semestre" onchange="loadRenewalsAdmin()">
-            <option value="">— Choisir —</option>
-            <option>Semestre 1</option><option>Semestre 2</option><option>Semestre 3</option>
-            <option>Semestre 4</option><option>Semestre 5</option><option>Semestre 6</option>
-            <option>Semestre 7</option><option>Semestre 8</option><option>Semestre 9</option>
-            <option>Semestre 10</option><option>Semestre 11</option><option>Semestre 12</option>
-            <option>Semestre 13</option><option>Semestre 14</option>
-          </select>
-        </div>
-        
-        <div id="rn-action-box" style="display:none;margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--line);">
-           <div style="font-weight:700;font-size:.9rem;color:var(--txt);margin-bottom:.5rem;">Action de Masse</div>
-           <p style="font-size:.8rem;color:var(--redd);line-height:1.4;margin-bottom:1rem;">⚠️ Cette action révoquera l'accès à ce semestre pour <strong id="rn-count" style="color:var(--redl);">0</strong> étudiant(s) et leur enverra automatiquement l'e-mail de nouveau semestre.</p>
-           <button id="btn-rn-execute" class="btn-red" style="width:100%;font-size:.9rem;padding:1rem;" onclick="processBulkRenewal()">Désactiver & Envoyer E-mails</button>
-           <div id="rn-progress-container" style="display:none;margin-top:1rem;">
-             <div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--mut);margin-bottom:.4rem;">
-               <span>Progression...</span>
-               <span id="rn-progress-text">0 / 0</span>
-             </div>
-             <div style="width:100%;height:6px;background:var(--sur2);border-radius:3px;overflow:hidden;">
-                <div id="rn-progress-bar" style="width:0%;height:100%;background:var(--grn);transition:width .2s;"></div>
-             </div>
-           </div>
-        </div>
-      </div>
-      
-      <div class="card">
-        <div class="card-head">
-          <span class="card-title">👥 Étudiants concernés</span>
-        </div>
-        <table>
-          <thead><tr><th>Nom / Email</th><th>Date de souscription</th><th>Statut</th></tr></thead>
-          <tbody id="rn-tbody">
-            <tr class="empty-row"><td colspan="3">Sélectionnez un semestre à gauche pour voir les étudiants visés.</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- ════ COMMENTS ════ -->
-  <div class="page" id="page-comments">
-    <h1 class="ptitle">💬 Commentaires & Modération</h1>
-    <p class="psub">Gérez les questions des étudiants et filtrez les contenus indésirables.</p>
-
-    <div style="display:grid;grid-template-columns:1fr 300px;gap:1.5rem;align-items:start;">
-      <div>
-        <div style="display:flex;gap:1rem;margin-bottom:1.5rem;align-items:center;">
-          <input type="text" id="cmt-search" placeholder="🔍 Rechercher par auteur ou contenu..."
-            oninput="renderCommentsAdmin()"
-            style="background:var(--sur);border:1px solid var(--line);border-radius:9px;padding:.7rem 1rem;font-family:'Outfit',sans-serif;font-size:.87rem;color:var(--txt);outline:none;flex:1;">
-          <button class="btn-ghost" onclick="loadCommentsAdmin()" style="padding:.65rem 1rem;">&#x21bb; Actualiser</button>
-        </div>
-
-        <div class="card">
-          <div class="card-head">
-            <span class="card-title">💬 Flux des commentaires</span>
-            <span id="cmt-admin-count" style="font-size:.8rem;color:var(--mut);font-weight:600;"></span>
-          </div>
-          <table>
-            <thead><tr><th>Auteur</th><th>Cours</th><th>Commentaire</th><th>Score</th><th>Date</th><th>Action</th></tr></thead>
-            <tbody id="comments-admin-tbody"></tbody>
-          </table>
-        </div>
-
-
-      <aside>
-        <div class="form-card" style="position:sticky;top:1rem;">
-          <h3 style="font-size:1.1rem;margin-bottom:.5rem;">🚫 Mots bannis</h3>
-          <p style="font-size:.8rem;color:var(--mut);margin-bottom:1.5rem;">Les commentaires contenant ces mots seront automatiquement masqués et l'étudiant averti.</p>
-          
-          <div style="display:flex;gap:.5rem;margin-bottom:1.5rem;">
-            <input type="text" id="bw-input" placeholder="Ajouter un mot..." style="flex:1;background:var(--sur2);border:1px solid var(--line);border-radius:8px;padding:.6rem;color:white;font-size:.85rem;outline:none;">
-            <button class="btn-red" style="padding:.6rem;" onclick="addBannedWord()">+</button>
-          </div>
-
-          <div id="banned-words-wrap" style="display:flex;flex-wrap:wrap;gap:.5rem;">
-            <!-- Generated via JS -->
-          </div>
-        </div>
-      </aside>
-    </div>
-  </div>
-</div>
-
   <!-- ════ PARAMÈTRES ════ -->
   <div class="page" id="page-parametres">
     <h1 class="ptitle">Paramètres</h1>
@@ -754,167 +577,8 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
       </table>
     </div>
   </div>
+
 </div><!-- /main -->
-
-<!-- MODAL REVENUE / PAYMENTS HISTORY -->
-<div id="revenue-modal" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;padding:1rem;">
-  <div style="background:var(--sur);border:1px solid var(--line);border-radius:20px;padding:2rem;width:100%;max-width:1100px;animation:pop .25s ease;max-height:90vh;display:flex;flex-direction:column;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
-      <div style="font-family:'Instrument Serif',serif;font-size:2.4rem;color:var(--txt);">Répartition et Historique</div>
-      <button onclick="closeRevenueModal()" style="background:none;border:none;color:var(--mut);font-size:1.5rem;cursor:pointer;">✕</button>
-    </div>
-    
-    <div class="stats" style="grid-template-columns:repeat(4,1fr);margin-bottom:1.5rem;">
-        <div class="stat">
-          <div class="stat-icon" style="background:rgba(59,130,246,0.1);border-color:rgba(59,130,246,.25);">💰</div>
-          <div class="stat-val" id="rev-tot" style="color:var(--txt);">0 DH</div>
-          <div class="stat-lbl">Revenus Validés</div>
-        </div>
-        <div class="stat">
-          <div class="stat-val" id="rev-rib" style="font-size:1.5rem;">0 DH</div>
-          <div class="stat-lbl">RIB Banque</div>
-        </div>
-        <div class="stat">
-          <div class="stat-val" id="rev-bill" style="font-size:1.5rem;">0 DH</div>
-          <div class="stat-lbl">Billeterie.ma</div>
-        </div>
-        <div class="stat">
-          <div class="stat-val" id="rev-aut" style="font-size:1.5rem;">0 DH</div>
-          <div class="stat-lbl">Autres</div>
-        </div>
-    </div>
-
-    <!-- Filtres -->
-    <div style="display:flex;gap:15px;margin-bottom:1.5rem;align-items:flex-end;flex-wrap:wrap;">
-      <div class="field" style="margin-bottom:0;flex:1;min-width:150px;">
-        <label>Statut</label>
-        <select id="rev-filter-status" onchange="renderRevenueHistory()">
-          <option value="Actif">Seulement Actifs (Revenu Réel)</option>
-          <option value="En attente">En attente (Prévisionnel)</option>
-          <option value="all">Toutes les transactions</option>
-        </select>
-      </div>
-      <div class="field" style="margin-bottom:0;flex:1;min-width:150px;">
-        <label>Période</label>
-        <select id="rev-filter-period" onchange="renderRevenueHistory()">
-          <option value="month">Ce mois-ci</option>
-          <option value="today">Aujourd'hui</option>
-          <option value="week">Cette semaine</option>
-          <option value="year">Cette année</option>
-          <option value="all">Tout l'historique</option>
-          <option value="custom">Période personnalisée</option>
-        </select>
-      </div>
-      <div class="field" id="rev-date-start-wrap" style="display:none;margin-bottom:0;">
-        <label>Du</label>
-        <input type="date" id="rev-date-start" onchange="renderRevenueHistory()">
-      </div>
-      <div class="field" id="rev-date-end-wrap" style="display:none;margin-bottom:0;">
-        <label>Au</label>
-        <input type="date" id="rev-date-end" onchange="renderRevenueHistory()">
-      </div>
-    </div>
-
-    <div class="card" style="flex:1;overflow-y:auto;margin-bottom:0;">
-      <table>
-        <thead style="position:sticky;top:0;background:var(--sur);z-index:2;">
-          <tr><th>Date / Heure</th><th>Étudiant</th><th>Semestre</th><th>Statut</th><th>Méthode</th><th>Admin</th><th>Reçu</th></tr>
-        </thead>
-        <tbody id="rev-tbody"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL DETAIL ACTIVATION -->
-<div id="act-detail-modal" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;padding:1rem;overflow-y:auto;">
-  <div style="background:var(--sur);border:1px solid var(--line);border-radius:20px;padding:2.5rem;width:100%;max-width:500px;animation:pop .25s ease;">
-    <div style="text-align:center;margin-bottom:2rem;">
-      <div style="width:60px;height:60px;background:var(--grnd);border-radius:100px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;margin:0 auto 1rem;">✅</div>
-      <div style="font-family:'Instrument Serif',serif;font-size:2rem;color:var(--txt);">Détails Activation</div>
-    </div>
-    
-    <div style="background:rgba(255,255,255,.03);border-radius:12px;padding:1.5rem;margin-bottom:2rem;display:flex;flex-direction:column;gap:1.2rem;">
-       <div style="display:flex;justify-content:space-between;"><span style="color:var(--mut2);font-size:.85rem;">Étudiant :</span><span style="font-weight:600;" id="adm-nom">—</span></div>
-       <div style="display:flex;justify-content:space-between;"><span style="color:var(--mut2);font-size:.85rem;">Email :</span><span style="font-weight:600;font-size:.85rem;" id="adm-email">—</span></div>
-       <div style="display:flex;justify-content:space-between;"><span style="color:var(--mut2);font-size:.85rem;">Semestre :</span><span style="font-weight:600;" id="adm-semestre">—</span></div>
-       <div style="display:flex;justify-content:space-between;"><span style="color:var(--mut2);font-size:.85rem;">Méthode :</span><span style="color:var(--redl);font-weight:700;" id="adm-methode">—</span></div>
-       <div style="display:flex;justify-content:space-between;"><span style="color:var(--mut2);font-size:.85rem;">Validé par :</span><span style="font-weight:600;" id="adm-admin">—</span></div>
-       <div style="display:flex;justify-content:space-between;"><span style="color:var(--mut2);font-size:.85rem;">Le :</span><span style="font-weight:600;" id="adm-date">—</span></div>
-       <div style="display:flex;justify-content:space-between;"><span style="color:var(--mut2);font-size:.85rem;">Expire le :</span><span style="font-weight:600;" id="adm-exp">—</span></div>
-       <div style="display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:1rem;"><span style="color:var(--mut2);font-size:.85rem;">Preuve de paiement :</span><div id="adm-recu"></div></div>
-    </div>
-    
-    <button class="btn-ghost" style="width:100%;" onclick="document.getElementById('act-detail-modal').style.display='none'">Fermer</button>
-  </div>
-</div>
-
-<!-- MODAL VALIDATION PAIEMENT -->
-<div id="pay-val-modal" style="position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.9);backdrop-filter:blur(15px);display:none;align-items:center;justify-content:center;padding:1rem;overflow-y:auto;">
-  <div style="background:var(--sur);border:2px solid var(--redb);border-radius:24px;padding:2.5rem;width:100%;max-width:550px;animation:pop .3s ease;">
-    <div style="text-align:center;margin-bottom:1.5rem;">
-      <div style="font-family:'Instrument Serif',serif;font-size:1.8rem;color:var(--txt);">Validation du Paiement</div>
-      <p style="color:var(--mut);font-size:.85rem;margin-top:.4rem;">Veuillez remplir les informations de transaction pour finaliser l'activation.</p>
-    </div>
-
-    <div style="margin-bottom:1.5rem;">
-      <label style="display:block;font-size:.76rem;font-weight:600;color:var(--mut);margin-bottom:.7rem;">Sélections de la Méthode</label>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
-        <button class="pv-method-btn" onclick="pvSelectMethod('Virement RIB', this)">🏦 RIB (Banque)</button>
-        <button class="pv-method-btn" onclick="pvSelectMethod('Billeterie.ma', this)">🎫 Billeterie.ma</button>
-        <button class="pv-method-btn" onclick="pvSelectMethod('WhatsApp Direct', this)">💬 WhatsApp</button>
-        <button class="pv-method-btn" onclick="pvSelectMethod('Autre', this)">🌐 Autre...</button>
-      </div>
-      <input type="text" id="pv-autre-input" placeholder="Précisez la méthode..." style="display:none;margin-top:.75rem;width:100%;padding:.7rem;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:9px;color:white;font-family:'Outfit';">
-    </div>
-
-    <div style="margin-bottom:2rem;">
-      <label style="display:block;font-size:.76rem;font-weight:600;color:var(--mut);margin-bottom:.7rem;">📎 Photocopie / Capture du reçu (Obligatoire)</label>
-      <div id="pv-dropzone" style="border:2px dashed var(--line);border-radius:14px;padding:2rem;text-align:center;cursor:pointer;transition:all .2s;background:rgba(255,255,255,.02);"
-           onover="this.style.borderColor='var(--redb)';this.style.background='var(--redd)';"
-           onleave="this.style.borderColor='var(--line)';this.style.background='transparent';"
-           onclick="document.getElementById('pv-file').click()"
-           ondragover="event.preventDefault();this.style.borderColor='var(--redb)';"
-           ondragleave="this.style.borderColor='var(--line)';"
-           ondrop="pvHandleDrop(event)">
-        <span id="pv-file-label" style="font-size:.85rem;color:var(--mut2);">Glissez-déposez le fichier ici ou <strong>cliquez pour parcourir</strong></span>
-        <input type="file" id="pv-file" style="display:none;" onchange="pvHandleSelect(event)">
-      </div>
-      <div id="pv-uploading" style="display:none;margin-top:.75rem;color:var(--amb);font-size:.8rem;align-items:center;gap:.5rem;">
-         <span class="spin">⏳</span> Upload en cours vers le serveur sécurisé...
-      </div>
-    </div>
-
-    <div style="display:flex;gap:.75rem;">
-      <button class="btn-ghost" style="flex:1;" onclick="closePayValModal()">Annuler</button>
-      <button class="btn-red" id="pv-submit-btn" style="flex:1.5;opacity:.5;pointer-events:none;" onclick="submitPaymentValidation()">✅ Confirmer l'activation</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL HISTORIQUE MODERATION -->
-<div id="moderation-modal" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;padding:1rem;">
-  <div style="background:var(--sur);border:1px solid var(--line);border-radius:20px;padding:2rem;width:100%;max-width:700px;animation:pop .25s ease;max-height:90vh;display:flex;flex-direction:column;">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.5rem;">
-      <div>
-        <div style="font-family:'Instrument Serif',serif;font-size:2rem;color:var(--txt);" id="mod-name">Nom de l'étudiant</div>
-        <div style="font-size:.9rem;color:var(--mut);margin-bottom:.8rem;" id="mod-email">email@etudiant.com</div>
-        <div id="mod-actions" style="display:flex;gap:.5rem;align-items:center;">
-           <!-- Generated via JS -->
-        </div>
-      </div>
-      <button onclick="closeModerationHistory()" style="background:none;border:none;color:var(--mut);font-size:1.5rem;cursor:pointer;">✕</button>
-    </div>
-    
-    <div style="overflow-y:auto;flex:1;padding-right:.5rem;">
-      <h3 style="margin-top:0;margin-bottom:1rem;font-size:1.1rem;">📋 Historique des Sanctions & Suppressions</h3>
-      <div id="mod-history-list" style="display:flex;flex-direction:column;gap:1rem;">
-         <!-- Populated via JS -->
-      </div>
-    </div>
-  </div>
-</div>
-
 <div class="toast" id="toast"></div>
 
 <!-- MODAL ÉTUDIANT DÉTAILLÉ -->
@@ -1002,14 +666,6 @@ var EJS_SVC = 'service_chelsyk';
 var CE = 'neyamcontact' + '@' + 'gmail.com';
 emailjs.init({ publicKey: EJS_KEY });
 
-// ── GLOBAL STATE ──
-var GLOBAL_ABOS = [];
-var _pvMethod = '', _pvFile = null, _pvEmail = '', _pvSem = '', _pvAboId = '';
-var _renewalsUsersList = [];
-var _bannedWords = [];
-var _allComments = [];
-var _moderationHistory = [];
-
 // ══ LOGIN ADMIN ══
 var ADMIN_EMAIL = 'admin@medflix.ma';
 var ADMIN_PASS  = 'admin1234';
@@ -1046,22 +702,20 @@ function confirmAdminLogout() {
 // ══════════════════════════════════
 //  NAV
 // ══════════════════════════════════
-var PAGE_TITLES = { dashboard:'Dashboard', activation:'Activation des comptes', etudiants:'Tous les étudiants', cours:'Upload Cours', tp:'Upload TP / Examens', qcm:'Créateur de QCM', abonnements:'Abonnements', renouvellements:'Renouvellements', parametres:'Param\u00e8tres', backup:'Sauvegarde', comments:'Commentaires' };
+var PAGE_TITLES = { dashboard:'Dashboard', activation:'Activation des comptes', etudiants:'Tous les étudiants', cours:'Upload Cours', tp:'Upload TP / Examens', qcm:'Créateur de QCM', abonnements:'Abonnements', parametres:'Paramètres', backup:'Sauvegarde' };
 
 function nav(name) {
   document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
   document.querySelectorAll('.ni').forEach(function(n){ n.classList.remove('active'); });
-  var pageEl = document.getElementById('page-' + name);
-  var niEl = document.getElementById('ni-' + name);
-  if (pageEl) pageEl.classList.add('active');
-  if (niEl) niEl.classList.add('active');
-  document.getElementById('tb-title').textContent = PAGE_TITLES[name] || name;
+  document.getElementById('page-' + name).classList.add('active');
+  document.getElementById('ni-' + name).classList.add('active');
+  document.getElementById('tb-title').textContent = PAGE_TITLES[name];
   
   if (name === 'cours' || name === 'tp' || name === 'qcm') {
     updateDataLists();
   }
   
-  var renders = { dashboard:refreshDashboard, activation:renderActivation, etudiants:renderAllStudents, cours:renderCours, tp:renderTP, qcm:renderQCMList, abonnements:renderAbonnements, renouvellements:renderRenouvellements, parametres:renderParametres, backup:renderBackup, comments:loadCommentsAdmin };
+  var renders = { dashboard:refreshDashboard, activation:renderActivation, etudiants:renderAllStudents, cours:renderCours, tp:renderTP, qcm:renderQCMList, abonnements:renderAbonnements, parametres:renderParametres, backup:renderBackup };
   if (renders[name]) renders[name]();
 }
 
@@ -1070,13 +724,9 @@ function nav(name) {
 // ══════════════════════════════════
 async function refreshDashboard() {
   var users = await dbGetUsers();
-  document.getElementById('ds-total').textContent = users.length || '—';
-
   var pending = users.filter(function(u){ return !u.activated && !u.resiliated; });
   var active  = users.filter(function(u){ return u.activated; });
-
   var abos = await dbGetAbonnements();
-  GLOBAL_ABOS = abos; // Cache for revenue analytics
   var rev = abos.filter(function(a){ return a.statut === 'Actif'; }).length * 199;
 
   var expiring = active.filter(function(u){
@@ -1084,10 +734,11 @@ async function refreshDashboard() {
     return tr.days <= 30;
   });
 
-  document.getElementById('ds-pending').textContent = pending.length || '—';
-  document.getElementById('ds-active').textContent  = active.length || '—';
+  document.getElementById('ds-total').textContent   = users.length || '—';
+  document.getElementById('ds-pending').textContent  = pending.length || '—';
+  document.getElementById('ds-active').textContent   = active.length || '—';
   document.getElementById('ds-expiring').textContent = expiring.length || '—';
-  document.getElementById('ds-rev').innerHTML = rev ? rev + ' DH <span style="font-size:0.65rem;color:var(--redl);cursor:pointer;text-decoration:underline;margin-left:5px;" onclick="showRevenueSplit()">Détails</span>' : '—';
+  document.getElementById('ds-rev').textContent      = rev ? rev + ' DH' : '—';
 
   var nb = document.getElementById('nb-activation');
   if (pending.length > 0) { nb.textContent = pending.length; nb.style.display = 'inline'; }
@@ -1117,102 +768,6 @@ async function refreshDashboard() {
   }).join('');
 }
 
-async function showRevenueSplit() {
-   document.getElementById('rev-filter-status').value = 'Actif';
-   document.getElementById('rev-filter-period').value = 'month';
-   document.getElementById('rev-date-start').value = '';
-   document.getElementById('rev-date-end').value = '';
-
-   document.getElementById('revenue-modal').style.display = 'flex';
-   renderRevenueHistory();
-}
-
-function closeRevenueModal() {
-   document.getElementById('revenue-modal').style.display = 'none';
-}
-
-function renderRevenueHistory() {
-   var statusFilter = document.getElementById('rev-filter-status').value;
-   var periodFilter = document.getElementById('rev-filter-period').value;
-   
-   var dStartWrap = document.getElementById('rev-date-start-wrap');
-   var dEndWrap = document.getElementById('rev-date-end-wrap');
-   
-   if (periodFilter === 'custom') {
-      dStartWrap.style.display = 'block';
-      dEndWrap.style.display = 'block';
-   } else {
-      dStartWrap.style.display = 'none';
-      dEndWrap.style.display = 'none';
-   }
-
-   var cStart = document.getElementById('rev-date-start').value;
-   var cEnd = document.getElementById('rev-date-end').value;
-
-   var revRib = 0;
-   var revBill = 0;
-   var revAutres = 0;
-
-   var now = new Date();
-   var todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-   var day = now.getDay() || 7; 
-   var weekStart = new Date(todayStart - (day - 1) * 86400000).getTime();
-   var monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-   var yearStart = new Date(now.getFullYear(), 0, 1).getTime();
-
-   var tHtml = '';
-
-   GLOBAL_ABOS.forEach(function(a) {
-       var tDate = new Date(a.created_at);
-       var tTime = tDate.getTime();
-       
-       if (periodFilter === 'today' && tTime < todayStart) return;
-       if (periodFilter === 'week' && tTime < weekStart) return;
-       if (periodFilter === 'month' && tTime < monthStart) return;
-       if (periodFilter === 'year' && tTime < yearStart) return;
-       if (periodFilter === 'custom') {
-          if (cStart && tTime < new Date(cStart).getTime()) return;
-          if (cEnd && tTime > new Date(cEnd).getTime() + 86400000) return;
-       }
-
-       if (statusFilter !== 'all' && a.statut !== statusFilter) return;
-
-       var montant = parseInt(a.montant) || 199;
-       
-       if (a.statut === 'Actif' || a.statut === 'Résilié') {
-           var m = (a.methode || '').toLowerCase();
-           if (m.includes('rib') || m.includes('virement')) revRib += montant;
-           else if (m.includes('billeterie')) revBill += montant;
-           else revAutres += montant;
-       }
-
-       var stColor = a.statut === 'Actif' ? 'var(--grn)' : (a.statut === 'Résilié' ? 'var(--red-l)' : 'var(--amb)');
-       var adminName = a.admin || '';
-       if (!adminName || adminName === 'admin@medflix.ma' || adminName === 'admin') adminName = 'Aymane';
-       if (a.statut === 'En attente') adminName = '—';
-       
-       var recuLink = a.recu ? '<a href="'+a.recu+'" target="_blank" style="color:var(--redl);text-decoration:none;font-weight:600;padding:4px 8px;background:var(--redd);border-radius:6px;display:inline-block;">Voir le reçu</a>' : '<span style="color:var(--mut2);">—</span>';
-
-       tHtml += '<tr style="border-bottom:1px solid var(--line);">' +
-         '<td style="padding:.9rem 1rem;color:var(--mut2);">' + tDate.toLocaleDateString('fr-FR') + ' ' + tDate.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) + '</td>' +
-         '<td style="padding:.9rem 1rem;color:var(--txt);font-weight:500;">' + (a.nom || '') + '<br><span style="font-size:0.8rem;color:var(--mut2);">'+a.email+'</span></td>' +
-         '<td style="padding:.9rem 1rem;color:var(--mut);">' + a.semestre + '</td>' +
-         '<td style="padding:.9rem 1rem;"><span style="color:'+stColor+';background:'+stColor.replace('var(','rgba(').replace(')',',0.1)')+';padding:4px 8px;border-radius:6px;font-size:0.8rem;font-weight:600;">' + a.statut + '</span></td>' +
-         '<td style="padding:.9rem 1rem;color:var(--mut);">' + (a.methode || 'N/A') + '</td>' +
-         '<td style="padding:.9rem 1rem;color:var(--mut);">' + adminName + '</td>' +
-         '<td style="padding:.9rem 1rem;">' + recuLink + '</td>' +
-       '</tr>';
-   });
-
-   document.getElementById('rev-rib').textContent = revRib + ' DH';
-   document.getElementById('rev-bill').textContent = revBill + ' DH';
-   document.getElementById('rev-aut').textContent = revAutres + ' DH';
-   document.getElementById('rev-tot').textContent = (revRib + revBill + revAutres) + ' DH';
-
-   if (!tHtml) tHtml = '<tr><td colspan="7" style="padding:2rem;text-align:center;color:var(--mut2);">Aucune transaction trouvée pour ces filtres.</td></tr>';
-   document.getElementById('rev-tbody').innerHTML = tHtml;
-}
-
 // ══════════════════════════════════
 //  ACTIVATION
 // ══════════════════════════════════
@@ -1226,8 +781,8 @@ async function renderActivation() {
   else nb.style.display = 'none';
 
   var tbody = document.getElementById('activation-tbody');
-  if (!pending.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="6">✅ Aucun compte en attente — tout est à jour !</td></tr>'; }
-  else tbody.innerHTML = pending.map(function(u){
+  if (!pending.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="6">✅ Aucun compte en attente — tout est à jour !</td></tr>'; return; }
+  tbody.innerHTML = pending.map(function(u){
     return '<tr class="row-pending">'
       + '<td style="color:var(--txt);font-weight:600;">' + u.name + '</td>'
       + '<td>' + u.email + '</td><td>' + u.faculte + '</td><td>' + u.semester + '</td><td>' + u.date + '</td>'
@@ -1236,155 +791,23 @@ async function renderActivation() {
       + '<button class="btn-del" onclick="deleteUser(\'' + u.email + '\')">✕</button>'
       + '</td></tr>';
   }).join('');
-
-  // ── Historique des activations (depuis table abonnements) ──
-  var abos = await dbGetAbonnements();
-  var actifs = abos.filter(function(a){ return a.statut === 'Actif'; })
-                   .sort(function(a,b){ return (a.created_at > b.created_at ? -1 : 1); });
-
-  var histo = document.getElementById('act-history-tbody');
-  document.getElementById('act-hist-count').textContent = actifs.length + ' activation(s)';
-
-  if (!actifs.length) {
-    histo.innerHTML = '<tr class="empty-row"><td colspan="6">Aucune activation enregistrée</td></tr>';
-    return;
-  }
-
-  histo.innerHTML = actifs.map(function(a) {
-    var dateStr = a.created_at ? formatDateTime(a.created_at) : '—';
-    var methodeLabel = a.methode || '—';
-    var adminName = a.admin || '—';
-    var recuBtn = a.recu
-      ? '<span style="color:var(--redl);font-size:.75rem;cursor:pointer;text-decoration:underline;" onclick="event.stopPropagation();window.open(\'' + a.recu + '\',\'_blank\')">📎 Voir</span>'
-      : '<span style="color:var(--mut2);font-size:.75rem;">—</span>';
-
-    return '<tr style="cursor:pointer;" onclick="openActDetail(' + JSON.stringify(a).replace(/"/g, '&quot;') + ')" title="Cliquer pour voir les détails">'
-      + '<td style="color:var(--txt);font-weight:500;">' + escAdmin(a.nom) + '<br><span style="font-weight:400;color:var(--mut2);font-size:.72rem;">' + escAdmin(a.email) + '</span></td>'
-      + '<td>' + escAdmin(a.semestre) + '</td>'
-      + '<td>' + escAdmin(methodeLabel) + '</td>'
-      + '<td><span style="background:var(--redd);color:var(--redl);padding:.2rem .5rem;border-radius:4px;font-size:.72rem;font-weight:600;">' + escAdmin(adminName) + '</span></td>'
-      + '<td style="font-size:.8rem;">' + dateStr + '</td>'
-      + '<td>' + recuBtn + '</td>'
-      + '</tr>';
-  }).join('');
-}
-
-function openActDetail(a) {
-  var dateStr = a.created_at ? formatDateTime(a.created_at) : '—';
-  var expStr = a.expiration ? new Date(a.expiration).toLocaleDateString('fr-FR') : '—';
-  var recuHtml = a.recu
-    ? '<a href="' + a.recu + '" target="_blank" style="color:var(--redl);text-decoration:underline;">📎 Ouvrir le reçu</a>'
-    : '<span style="color:var(--mut2);">Aucun reçu</span>';
-
-  var modal = document.getElementById('act-detail-modal');
-  modal.querySelector('#adm-nom').textContent = a.nom;
-  modal.querySelector('#adm-email').textContent = a.email;
-  modal.querySelector('#adm-semestre').textContent = a.semestre || '—';
-  modal.querySelector('#adm-methode').textContent = a.methode || '—';
-  modal.querySelector('#adm-admin').textContent = a.admin || 'Admin';
-  modal.querySelector('#adm-date').textContent = dateStr;
-  modal.querySelector('#adm-exp').textContent = expStr;
-  modal.querySelector('#adm-recu').innerHTML = recuHtml;
-  modal.style.display = 'flex';
-}
-
-// ── PAY VAL MODAL LOGIC ──
-function openPayValModal(email, sem, aboId) {
-  _pvEmail = email; _pvSem = sem; _pvAboId = aboId;
-  _pvMethod = ''; _pvFile = null;
-  
-  document.querySelectorAll('.pv-method-btn').forEach(function(b){ b.classList.remove('active'); });
-  document.getElementById('pv-autre-input').style.display = 'none';
-  document.getElementById('pv-file-label').innerHTML = 'Glissez-déposez le fichier ici ou <strong>cliquez pour parcourir</strong>';
-  document.getElementById('pv-uploading').style.display = 'none';
-  pvUpdateSubmitState();
-  
-  document.getElementById('pay-val-modal').style.display = 'flex';
-}
-
-function closePayValModal() { document.getElementById('pay-val-modal').style.display = 'none'; }
-
-function pvSelectMethod(m, btn) {
-  _pvMethod = m;
-  document.querySelectorAll('.pv-method-btn').forEach(function(b){ b.classList.remove('active'); });
-  btn.classList.add('active');
-  document.getElementById('pv-autre-input').style.display = (m === 'Autre') ? 'block' : 'none';
-  pvUpdateSubmitState();
-}
-
-function pvHandleSelect(e) { _pvFile = e.target.files[0]; pvUpdateFileUI(); }
-function pvHandleDrop(e) { e.preventDefault(); _pvFile = e.dataTransfer.files[0]; pvUpdateFileUI(); }
-
-function pvUpdateFileUI() {
-  if(_pvFile) {
-    document.getElementById('pv-file-label').innerHTML = "📄 <strong>" + _pvFile.name + "</strong> (" + Math.round(_pvFile.size/1024) + " KB)";
-  }
-  pvUpdateSubmitState();
-}
-
-function pvUpdateSubmitState() {
-  var ok = _pvMethod && _pvFile;
-  var btn = document.getElementById('pv-submit-btn');
-  btn.style.opacity = ok ? '1' : '.5';
-  btn.style.pointerEvents = ok ? 'auto' : 'none';
-}
-
-async function uploadReceiptFile(file) {
-  try {
-    var ext = file.name.split('.').pop();
-    var fileName = Date.now() + '_' + Math.random().toString(36).substring(7) + '.' + ext;
-    var { data, error } = await sb.storage.from('receipts').upload(fileName, file);
-    if (error) throw error;
-    var { data: pub } = sb.storage.from('receipts').getPublicUrl(fileName);
-    return pub.publicUrl;
-  } catch(err) {
-    alert("Erreur upload reçu: " + err.message);
-    return null;
-  }
-}
-
-async function submitPaymentValidation() {
-  try {
-    var methode = _pvMethod === 'Autre' ? document.getElementById('pv-autre-input').value : _pvMethod;
-    if (!methode || !_pvFile) return;
-
-    document.getElementById('pv-uploading').style.display = 'flex';
-    document.getElementById('pv-submit-btn').style.pointerEvents = 'none';
-    document.getElementById('pv-submit-btn').textContent = 'Upload en cours...';
-
-    var url = await uploadReceiptFile(_pvFile);
-    if (!url) {
-       document.getElementById('pv-uploading').style.display = 'none';
-       document.getElementById('pv-submit-btn').style.pointerEvents = 'auto';
-       document.getElementById('pv-submit-btn').textContent = "✅ Confirmer l'activation";
-       return;
-    }
-
-    await _doActivateUser(_pvEmail, _pvSem, _pvAboId, url, methode);
-    closePayValModal();
-  } catch(err) {
-    alert("Erreur validation: " + err.message);
-  }
 }
 
 async function activateUser(email, targetSemestre, aboId) {
-  openPayValModal(email, targetSemestre, aboId);
-}
-
-async function _doActivateUser(email, targetSemestre, aboId, receiptUrl, methode) {
   var user = await dbGetUser(email);
   if (!user) { toast('Utilisateur introuvable', 'err'); return; }
 
   var cfg = await dbGetConfig();
   var expDate = calcExpirationFrom(cfg.dureeJours);
+
   var sem = targetSemestre || user.semester;
 
   var paid = user.paid || [];
   if (!paid.includes(sem)) paid.push(sem);
+
+  // Per-semester expiration
   var paidDetails = addSemesterToPaidDetails(user.paidDetails, sem, expDate);
   var latestExp = getLatestExpiration(paidDetails);
-
-  var adminName = (SESS && SESS.name) ? SESS.name : 'Admin';
 
   await dbUpdateUser(email, {
     activated: true, resiliated: false,
@@ -1393,9 +816,11 @@ async function _doActivateUser(email, targetSemestre, aboId, receiptUrl, methode
   });
 
   if (aboId) {
-    await dbUpdateAbonnement(aboId, { statut: 'Actif', expiration: expDate, methode: methode, recu: receiptUrl, admin: adminName });
+    // Si la demande existe déjà dans les abonnements (ex: Ajout semestre), on la modifie
+    await dbUpdateAbonnement(aboId, { statut: 'Actif', expiration: expDate });
   } else {
-    await dbAddAbonnement({ nom:user.name, email:email, semestre:sem, montant:199, methode:methode, statut:'Actif', expiration:expDate, recu: receiptUrl, admin: adminName });
+    // S'il n'y avait pas de ligne ou 1ère activation, on crée la trace
+    await dbAddAbonnement({ nom:user.name, email:email, semestre:sem, montant:199, methode:'Validé admin', statut:'Actif', expiration:expDate });
   }
 
   var expFormatted = new Date(expDate).toLocaleDateString('fr-FR');
@@ -1404,7 +829,7 @@ async function _doActivateUser(email, targetSemestre, aboId, receiptUrl, methode
     'Bonne nouvelle ' + user.name + ' !\n\nTon paiement a été vérifié et ton accès Medflix est maintenant actif.\n\nSemestre débloqué : ' + sem + '\nAccès valable jusqu\'au : ' + expFormatted + ' (' + cfg.dureeJours + ' jours)\n\nConnecte-toi dès maintenant sur medflix.ma !'
   );
 
-  toast('✅ Semestre de ' + user.name + ' activé !');
+  toast('✅ Semestre de ' + user.name + ' activé ! Expire le ' + expFormatted);
   renderActivation();
   refreshDashboard();
 }
@@ -1464,10 +889,7 @@ async function addManual(activate) {
   var sem     = document.getElementById('a-sem').value;
   var fac     = document.getElementById('a-fac').value;
   var methode = document.getElementById('a-methode').value;
-  var recuFile = document.getElementById('a-recu').files[0] || null;
-  
   if (!prenom || !nom || !email || !sem) { toast('Remplissez tous les champs', 'err'); return; }
-  if (activate && !recuFile) { toast('Le reçu est obligatoire pour activer.', 'err'); return; }
 
   var existing = await dbGetUser(email);
   if (existing) { toast('Email déjà existant', 'err'); return; }
@@ -1475,24 +897,16 @@ async function addManual(activate) {
   var tempPass = Math.random().toString(36).slice(-8);
   var cfg = await dbGetConfig();
   var expDate = activate ? calcExpirationFrom(cfg.dureeJours) : null;
-  var adminName = (SESS && SESS.name) ? SESS.name : 'Admin';
-
-  var receiptUrl = null;
-  if (recuFile) {
-    toast('Upload du reçu en cours...', 'ok');
-    receiptUrl = await uploadReceiptFile(recuFile);
-  }
 
   var u = await dbCreateUser({
     name:prenom+' '+nom, email:email, pass:tempPass, faculte:fac, semester:sem,
-    date: new Date().toLocaleDateString('fr-FR'),
-    activated: activate, resiliated: false,
-    expiration: expDate, paid: activate ? [sem] : [],
-    paidDetails: activate ? [{ id: sem+'-manual', sem: sem, start: new Date().toISOString().slice(0,16), exp: expDate, status:'actif' }] : []
+    paid:activate?[sem]:[], activated:activate, resiliated:false, expiration:expDate,
+    activatedDate:activate?new Date().toLocaleDateString('fr-FR'):null,
+    paidDetails:activate?[{sem:sem,exp:expDate}]:[]
   });
 
   if (activate) {
-    await dbAddAbonnement({ nom:u.name, email:email, semestre:sem, montant:199, methode:methode, statut:'Actif', expiration:expDate, recu: receiptUrl, admin: adminName });
+    await dbAddAbonnement({ nom:u.name, email:email, semestre:sem, montant:199, methode:methode, statut:'Actif', expiration:expDate });
   }
 
   sendEmail('etudiant', u.name, email,
@@ -1507,101 +921,6 @@ async function addManual(activate) {
   toast(activate ? '✅ Étudiant ajouté et activé !' : 'Étudiant ajouté, en attente de validation');
   renderActivation();
   refreshDashboard();
-}
-
-// ── RENOUVELLEMENTS ──
-var _renewalsUsersList = [];
-async function loadRenewalsAdmin() {
-   var sem = document.getElementById('rn-semestre').value;
-   if (!sem) {
-      document.getElementById('rn-action-box').style.display = 'none';
-      document.getElementById('rn-tbody').innerHTML = '<tr class="empty-row"><td colspan="3">Sélectionnez un semestre à gauche.</td></tr>';
-      return;
-   }
-   
-   var users = await dbGetUsers();
-   // Filtrer ceux qui ont ce semestre précisément dans leur tableau 'paid'
-   _renewalsUsersList = users.filter(function(u) { return (u.paid || []).includes(sem); });
-   
-   document.getElementById('rn-count').textContent = _renewalsUsersList.length;
-   document.getElementById('rn-action-box').style.display = _renewalsUsersList.length > 0 ? 'block' : 'none';
-   
-   if (_renewalsUsersList.length === 0) {
-      document.getElementById('rn-tbody').innerHTML = '<tr><td colspan="3" style="text-align:center;padding:2rem;">Aucun étudiant trouvé pour ce semestre.</td></tr>';
-      return;
-   }
-   
-   document.getElementById('rn-tbody').innerHTML = _renewalsUsersList.map(function(u) {
-      return '<tr>' +
-         '<td style="padding:.8rem 1rem;"><div style="font-weight:600;color:var(--txt);">'+u.name+'</div><div style="font-size:.76rem;color:var(--mut2);">'+u.email+'</div></td>' +
-         '<td style="padding:.8rem 1rem;color:var(--mut);">'+(u.activatedDate || u.date || '—')+'</td>' +
-         '<td style="padding:.8rem 1rem;"><span class="bg">Souscrit</span></td>' +
-      '</tr>';
-   }).join('');
-}
-
-async function processBulkRenewal() {
-   var sem = document.getElementById('rn-semestre').value;
-   if (!sem || _renewalsUsersList.length === 0) return;
-   
-   if (!confirm('Êtes-vous sûr de vouloir RÉVOQUER l\'abonnement au ' + sem + ' pour ' + _renewalsUsersList.length + ' étudiants et de leur envoyer le mail de fin de saison ?')) return;
-   
-   var btn = document.getElementById('btn-rn-execute');
-   btn.disabled = true;
-   btn.textContent = 'Traitement en cours... Ne fermez pas la page !';
-   
-   var progContainer = document.getElementById('rn-progress-container');
-   var progText = document.getElementById('rn-progress-text');
-   var progBar = document.getElementById('rn-progress-bar');
-   
-   progContainer.style.display = 'block';
-   
-   var total = _renewalsUsersList.length;
-   var done = 0;
-   
-   for (var i = 0; i < total; i++) {
-      var u = _renewalsUsersList[i];
-      
-      // Update DB to revoke access to target sem
-      var newPaid = (u.paid || []).filter(function(s) { return s !== sem; });
-      var newPaidDetails = (u.paidDetails || []).map(function(p) {
-         if (p.sem === sem && getPaidDetailStatus(p) === 'actif') {
-            return Object.assign({}, p, { status: 'resilie', dateResil: getNowLocalISO() });
-         }
-         return p;
-      });
-      
-      await dbUpdateUser(u.email, { paid: newPaid, paidDetails: newPaidDetails });
-      
-      // Email Notification
-      var mailBody = "Bonjour " + u.name + ",\n\nVotre abonnement au " + sem + " vient de prendre fin en ce début de saison. Le nouveau semestre est d'ores et déjà disponible sur la plateforme Medflix, n'hésitez pas à activer votre nouvel accès depuis votre espace étudiant !\n\nL'Équipe Medflix.";
-      try {
-         await sendEmail('etudiant', u.name, u.email, 'Votre semestre est terminé — Préparez-vous pour la suite !', mailBody);
-      } catch(e) { console.error('Mail error', e); }
-      
-      done++;
-      progText.textContent = done + ' / ' + total;
-      progBar.style.width = ((done / total) * 100) + '%';
-      
-      await new Promise(function(resolve) { setTimeout(resolve, 800); });
-   }
-   
-   btn.style.background = 'var(--grn)';
-   btn.textContent = '✅ Opération Terminée';
-   alert('Traitement terminé pour ' + done + ' étudiants !');
-   loadRenewalsAdmin();
-}
-
-function getPaidDetailStatus(p) {
-  if (p.status === 'resilie' || p.status === 'expire') return p.status;
-  if (!p.exp) return 'actif';
-  return (new Date(p.exp) > new Date()) ? 'actif' : 'expire';
-}
-
-function getNowLocalISO() {
-  var d = new Date();
-  var offset = d.getTimezoneOffset() * 60000;
-  return (new Date(d - offset)).toISOString().slice(0, 16);
 }
 
 function formatDateTime(iso) {
@@ -1842,10 +1161,9 @@ async function saveCours(mode) {
   var annee  = document.getElementById('c-annee').value.trim();
   var titre  = document.getElementById('c-titre').value.trim();
   var link   = document.getElementById('c-link').value.trim();
-  var pdf_link = document.getElementById('c-pdf-link').value.trim();
   if (!sem || !module || !titre) { toast('Semestre, Module et Titre obligatoires', 'err'); return; }
 
-  var payload = { titre:titre, semestre:sem, module:module, sous_module:sous_module, annee:annee, lien:link, pdf_link:pdf_link, desc:document.getElementById('c-desc').value.trim(), statut:mode==='publier'?'Publié':'Brouillon' };
+  var payload = { titre:titre, semestre:sem, module:module, sous_module:sous_module, annee:annee, lien:link, desc:document.getElementById('c-desc').value.trim(), statut:mode==='publier'?'Publié':'Brouillon' };
   
   if (editingIds.cours) {
     await dbUpdateCours(editingIds.cours, payload);
@@ -1857,7 +1175,7 @@ async function saveCours(mode) {
     await dbAddCours(payload);
   }
 
-  ['c-sem','c-module','c-sous-module','c-annee','c-titre','c-link','c-pdf-link', 'c-desc'].forEach(function(id){ var el=document.getElementById(id); if(el.tagName==='SELECT')el.selectedIndex=0; else el.value=''; });
+  ['c-sem','c-module','c-sous-module','c-annee','c-titre','c-link','c-desc'].forEach(function(id){ var el=document.getElementById(id); if(el.tagName==='SELECT')el.selectedIndex=0; else el.value=''; });
   renderCours();
   updateDataLists();
   toast(mode==='publier' ? '✓ Cours "' + titre + '" enregistré !' : '💾 Brouillon sauvegardé');
@@ -1893,8 +1211,6 @@ async function saveTP(mode) {
   }
 
   ['tp-sem','tp-type','tp-module','tp-sous-module','tp-annee','tp-titre','tp-link'].forEach(function(id){ var el=document.getElementById(id); if(el.tagName==='SELECT')el.selectedIndex=0; else el.value=''; });
-  document.getElementById('tp-dropzone-label').style.display = 'block';
-  document.getElementById('tp-dropzone-progress').style.display = 'none';
   renderTP();
   updateDataLists();
   toast(mode==='publier' ? '✓ Document publié !' : '💾 Brouillon sauvegardé');
@@ -2087,7 +1403,6 @@ var _smUser = null;
 
 var _smActiveAbosCache = [];
 var _smPendingAbosCache = [];
-var _smAllAbosCache = [];
 
 async function openStudentModal(email) {
   _smEmail = email;
@@ -2097,9 +1412,8 @@ async function openStudentModal(email) {
 
   // Fetch abonnements to display or synchronize
   var abos = await dbGetAbonnements();
-  _smAllAbosCache = abos.filter(function(a){ return a.email === email; });
-  _smPendingAbosCache = _smAllAbosCache.filter(function(a){ return a.statut === 'En attente'; });
-  _smActiveAbosCache = _smAllAbosCache.filter(function(a){ return a.statut === 'Actif'; });
+  _smPendingAbosCache = abos.filter(function(a){ return a.email === email && a.statut === 'En attente'; });
+  _smActiveAbosCache = abos.filter(function(a){ return a.email === email && a.statut === 'Actif'; });
   
   // AUTO-SYNC FIX for Race Conditions & Missing Resiliations
   var historicAbos = abos.filter(function(a){ return a.email === email && a.statut !== 'En attente'; });
@@ -2464,101 +1778,6 @@ function toast(msg, type) {
 //  INIT
 // ══════════════════════════════════
 refreshDashboard();
-
-// ══════════════════════════════════
-//  COMMENTS ADMIN
-// ══════════════════════════════════
-var _allComments = [];
-
-async function loadCommentsAdmin() {
-  var tbody = document.getElementById('comments-admin-tbody');
-  tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Chargement...</td></tr>';
-  _allComments = await dbGetAllComments();
-
-  // Populate course filter
-  var courses = {};
-  _allComments.forEach(function(c) { if (c.course_title) courses[c.course_title] = true; });
-  var sel = document.getElementById('cmt-filter-course');
-  var curr = sel.value;
-  sel.innerHTML = '<option value="">Tous les cours</option>';
-  Object.keys(courses).sort().forEach(function(t) {
-    var opt = document.createElement('option');
-    opt.value = t; opt.textContent = t;
-    if (t === curr) opt.selected = true;
-    sel.appendChild(opt);
-  });
-
-  // Badge count
-  var nb = document.getElementById('nb-comments');
-  if (_allComments.length > 0) {
-    nb.textContent = _allComments.length;
-    nb.style.display = 'inline';
-  } else { nb.style.display = 'none'; }
-
-  renderCommentsAdmin();
-}
-
-function renderCommentsAdmin() {
-  var tbody  = document.getElementById('comments-admin-tbody');
-  var search = (document.getElementById('cmt-search') || {}).value || '';
-  var fCourse= (document.getElementById('cmt-filter-course') || {}).value || '';
-  var fType  = (document.getElementById('cmt-filter-type') || {}).value || '';
-  var q      = search.toLowerCase();
-
-  var filtered = _allComments.filter(function(c) {
-    if (fCourse && c.course_title !== fCourse) return false;
-    if (fType === 'root'  && c.parent_id)  return false;
-    if (fType === 'reply' && !c.parent_id) return false;
-    if (q && !c.author.toLowerCase().includes(q) && !c.content.toLowerCase().includes(q)) return false;
-    return true;
-  });
-
-  document.getElementById('cmt-admin-count').textContent = filtered.length + ' commentaire(s)';
-
-  if (!filtered.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Aucun commentaire trouvé</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = filtered.map(function(c) {
-    var score   = (c.upvotes||0) - (c.downvotes||0);
-    var scoreHtml = '<span class="' + (score > 0 ? 'bg' : score < 0 ? 'br' : 'ba') + '">' +
-      (score > 0 ? '&#9650; ' : score < 0 ? '&#9660; ' : '') + score + '</span>';
-    var typeHtml = c.parent_id
-      ? '<span class="ba" style="font-size:.65rem;">Réponse</span>'
-      : '<span class="bg" style="font-size:.65rem;">Commentaire</span>';
-    var date = c.created_at ? new Date(c.created_at).toLocaleDateString('fr-FR') + ' ' +
-      new Date(c.created_at).toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'}) : '—';
-    var preview = (c.content || '').length > 90 ? c.content.substring(0,90) + '…' : c.content;
-    return '<tr>' +
-      '<td style="color:var(--txt);font-weight:600;min-width:130px;">' + escAdmin(c.author) + '<br>' +
-        '<span style="font-size:.72rem;color:var(--mut2);font-weight:400;">' + escAdmin(c.email) + '</span></td>' +
-      '<td style="max-width:160px;font-size:.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + escAdmin(c.course_title||'') + '">' +
-        escAdmin(c.course_title || '—') + '</td>' +
-      '<td style="max-width:300px;font-size:.83rem;">' + typeHtml + ' ' + escAdmin(preview) + '</td>' +
-      '<td style="text-align:center;">' + scoreHtml + '</td>' +
-      '<td style="font-size:.78rem;white-space:nowrap;">' + date + '</td>' +
-      '<td><button class="btn-del" onclick="adminDeleteComment(\'' + c.id + '\')">✕ Supprimer</button></td>' +
-    '</tr>';
-  }).join('');
-}
-
-function escAdmin(str) {
-  if (!str) return '';
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-async function adminDeleteComment(id) {
-  if (!confirm('Supprimer ce commentaire et toutes ses réponses ?')) return;
-  await dbDeleteComment(id);
-  _allComments = _allComments.filter(function(c){ return c.id !== id && c.parent_id !== id; });
-  // update badge
-  var nb = document.getElementById('nb-comments');
-  if (_allComments.length > 0) { nb.textContent = _allComments.length; nb.style.display = 'inline'; }
-  else { nb.style.display = 'none'; }
-  renderCommentsAdmin();
-  toast('Commentaire supprimé', 'ok');
-}
 
 </script>
 </body>

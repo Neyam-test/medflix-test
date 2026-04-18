@@ -657,7 +657,7 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
             <tbody id="comments-admin-tbody"></tbody>
           </table>
         </div>
-
+      </div>
 
       <aside>
         <div class="form-card" style="position:sticky;top:1rem;">
@@ -676,7 +676,7 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
       </aside>
     </div>
   </div>
-</div>
+</div><!-- /main -->
 
   <!-- ════ PARAMÈTRES ════ -->
   <div class="page" id="page-parametres">
@@ -753,7 +753,21 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
         <tbody id="backup-history"></tbody>
       </table>
     </div>
+    </div>
   </div>
+
+  <!-- ════ COMMENTS ════ -->
+  <div class="page" id="page-comments">
+    <h1 class="ptitle">💬 Commentaires</h1>
+    <p class="psub">Modération des commentaires étudiants par cours</p>
+
+    <div style="display:flex;gap:1rem;margin-bottom:1.5rem;align-items:center;flex-wrap:wrap;">
+      <input type="text" id="cmt-search" placeholder="🔍 Rechercher par auteur ou contenu..."
+        oninput="renderCommentsAdmin()"
+        style="background:var(--sur);border:1px solid var(--line);border-radius:9px;padding:.7rem 1rem;font-family:'Outfit',sans-serif;font-size:.87rem;color:var(--txt);outline:none;flex:1;max-width:400px;">
+      <select id="cmt-filter-course" onchange="renderCommentsAdmin()"
+        style="background:var(--sur);border:1px solid var(--line);border-radius:9px;padding:.7rem 1rem;font-family:'Outfit',sans-serif;font-size:.87rem;color:var(--txt);outline:none;">
+        <option value="">Tous les cours</option>
 </div><!-- /main -->
 
 <!-- MODAL REVENUE / PAYMENTS HISTORY -->

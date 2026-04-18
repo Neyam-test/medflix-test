@@ -1,0 +1,53 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="medflix-db.js"></script>
+</head>
+<body>
+    <div id="out" style="white-space:pre-wrap; font-family:monospace; background:#111; color:#eee; padding:1rem;">Chargement...</div>
+    <script>
+    async function run() {
+        const out = document.getElementById('out');
+        const email = 'neyamcontact@gmail.com';
+        let report = "";
+
+        try {
+            // 1. User Profile
+            const { data: profile } = await sb.from('profiles').select('*').eq('email', email).single();
+            report += "--- PROFILE: " + email + " ---\n" + JSON.stringify(profile, null, 2) + "\n\n";
+
+            // 2. Abonnements
+            const { data: abos } = await sb.from('abonnements').select('*').eq('email', email);
+            report += "--- ABONNEMENTS: " + email + " ---\n" + JSON.stringify(abos, null, 2) + "\n\n";
+
+            // 3. Counts
+            const { count: users } = await sb.from('profiles').select('*', { count: 'exact', head: true });
+            const { count: cmts } = await sb.from('comments').select('*', { count: 'exact', head: true });
+            const { count: cours } = await sb.from('courses').select('*', { count: 'exact', head: true });
+            const { count: tp } = await sb.from('tp_examens').select('*', { count: 'exact', head: true });
+            
+            report += "--- COUNTS ---\n";
+            report += "Users: " + users + "\n";
+            report += "Comments: " + cmts + "\n";
+            report += "Courses: " + cours + "\n";
+            report += "TP: " + tp + "\n\n";
+
+            // 4. Banned Words
+            const bw = await dbGetBannedWords();
+            report += "--- BANNED WORDS ---\n" + JSON.stringify(bw) + "\n\n";
+
+            // 5. Recent Comments (for moderation check)
+            const { data: recentCmts } = await sb.from('comments').select('*').limit(5).order('created_at', {ascending:false});
+            report += "--- RECENT COMMENTS ---\n" + JSON.stringify(recentCmts, null, 2) + "\n";
+
+            out.textContent = report;
+        } catch(e) {
+            out.textContent = "Erreur: " + e.message;
+        }
+    }
+    run();
+    </script>
+</body>
+</html>
