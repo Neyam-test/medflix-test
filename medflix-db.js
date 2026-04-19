@@ -374,6 +374,20 @@ async function dbUpdateAbonnement(id, updates) {
   if (error) console.error('dbUpdateAbonnement:', error);
 }
 
+async function dbDeleteAbonnement(id) {
+  var { error } = await sb.from('abonnements').delete().eq('id', id);
+  if (error) console.error('dbDeleteAbonnement:', error);
+}
+
+// Supprime toutes les demandes "En attente" pour un email+semestre
+async function dbDeletePendingAbonnements(email, semestre) {
+  var { error } = await sb.from('abonnements').delete()
+    .eq('email', email)
+    .eq('semestre', semestre)
+    .eq('statut', 'En attente');
+  if (error) console.error('dbDeletePendingAbonnements:', error);
+}
+
 async function dbSyncAbonnementsStatus(email, semestre, statut, exp) {
   var updates = { statut: statut };
   if (exp !== undefined) updates.expiration = exp;
@@ -384,32 +398,58 @@ async function dbSyncAbonnementsStatus(email, semestre, statut, exp) {
 // ══════════════════════════════════
 //  CONFIG
 // ══════════════════════════════════
+// Configuration de la durée par défaut re-créée proprement
 async function dbGetConfig() {
-  var { data, error } = await sb.from('config').select('*').eq('key', 'duree_jours').single();
-  if (error || !data) return { dureeJours: 180 };
-  return { dureeJours: parseInt(data.value) || 180 };
+  try {
+    var { data, error } = await sb.from('config').select('*').eq('key', 'duree_jours');
+    if (!error && data && data.length > 0) {
+      var d = parseInt(data[0].value);
+      if (!isNaN(d)) {
+        try { localStorage.setItem('cfg_duree', d); } catch(e){}
+        return { dureeJours: d };
+      }
+    }
+  } catch(e) {
+    console.warn("DB config fetch failed, using fallback", e);
+  }
+  var fallback = 180;
+  try {
+    var loc = localStorage.getItem('cfg_duree');
+    if (loc && !isNaN(parseInt(loc))) fallback = parseInt(loc);
+  } catch(e) {}
+  return { dureeJours: fallback };
 }
 
 async function dbSetConfig(dureeJours) {
-  var { error } = await sb.from('config').update({ value: JSON.stringify(dureeJours) }).eq('key', 'duree_jours');
-  if (error) {
-    console.error('dbSetConfig Update error:', error);
-    await sb.from('config').upsert({ key: 'duree_jours', value: JSON.stringify(dureeJours) }, { onConflict: 'key' });
-  }
+  try { localStorage.setItem('cfg_duree', dureeJours); } catch(e){}
+  try {
+    var { error } = await sb.from('config').upsert({ key: 'duree_jours', value: JSON.stringify(dureeJours) }, { onConflict: 'key' });
+    if (error) console.error("Error saving config:", error);
+  } catch(e) {}
 }
 
 async function dbGetBannedWords() {
-  var { data, error } = await sb.from('config').select('*').eq('key', 'banned_words').single();
-  if (error || !data) return [];
-  try { return JSON.parse(data.value) || []; } catch(e) { return []; }
+  try {
+    var { data, error } = await sb.from('config').select('*').eq('key', 'banned_words');
+    if (!error && data && data.length > 0) {
+      try {
+        var arr = JSON.parse(data[0].value);
+        localStorage.setItem('cfg_banned', JSON.stringify(arr));
+        return arr || [];
+      } catch(e){}
+    } else if (error) {
+      console.warn("DB Get Banned Words Error:", error);
+    }
+  } catch(e) {}
+  try { return JSON.parse(localStorage.getItem('cfg_banned')) || []; } catch(e) { return []; }
 }
 
 async function dbSetBannedWords(words) {
-  var { error } = await sb.from('config').update({ value: JSON.stringify(words) }).eq('key', 'banned_words');
-  if (error) {
-    console.error('dbSetBannedWords Update error:', error);
-    await sb.from('config').upsert({ key: 'banned_words', value: JSON.stringify(words) }, { onConflict: 'key' });
-  }
+  localStorage.setItem('cfg_banned', JSON.stringify(words));
+  try {
+    var { error } = await sb.from('config').upsert({ key: 'banned_words', value: JSON.stringify(words) }, { onConflict: 'key' });
+    if (error) console.error('dbSetBannedWords:', error);
+  } catch(e) {}
 }
 
 // ══════════════════════════════════

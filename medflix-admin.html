@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="medflix-db.js"></script>
+<script src="medflix-db.js?v=2"></script><script>console.log("HELLO VERSION 1000!");</script>
 <style>
 :root{
   --bg:#07070f; --sur:#0e0e1a; --sur2:#131320;
@@ -685,17 +685,19 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
 
     <div class="form-card">
       <h3>⏱️ Durée d'abonnement par défaut</h3>
-      <p style="font-size:.84rem;color:var(--mut);margin-bottom:1.5rem;">Définis la durée appliquée automatiquement à chaque nouvelle activation. Tu peux ensuite ajuster au cas par cas dans la page "Tous les étudiants".</p>
+      <p style="font-size:.84rem;color:var(--mut);margin-bottom:1.5rem;">Définis la durée appliquée automatiquement à chaque nouvelle activation. La valeur par défaut est de 180 jours.</p>
+      
       <div class="fr2">
         <div class="field">
           <label>Durée (en jours)</label>
-          <input type="number" id="cfg-duree" min="1" max="730" placeholder="180">
+          <input type="number" id="cfg-duree" min="1" max="730" placeholder="Ex: 180"><script>(function(){ var v=parseInt(localStorage.getItem('cfg_duree')); if(v&&!isNaN(v)) document.getElementById('cfg-duree').value=v; })();</script>
         </div>
         <div class="field">
           <label>Équivalent</label>
           <input type="text" id="cfg-equiv" readonly style="opacity:.6;cursor:default;" value="—">
         </div>
       </div>
+      
       <div style="display:flex;gap:.75rem;margin-top:1rem;">
         <button class="btn-ghost" onclick="setCfgDuree(30)">1 mois</button>
         <button class="btn-ghost" onclick="setCfgDuree(90)">3 mois</button>
@@ -703,16 +705,21 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
         <button class="btn-ghost" onclick="setCfgDuree(180)">6 mois</button>
         <button class="btn-ghost" onclick="setCfgDuree(365)">1 an</button>
       </div>
+      
       <div class="form-actions" style="margin-top:1.5rem;">
         <button class="btn-red" onclick="saveParametres()">💾 Sauvegarder</button>
       </div>
     </div>
 
+    <!-- NATIVE HTMl Table -->
     <div class="card" style="margin-top:1.5rem;">
       <div class="card-head"><span class="card-title">Résumé actuel</span></div>
       <table>
-        <thead><tr><th>Paramètre</th><th>Valeur</th></tr></thead>
-        <tbody id="cfg-summary"></tbody>
+        <thead><tr><th>Paramètre</th><th>Valeur Appliquée</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--txt);font-weight:600;">Durée par défaut</td><td id="td-duree-val"><script>document.write((parseInt(localStorage.getItem('cfg_duree'))||180)+' jours');</script></td></tr>
+          <tr><td style="color:var(--txt);font-weight:600;">Application</td><td>Activations compte / abonnements</td></tr>
+        </tbody>
       </table>
     </div>
   </div>
@@ -1031,6 +1038,9 @@ var SESS = JSON.parse(localStorage.getItem('medflix_session') || 'null');
 if (SESS && SESS.role === 'admin' && SESS.email === ADMIN_EMAIL) {
   document.addEventListener('DOMContentLoaded', function(){
     document.getElementById('admin-login-screen').style.display = 'none';
+    // Revenir à la dernière page visitée
+    var lastPage = localStorage.getItem('medflix_admin_lastpage') || 'dashboard';
+    nav(lastPage);
   });
 }
 
@@ -1049,6 +1059,7 @@ function confirmAdminLogout() {
 var PAGE_TITLES = { dashboard:'Dashboard', activation:'Activation des comptes', etudiants:'Tous les étudiants', cours:'Upload Cours', tp:'Upload TP / Examens', qcm:'Créateur de QCM', abonnements:'Abonnements', renouvellements:'Renouvellements', parametres:'Param\u00e8tres', backup:'Sauvegarde', comments:'Commentaires' };
 
 function nav(name) {
+  localStorage.setItem('medflix_admin_lastpage', name);
   document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
   document.querySelectorAll('.ni').forEach(function(n){ n.classList.remove('active'); });
   var pageEl = document.getElementById('page-' + name);
@@ -1405,8 +1416,17 @@ async function _doActivateUser(email, targetSemestre, aboId, receiptUrl, methode
   );
 
   toast('✅ Semestre de ' + user.name + ' activé !');
+  
+  // Supprimer les demandes "En attente" dupliquées pour ce semestre
+  await dbDeletePendingAbonnements(email, sem);
+  
   renderActivation();
   refreshDashboard();
+  
+  // Rafraîchir le modal étudiant s'il est ouvert
+  if (_smEmail === email) {
+    await openStudentModal(email);
+  }
 }
 
 async function deleteUser(email) {
@@ -2047,37 +2067,75 @@ async function activateSemester(aboId, email, semestre) {
 }
 
 // ══════════════════════════════════
-//  PARAMÈTRES
+//  PARAMÈTRES (Re-conçu pour être 100% natif et sûr)
 // ══════════════════════════════════
 function setCfgDuree(days) {
-  document.getElementById('cfg-duree').value = days;
-  updateCfgEquiv(days);
+  var el = document.getElementById('cfg-duree');
+  if(el) { el.value = days; updateCfgEquiv(days); }
 }
+
 function updateCfgEquiv(days) {
   var el = document.getElementById('cfg-equiv');
+  if(!el) return;
   if (!days || days <= 0) { el.value = '—'; return; }
   if (days < 30) el.value = days + ' jour' + (days>1?'s':'');
   else if (days < 365) el.value = Math.round(days/30*10)/10 + ' mois (~' + days + 'j)';
   else el.value = Math.round(days/365*10)/10 + ' an(s) (~' + days + 'j)';
 }
-async function renderParametres() {
-  var cfg = await dbGetConfig();
-  document.getElementById('cfg-duree').value = cfg.dureeJours;
-  updateCfgEquiv(cfg.dureeJours);
-  var tbody = document.getElementById('cfg-summary');
-  tbody.innerHTML =
-    '<tr><td style="color:var(--txt);font-weight:600;">Durée par défaut</td><td>' + cfg.dureeJours + ' jours</td></tr>'
-    + '<tr><td style="color:var(--txt);font-weight:600;">Applicable aux</td><td>Nouvelles activations</td></tr>'
-    + '<tr><td style="color:var(--txt);font-weight:600;">Modification manuelle</td><td>Disponible dans "Tous les étudiants" → bouton 📅</td></tr>';
+
+function renderParametres() {
+  var tdVal = document.getElementById('td-duree-val');
+  var dEl   = document.getElementById('cfg-duree');
+
+  // ── 1. Affichage IMMÉDIAT depuis localStorage (synchrone, jamais vide) ──
+  var instant = parseInt(localStorage.getItem('cfg_duree')) || 180;
+  if (dEl) dEl.value = instant;
+  updateCfgEquiv(instant);
+  if (tdVal) tdVal.textContent = instant + ' jours';
+
+  // ── 2. Sync silencieuse avec Supabase en arrière-plan ──
+  if (typeof dbGetConfig === 'function') {
+    dbGetConfig().then(function(cfg) {
+      if (!cfg || !cfg.dureeJours) return;
+      var db = cfg.dureeJours;
+      if (db !== instant) {
+        if (dEl && document.activeElement !== dEl) dEl.value = db;
+        updateCfgEquiv(db);
+        if (tdVal) tdVal.textContent = db + ' jours';
+      }
+    }).catch(function(){});
+  }
 }
+
 async function saveParametres() {
-  var days = parseInt(document.getElementById('cfg-duree').value);
+  var dEl = document.getElementById('cfg-duree');
+  if(!dEl) return;
+  var days = parseInt(dEl.value);
   if (!days || days < 1) { toast('Durée invalide', 'err'); return; }
-  await dbSetConfig(days);
-  renderParametres();
-  toast('✅ Durée par défaut : ' + days + ' jours');
+  
+  // ── 1. Persister en localStorage IMMÉDIATEMENT ──
+  localStorage.setItem('cfg_duree', days);
+  
+  // ── 2. Mise à jour UI instantanée ──
+  var tdVal = document.getElementById('td-duree-val');
+  if (tdVal) tdVal.textContent = days + ' jours';
+  updateCfgEquiv(days);
+  
+  // ── 3. Sauvegarder en DB en arrière-plan ──
+  if (typeof dbSetConfig === 'function') {
+    dbSetConfig(days).then(function() {
+      toast('✅ Durée par défaut : ' + days + ' jours', 'succ');
+    }).catch(function(e) {
+      toast('✅ Durée sauvegardée localement (' + days + 'j)', 'succ');
+    });
+  } else {
+    toast('✅ Durée par défaut : ' + days + ' jours', 'succ');
+  }
 }
-document.getElementById('cfg-duree').addEventListener('input', function(){ updateCfgEquiv(parseInt(this.value)||0); });
+
+// Attach listener
+var dInp = document.getElementById('cfg-duree');
+if(dInp) { dInp.addEventListener('input', function(){ updateCfgEquiv(parseInt(this.value)||0); }); }
 
 // ══════════════════════════════════
 //  MODAL ÉTUDIANT & CALENDRIER
@@ -2241,9 +2299,8 @@ function renderStudentModal() {
 function closeStudentModal() { document.getElementById('student-modal').style.display = 'none'; _smEmail = ''; _smUser = null; renderAllStudents(); refreshDashboard(); }
 
 async function smActivateAdditional(email, semestre, aboId) {
-   // Validate the addition right from the modal
+   // _doActivateUser rafraîchit le modal automatiquement
    await activateUser(email, semestre, aboId);
-   openStudentModal(email);
 }
 
 async function smActivatePending(email) {
@@ -2563,3 +2620,4 @@ async function adminDeleteComment(id) {
 </script>
 </body>
 </html>
+
