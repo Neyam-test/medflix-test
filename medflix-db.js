@@ -385,36 +385,30 @@ async function dbSyncAbonnementsStatus(email, semestre, statut, exp) {
 //  CONFIG
 // ══════════════════════════════════
 async function dbGetConfig() {
-  var { data, error } = await sb.from('config').select('*').eq('key', 'duree_jours').limit(1);
-  if (error || !data || data.length === 0) return { dureeJours: 180 };
-  return { dureeJours: parseInt(data[0].value) || 180 };
+  var { data, error } = await sb.from('config').select('*').eq('key', 'duree_jours').single();
+  if (error || !data) return { dureeJours: 180 };
+  return { dureeJours: parseInt(data.value) || 180 };
 }
 
 async function dbSetConfig(dureeJours) {
-  var { data } = await sb.from('config').select('id').eq('key', 'duree_jours');
-  if (data && data.length > 0) {
-    await sb.from('config').update({ value: JSON.stringify(dureeJours) }).eq('id', data[0].id);
-    for (var i = 1; i < data.length; i++) await sb.from('config').delete().eq('id', data[i].id);
-  } else {
-    var { error } = await sb.from('config').insert({ key: 'duree_jours', value: JSON.stringify(dureeJours) });
-    if (error) console.error('dbSetConfig:', error);
+  var { error } = await sb.from('config').update({ value: JSON.stringify(dureeJours) }).eq('key', 'duree_jours');
+  if (error) {
+    console.error('dbSetConfig Update error:', error);
+    await sb.from('config').upsert({ key: 'duree_jours', value: JSON.stringify(dureeJours) }, { onConflict: 'key' });
   }
 }
 
 async function dbGetBannedWords() {
-  var { data, error } = await sb.from('config').select('*').eq('key', 'banned_words').limit(1);
-  if (error || !data || data.length === 0) return [];
-  try { return JSON.parse(data[0].value) || []; } catch(e) { return []; }
+  var { data, error } = await sb.from('config').select('*').eq('key', 'banned_words').single();
+  if (error || !data) return [];
+  try { return JSON.parse(data.value) || []; } catch(e) { return []; }
 }
 
 async function dbSetBannedWords(words) {
-  var { data } = await sb.from('config').select('id').eq('key', 'banned_words');
-  if (data && data.length > 0) {
-    await sb.from('config').update({ value: JSON.stringify(words) }).eq('id', data[0].id);
-    for (var i = 1; i < data.length; i++) await sb.from('config').delete().eq('id', data[i].id);
-  } else {
-    var { error } = await sb.from('config').insert({ key: 'banned_words', value: JSON.stringify(words) });
-    if (error) console.error('dbSetBannedWords:', error);
+  var { error } = await sb.from('config').update({ value: JSON.stringify(words) }).eq('key', 'banned_words');
+  if (error) {
+    console.error('dbSetBannedWords Update error:', error);
+    await sb.from('config').upsert({ key: 'banned_words', value: JSON.stringify(words) }, { onConflict: 'key' });
   }
 }
 
