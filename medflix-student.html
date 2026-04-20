@@ -2957,6 +2957,39 @@
         montant: 199, methode: 'En attente de paiement', statut: 'En attente'
       });
 
+      // ── Email de confirmation à l'étudiant ──
+      sendEmail(
+        'etudiant',
+        SESSION.name,
+        SESSION.email,
+        '📬 Demande d\'abonnement reçue — ' + sem,
+        'Bonjour ' + SESSION.name + ' !\n\n'
+        + 'Ta demande d\'abonnement pour le ' + sem + ' a bien été enregistrée.\n\n'
+        + '✅ Prochaines étapes :\n'
+        + '1. Effectue le virement de 199 DH sur le RIB fourni.\n'
+        + '2. Envoie ton reçu par WhatsApp.\n'
+        + '3. Ton accès sera activé sous 24h (48h ouvrables pour certaines banques).\n\n'
+        + 'Si tu as la moindre question, n\'hésite pas à nous contacter.\n\n'
+        + 'L\'équipe Medflix'
+      );
+
+      // ── Email de notification à l'admin ──
+      try {
+        var CE = 'neyamcontact@gmail.com';
+        sendEmail(
+          'admin',
+          'Admin Medflix',
+          CE,
+          '🔔 Nouvelle demande d\'abonnement — ' + sem,
+          'Nouvelle demande d\'abonnement reçue :\n\n'
+          + '👤 Étudiant : ' + SESSION.name + '\n'
+          + '📧 Email : ' + SESSION.email + '\n'
+          + '📚 Semestre : ' + sem + '\n'
+          + '💳 Montant : 199 DH\n\n'
+          + 'Connecte-toi au panneau admin pour valider le paiement et activer l\'accès.'
+        );
+      } catch(e) {}
+
       closeNewSemModal();
       document.getElementById('success-sem-modal').style.display = 'flex';
     }

@@ -281,7 +281,10 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
   <!-- ════ ACTIVATION ════ -->
   <div class="page" id="page-activation">
     <h1 class="ptitle">Activation des comptes</h1>
-    <p class="psub">Vérifie les paiements reçus et active les comptes étudiants.</p>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+      <p class="psub" style="margin:0;">Vérifie les paiements reçus et active les comptes étudiants.</p>
+      <button class="btn-ghost" onclick="renderActivation()" style="font-size:.8rem;padding:.4rem .8rem;background:rgba(255,255,255,0.05);">🔄 Actualiser la liste</button>
+    </div>
 
     <div class="info-box">
       💬 Les étudiants envoient leur reçu de paiement par WhatsApp au <strong>+212 6 67 34 44 96</strong>. Une fois le paiement vérifié, active leur compte ici.
@@ -295,6 +298,18 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
       <table>
         <thead><tr><th>Nom</th><th>Email</th><th>Faculté</th><th>Semestre</th><th>Inscrit le</th><th>Action</th></tr></thead>
         <tbody id="activation-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- Demandes abonnement en attente (étudiants existants) -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-head">
+        <span class="card-title">⏳ Demandes d'abonnement en attente</span>
+        <span id="pending-abo-count" style="font-size:.8rem;color:var(--amb);font-weight:600;"></span>
+      </div>
+      <table>
+        <thead><tr><th>Étudiant</th><th>Email</th><th>Semestre demandé</th><th>Le</th><th>Action</th></tr></thead>
+        <tbody id="pending-abo-tbody"><tr class="empty-row"><td colspan="5">✅ Aucune demande en attente</td></tr></tbody>
       </table>
     </div>
 
@@ -355,6 +370,67 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
       <div class="form-actions">
         <button class="btn-ghost" onclick="addManual(false)">Créer le compte uniquement</button>
         <button class="btn-red" onclick="addManual(true)">✅ Créer &amp; activer immédiatement</button>
+      </div>
+    </div>
+
+    <!-- ── Activer abonnement compte existant ── -->
+    <div class="form-card" style="margin-top:1.5rem;">
+      <h3>🔓 Activer un abonnement — Compte existant</h3>
+      <p style="font-size:.84rem;color:var(--mut);margin-bottom:1.5rem;">Recherche un étudiant déjà inscrit et active un semestre supplémentaire sur son compte.</p>
+
+      <div class="field" style="margin-bottom:1rem;">
+        <label>Rechercher un étudiant (nom ou email)</label>
+        <input type="text" id="ea-search" placeholder="Ex : Aymane ou neyam@..." oninput="eaSearchStudents()"
+          style="width:100%;padding:.75rem 1rem;background:var(--sur2);border:1px solid var(--line);border-radius:9px;color:var(--txt);font-family:Outfit,sans-serif;font-size:.9rem;outline:none;">
+      </div>
+
+      <!-- Résultats de recherche -->
+      <div id="ea-results" style="display:none;background:var(--sur2);border:1px solid var(--line);border-radius:9px;margin-bottom:1rem;max-height:200px;overflow-y:auto;"></div>
+
+      <!-- Étudiant sélectionné -->
+      <div id="ea-selected-box" style="display:none;background:rgba(224,32,32,.06);border:1px solid rgba(224,32,32,.2);border-radius:10px;padding:1rem;margin-bottom:1rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div id="ea-selected-name" style="font-weight:700;color:var(--txt);font-size:.95rem;"></div>
+            <div id="ea-selected-email" style="font-size:.8rem;color:var(--mut);margin-top:.2rem;"></div>
+          </div>
+          <button onclick="eaClearSelection()" style="background:none;border:none;color:var(--mut);cursor:pointer;font-size:1.2rem;">✕</button>
+        </div>
+      </div>
+
+      <div class="fr2">
+        <div class="field">
+          <label>Semestre à activer</label>
+          <select id="ea-sem">
+            <option value="">— Choisir —</option>
+            <option>Semestre 1</option><option>Semestre 2</option><option>Semestre 3</option>
+            <option>Semestre 4</option><option>Semestre 5</option><option>Semestre 6</option>
+            <option>Semestre 7</option><option>Semestre 8</option><option>Semestre 9</option>
+            <option>Semestre 10</option><option>Semestre 11</option><option>Semestre 12</option>
+            <option>Semestre 13</option><option>Semestre 14</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Méthode de paiement</label>
+          <select id="ea-methode">
+            <option>Virement RIB (Banque)</option>
+            <option>billeterie.ma</option>
+            <option>WhatsApp / Direct / Cash</option>
+            <option>Promotion / Offert</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>📎 Joindre le reçu de paiement (Obligatoire)</label>
+        <div id="ea-recu-dropzone" style="border:2px dashed var(--line);border-radius:12px;padding:1.5rem;text-align:center;cursor:pointer;background:rgba(255,255,255,.02);" onclick="document.getElementById('ea-recu').click()">
+          <span id="ea-recu-label" style="font-size:.85rem;color:var(--mut);">Cliquez pour joindre un fichier (PDF, image...)</span>
+          <input type="file" id="ea-recu" style="display:none;" onchange="document.getElementById('ea-recu-label').textContent = this.files[0].name">
+        </div>
+      </div>
+
+      <div class="form-actions" style="margin-top:1.5rem;">
+        <button class="btn-red" onclick="activateExistingStudent()">✅ Activer l'abonnement</button>
       </div>
     </div>
   </div>
@@ -1009,8 +1085,25 @@ var EJS_SVC = 'service_chelsyk';
 var CE = 'neyamcontact' + '@' + 'gmail.com';
 emailjs.init({ publicKey: EJS_KEY });
 
+window.onerror = function(msg, url, line) {
+  console.error("GLOBAL JS ERROR:", msg, "at", url, ":", line);
+  if (typeof toast !== 'undefined') toast("Erreur système: " + msg, "err");
+  return false;
+};
+
 // ── GLOBAL STATE ──
 var GLOBAL_ABOS = [];
+var _cacheUsers = null;   // cache pré-chargé
+var _cacheAbos  = null;   // cache pré-chargé
+
+// Pré-charge silencieusement toutes les données dès le démarrage
+function prefetchAdminData() {
+  Promise.all([dbGetUsers(), dbGetAbonnements()]).then(function(r) {
+    _cacheUsers = r[0];
+    _cacheAbos  = r[1];
+    GLOBAL_ABOS = r[1];
+  }).catch(function(){});
+}
 var _pvMethod = '', _pvFile = null, _pvEmail = '', _pvSem = '', _pvAboId = '';
 var _renewalsUsersList = [];
 var _bannedWords = [];
@@ -1038,6 +1131,8 @@ var SESS = JSON.parse(localStorage.getItem('medflix_session') || 'null');
 if (SESS && SESS.role === 'admin' && SESS.email === ADMIN_EMAIL) {
   document.addEventListener('DOMContentLoaded', function(){
     document.getElementById('admin-login-screen').style.display = 'none';
+    // Pré-charger les données en arrière-plan AVANT que l'admin clique
+    prefetchAdminData();
     // Revenir à la dernière page visitée
     var lastPage = localStorage.getItem('medflix_admin_lastpage') || 'dashboard';
     nav(lastPage);
@@ -1095,10 +1190,10 @@ async function refreshDashboard() {
     return tr.days <= 30;
   });
 
-  document.getElementById('ds-pending').textContent = pending.length || '—';
-  document.getElementById('ds-active').textContent  = active.length || '—';
-  document.getElementById('ds-expiring').textContent = expiring.length || '—';
-  document.getElementById('ds-rev').innerHTML = rev ? rev + ' DH <span style="font-size:0.65rem;color:var(--redl);cursor:pointer;text-decoration:underline;margin-left:5px;" onclick="showRevenueSplit()">Détails</span>' : '—';
+  document.getElementById('ds-pending').textContent = pending.length;
+  document.getElementById('ds-active').textContent  = active.length;
+  document.getElementById('ds-expiring').textContent = expiring.length;
+  document.getElementById('ds-rev').innerHTML = rev + ' DH <span style="font-size:0.65rem;color:var(--redl);cursor:pointer;text-decoration:underline;margin-left:5px;" onclick="showRevenueSplit()">Détails</span>';
 
   var nb = document.getElementById('nb-activation');
   if (pending.length > 0) { nb.textContent = pending.length; nb.style.display = 'inline'; }
@@ -1228,7 +1323,28 @@ function renderRevenueHistory() {
 //  ACTIVATION
 // ══════════════════════════════════
 async function renderActivation() {
-  var users = await dbGetUsers();
+  console.log('--- RENDERING ACTIVATION PAGE ---');
+  // Vider immédiatement pour ne pas montrer de données obsolètes
+  document.getElementById('activation-tbody').innerHTML = '<tr class="empty-row"><td colspan="6" style="color:var(--mut);">⏳ Chargement...</td></tr>';
+  document.getElementById('pending-abo-tbody').innerHTML = '<tr class="empty-row"><td colspan="5" style="color:var(--mut);">⏳ Chargement...</td></tr>';
+  document.getElementById('act-history-tbody').innerHTML = '<tr class="empty-row"><td colspan="6" style="color:var(--mut);">⏳ Chargement...</td></tr>';
+
+  try {
+    // Charger en parallèle
+    var results = await Promise.all([dbGetUsers(), dbGetAbonnements()]);
+    _cacheUsers = results[0];
+    _cacheAbos  = results[1];
+    GLOBAL_ABOS = results[1];
+    await _renderActivationWithData(results[0], results[1]);
+    console.log('--- ACTIVATION PAGE RENDERED ---');
+  } catch(e) {
+    console.error('CRITICAL RENDER ERROR:', e);
+    toast('Erreur de chargement: ' + e.message, 'err');
+  }
+}
+
+async function _renderActivationWithData(users, abos) {
+  // ── 1. Comptes en attente (nouveaux inscrits non activés) ──
   var pending = users.filter(function(u){ return !u.activated && !u.resiliated; });
   document.getElementById('pending-count').textContent = pending.length + ' compte(s) en attente';
 
@@ -1248,10 +1364,39 @@ async function renderActivation() {
       + '</td></tr>';
   }).join('');
 
-  // ── Historique des activations (depuis table abonnements) ──
-  var abos = await dbGetAbonnements();
+  // ── 2. Demandes d'abonnement "En attente" — requête directe Supabase ──
+  console.log('Fetching pending abos from Supabase...');
+  var paRes = await sb.from('abonnements').select('*').eq('statut', 'En attente').order('created_at', { ascending: false });
+  var pendingAbos = paRes.data || [];
+  console.log('Pending abos found:', pendingAbos.length);
+  if (paRes.error) console.error('pendingAbos query error:', paRes.error);
+
+  var paCount = document.getElementById('pending-abo-count');
+  var paTbody = document.getElementById('pending-abo-tbody');
+  if (paCount) paCount.textContent = pendingAbos.length + ' demande(s) en attente';
+  if (paTbody) {
+    if (!pendingAbos.length) {
+      paTbody.innerHTML = '<tr class="empty-row"><td colspan="5">✅ Aucune demande en attente</td></tr>';
+    } else {
+      paTbody.innerHTML = pendingAbos.map(function(a) {
+        var dateStr = a.created_at ? formatDateTime(a.created_at) : '—';
+        return '<tr class="row-pending">'
+          + '<td style="color:var(--txt);font-weight:600;">' + escAdmin(a.nom) + '</td>'
+          + '<td style="color:var(--mut2);">' + escAdmin(a.email) + '</td>'
+          + '<td>' + escAdmin(a.semestre) + '</td>'
+          + '<td style="font-size:.8rem;color:var(--mut);">' + dateStr + '</td>'
+          + '<td style="display:flex;gap:.4rem;">'
+          + '<button class="btn-grn" onclick="activateUser(\'' + a.email + '\', \'' + a.semestre + '\', \'' + a.id + '\')">✅ Activer</button>'
+          + '<button class="btn-del" style="padding:.25rem .5rem;font-size:.75rem;" onclick="eaDeletePendingAbo(\'' + a.id + '\')">✕ Refuser</button>'
+          + '</td></tr>';
+      }).join('');
+    }
+  }
+
+  // ── 3. Historique des activations ──
   var actifs = abos.filter(function(a){ return a.statut === 'Actif'; })
                    .sort(function(a,b){ return (a.created_at > b.created_at ? -1 : 1); });
+
 
   var histo = document.getElementById('act-history-tbody');
   document.getElementById('act-hist-count').textContent = actifs.length + ' activation(s)';
@@ -1529,7 +1674,86 @@ async function addManual(activate) {
   refreshDashboard();
 }
 
-// ── RENOUVELLEMENTS ──
+// ══════════════════════════════════
+//  ACTIVER ABONNEMENT — COMPTE EXISTANT
+// ══════════════════════════════════
+var _eaSelectedUser = null;
+
+async function eaSearchStudents() {
+  var q = document.getElementById('ea-search').value.trim().toLowerCase();
+  var resDiv = document.getElementById('ea-results');
+  if (q.length < 2) { resDiv.style.display = 'none'; return; }
+
+  var users = await dbGetUsers();
+  var filtered = users.filter(function(u) {
+    return u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
+  }).slice(0, 8);
+
+  if (!filtered.length) {
+    resDiv.style.display = 'block';
+    resDiv.innerHTML = '<div style="padding:.75rem 1rem;font-size:.85rem;color:var(--mut);">Aucun étudiant trouvé</div>';
+    return;
+  }
+
+  resDiv.style.display = 'block';
+  resDiv.innerHTML = filtered.map(function(u) {
+    return '<div onclick="eaSelectStudent(' + JSON.stringify(JSON.stringify(u)) + ')" '
+      + 'style="padding:.7rem 1rem;cursor:pointer;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;" '
+      + 'onmouseover="this.style.background=\'rgba(255,255,255,.05)\'" onmouseout="this.style.background=\'none\'">'
+      + '<div>'
+      + '<div style="font-weight:600;color:var(--txt);font-size:.9rem;">' + u.name + '</div>'
+      + '<div style="font-size:.75rem;color:var(--mut);">' + u.email + '</div>'
+      + '</div>'
+      + '<span style="font-size:.72rem;padding:.2rem .5rem;border-radius:5px;background:' + (u.activated ? 'rgba(34,197,94,.15)' : 'rgba(224,32,32,.15)') + ';color:' + (u.activated ? '#4ade80' : 'var(--redl)') + ';">'
+      + (u.activated ? 'Actif' : 'Inactif') + '</span>'
+      + '</div>';
+  }).join('');
+}
+
+function eaSelectStudent(userJson) {
+  _eaSelectedUser = JSON.parse(userJson);
+  document.getElementById('ea-results').style.display = 'none';
+  document.getElementById('ea-search').value = '';
+  document.getElementById('ea-selected-name').textContent = _eaSelectedUser.name;
+  document.getElementById('ea-selected-email').textContent = _eaSelectedUser.email + ' — ' + (_eaSelectedUser.activated ? 'Compte actif' : 'Compte inactif');
+  document.getElementById('ea-selected-box').style.display = 'block';
+}
+
+function eaClearSelection() {
+  _eaSelectedUser = null;
+  document.getElementById('ea-selected-box').style.display = 'none';
+  document.getElementById('ea-search').value = '';
+}
+
+async function activateExistingStudent() {
+  if (!_eaSelectedUser) { toast('Sélectionne d\'abord un étudiant', 'err'); return; }
+  var sem     = document.getElementById('ea-sem').value;
+  var methode = document.getElementById('ea-methode').value;
+  var recuFile = document.getElementById('ea-recu').files[0] || null;
+
+  if (!sem) { toast('Choisis un semestre', 'err'); return; }
+  if (!recuFile) { toast('Le reçu est obligatoire pour activer.', 'err'); return; }
+
+  toast('Upload du reçu en cours...', 'ok');
+  var receiptUrl = await uploadReceiptFile(recuFile);
+  if (!receiptUrl) return;
+
+  await _doActivateUser(_eaSelectedUser.email, sem, null, receiptUrl, methode);
+
+  // Reset form
+  eaClearSelection();
+  document.getElementById('ea-sem').selectedIndex = 0;
+  document.getElementById('ea-recu-label').textContent = 'Cliquez pour joindre un fichier (PDF, image...)';
+  document.getElementById('ea-recu').value = '';
+}
+
+async function eaDeletePendingAbo(aboId) {
+  if (!confirm('Refuser et supprimer cette demande d\'abonnement ?')) return;
+  await dbDeleteAbonnement(aboId);
+  toast('Demande refusée et supprimée');
+  renderActivation();
+}
+
 var _renewalsUsersList = [];
 async function loadRenewalsAdmin() {
    var sem = document.getElementById('rn-semestre').value;
@@ -2617,7 +2841,16 @@ async function adminDeleteComment(id) {
   toast('Commentaire supprimé', 'ok');
 }
 
+async function renderAbonnements() {
+  console.log('renderAbonnements: Not implemented yet');
+  document.getElementById('page-abonnements').innerHTML = '<h1 class="ptitle">Gestion des abonnements</h1><div class="card"><p style="padding:1rem;">Section en cours de développement.</p></div>';
+}
+
+async function renderRenouvellements() {
+  console.log('renderRenouvellements: Not implemented yet');
+  document.getElementById('page-renouvellements').innerHTML = '<h1 class="ptitle">Renouvellements</h1><div class="card"><p style="padding:1rem;">Section en cours de développement.</p></div>';
+}
+
 </script>
 </body>
 </html>
-
