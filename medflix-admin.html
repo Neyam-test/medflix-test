@@ -1560,7 +1560,9 @@ async function _doActivateUser(email, targetSemestre, aboId, receiptUrl, methode
 
   var paid = user.paid || [];
   if (!paid.includes(sem)) paid.push(sem);
-  var paidDetails = addSemesterToPaidDetails(user.paidDetails, sem, expDate);
+  
+  var adminName = getCurrentAdminName();
+  var paidDetails = addSemesterToPaidDetails(user.paidDetails, sem, expDate, null, adminName);
   var latestExp = getLatestExpiration(paidDetails);
 
   var adminName = getCurrentAdminName();
@@ -2418,7 +2420,8 @@ async function openStudentModal(email) {
           sem: a.semestre,
           start: a.created_at ? new Date(a.created_at).toISOString().slice(0, 16) : '2024-01-01T00:00',
           exp: a.expiration || user.expiration || '',
-          status: a.statut === 'Résilié' ? 'resilie' : 'actif'
+          status: a.statut === 'Résilié' ? 'resilie' : 'actif',
+          by: a.adminName || 'Admin'
       });
       if (a.statut !== 'Résilié') {
         if(!user.paid) user.paid = [];
@@ -2453,25 +2456,9 @@ async function smConfirmAddSem() {
     if (isActive) { toast('L\'étudiant a déjà un accès actif pour ce semestre.', 'warn'); return; }
   }
   
-  var cfg = await dbGetConfig();
-  var start = getNowLocalISO();
-  var exp = calcExpirationFrom(cfg.dureeJours);
-  
-  var newId = sem + '-' + Math.random().toString(36).substring(2,7);
-  var newPaidDetail = { id: newId, sem: sem, start: start, exp: exp, status: 'actif', by: getCurrentAdminName() };
-  
-  user.paidDetails.push(newPaidDetail);
-  if (!user.paid) user.paid = [];
-  if (!user.paid.includes(sem)) user.paid.push(sem);
-  
-  user.activated = true; user.resiliated = false;
-  document.getElementById('sm-add-sem-box').style.display = 'none';
-  renderStudentModal();
-  toast('✅ ' + sem + ' ajouté pour ' + user.name);
-  
-  await dbUpdateUser(user.email, { paid: user.paid, paidDetails: user.paidDetails, activated: true, resiliated: false });
-  await dbAddAbonnement({ nom: user.name, email: user.email, semestre: sem, montant: 199, methode: 'Manuel (Panel Admin)', statut: 'Actif', expiration: exp });
+  activateUser(user.email, sem);
 }
+
 
 function renderStudentModal() {
   var user = _smUser;
@@ -2500,7 +2487,7 @@ function renderStudentModal() {
     var html = '';
     
     html += pdList.map(function(p) {
-      var st = getPaidDetailStatus(p); // This guarantees strict date-checking visual states
+      var st = getPaidDetailStatus(p); 
       var byTxt = p.by ? p.by : 'Aymane';
       var badge = st === 'actif' ? '<span class="bg">En cours</span>' : st === 'expire' ? '<span class="br">Expiré</span>' : '<span class="br" style="background:rgba(248,113,113,.06);color:#f87171;">Résilié</span>';
       
@@ -2551,7 +2538,6 @@ function renderStudentModal() {
 function closeStudentModal() { document.getElementById('student-modal').style.display = 'none'; _smEmail = ''; _smUser = null; renderAllStudents(); refreshDashboard(); }
 
 async function smActivateAdditional(email, semestre, aboId) {
-   // _doActivateUser rafraîchit le modal automatiquement
    await activateUser(email, semestre, aboId);
 }
 
@@ -2617,8 +2603,15 @@ async function executeDeactivate() {
 }
 
 async function smReactivate(subId) {
-  openDateModal(subId, true);
+  var user = _smUser;
+  if (!user) return;
+  var sub = user.paidDetails.find(function(p){ return p.id === subId; });
+  if (!sub) return;
+  
+  // Pour réactiver, on passe par le flux d'activation standard avec reçu
+  activateUser(user.email, sub.sem);
 }
+
 
 
 var _dmSubId = '';

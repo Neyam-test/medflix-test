@@ -477,10 +477,17 @@ function getTimeRemaining(expDate) {
 }
 
 // Add a semester subscription to paidDetails
-function addSemesterToPaidDetails(paidDetails, semester, expiration, start) {
+function addSemesterToPaidDetails(paidDetails, semester, expiration, start, adminName) {
   if (!start) start = getNowLocalISO();
   var list = (paidDetails || []).slice();
-  list.push({ id: Math.random().toString(36).substring(2, 9), sem: semester, start: start, exp: expiration, status: 'actif' });
+  list.push({ 
+    id: Math.random().toString(36).substring(2, 9), 
+    sem: semester, 
+    start: start, 
+    exp: expiration, 
+    status: 'actif',
+    by: adminName || 'Admin'
+  });
   return list;
 }
 
