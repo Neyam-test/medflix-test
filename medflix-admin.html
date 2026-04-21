@@ -2599,7 +2599,7 @@ async function openDateModal(subId, isReactivate) {
   var offset = d.getTimezoneOffset() * 60000;
   var defaultEnd = (new Date(d - offset)).toISOString().slice(0, 16);
   
-  document.getElementById('dm-date').value = _dmIsReactivate ? defaultEnd : sub.exp;
+  document.getElementById('dm-date').value = ''; // Champ vide au départ, à remplir par sélection
   document.getElementById('date-modal').style.display = 'flex';
 }
 
@@ -2607,7 +2607,7 @@ function closeDateModal() { document.getElementById('date-modal').style.display 
 
 function dmAddDays(days) {
   var input = document.getElementById('dm-date');
-  var base = input.value ? new Date(input.value) : new Date();
+  var base = new Date();
   base.setDate(base.getDate() + days);
   var offset = base.getTimezoneOffset() * 60000;
   input.value = (new Date(base - offset)).toISOString().slice(0, 16);
