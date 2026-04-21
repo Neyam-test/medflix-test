@@ -1189,7 +1189,7 @@ function nav(name) {
     updateDataLists();
   }
   
-  var renders = { dashboard:refreshDashboard, activation:renderActivation, etudiants:renderAllStudents, cours:renderCours, tp:renderTP, qcm:renderQCMList, abonnements:renderAbonnements, renouvellements:renderRenouvellements, parametres:renderParametres, backup:renderBackup, comments:loadCommentsAdmin };
+  var renders = { dashboard:refreshDashboard, activation:renderActivation, etudiants:renderAllStudents, cours:renderCours, tp:renderTP, qcm:renderQCMList, abonnements:renderAbonnements, renouvellements:loadRenewalsAdmin, parametres:renderParametres, backup:renderBackup, comments:loadCommentsAdmin };
   if (renders[name]) renders[name]();
 }
 
@@ -2262,7 +2262,7 @@ async function renderAbonnements() {
     pTbody.innerHTML = pending.map(function(a){
       return '<tr class="row-pending"><td style="color:var(--txt);font-weight:600;">' + a.nom + '</td>'
         + '<td>' + a.email + '</td><td>' + a.semestre + '</td><td>' + a.montant + ' DH</td><td>' + a.date + '</td>'
-        + '<td><button class="btn-grn" onclick="activateSemester(' + a.id + ',\'' + a.email + '\',\'' + a.semestre + '\')">✅ Activer</button></td></tr>';
+        + '<td><button class="btn-grn" onclick="activateUser(\'' + a.email + '\', \'' + a.semestre + '\', \'' + a.id + '\')">✅ Activer</button></td></tr>';
     }).join('');
   }
 
@@ -2275,44 +2275,6 @@ async function renderAbonnements() {
       + '<td>' + a.semestre + '</td><td>' + a.montant + ' DH</td><td>' + a.methode + '</td><td>' + a.date + '</td>'
       + '<td><span class="' + cls + '">' + a.statut + '</span></td></tr>';
   }).join('');
-}
-
-// Activate a specific semester for an existing student
-async function activateSemester(aboId, email, semestre) {
-  var user = await dbGetUser(email);
-  if (!user) { toast('Étudiant introuvable : ' + email, 'err'); return; }
-
-  var cfg = await dbGetConfig();
-  var expDate = calcExpirationFrom(cfg.dureeJours);
-
-  // Add semester to paid list
-  var paid = user.paid || [];
-  if (!paid.includes(semestre)) paid.push(semestre);
-
-  // Add to paidDetails with individual expiration
-  var paidDetails = addSemesterToPaidDetails(user.paidDetails, semestre, expDate);
-  var latestExp = getLatestExpiration(paidDetails);
-
-  // Update user — keep activated, clear resiliated
-  await dbUpdateUser(email, {
-    activated: true, resiliated: false,
-    paid: paid, paidDetails: paidDetails,
-    expiration: latestExp
-  });
-
-  // Update abonnement status
-  await dbUpdateAbonnement(aboId, { statut: 'Actif', methode: 'Validé admin', expiration: expDate });
-
-  // Email
-  var expFormatted = new Date(expDate).toLocaleDateString('fr-FR');
-  sendEmail('etudiant', user.name, email,
-    '✅ Nouveau semestre activé !',
-    'Bonne nouvelle ' + user.name + ' !\n\n' + semestre + ' a été activé sur ton compte Medflix.\n\nAccès valable jusqu\'au : ' + expFormatted + '\n\nTes autres semestres restent actifs. Connecte-toi sur medflix.ma !'
-  );
-
-  toast('✅ ' + semestre + ' activé pour ' + user.name + ' !');
-  renderAbonnements();
-  refreshDashboard();
 }
 
 // ══════════════════════════════════
@@ -2877,15 +2839,6 @@ async function adminDeleteComment(id) {
   toast('Commentaire supprimé', 'ok');
 }
 
-async function renderAbonnements() {
-  console.log('renderAbonnements: Not implemented yet');
-  document.getElementById('page-abonnements').innerHTML = '<h1 class="ptitle">Gestion des abonnements</h1><div class="card"><p style="padding:1rem;">Section en cours de développement.</p></div>';
-}
-
-async function renderRenouvellements() {
-  console.log('renderRenouvellements: Not implemented yet');
-  document.getElementById('page-renouvellements').innerHTML = '<h1 class="ptitle">Renouvellements</h1><div class="card"><p style="padding:1rem;">Section en cours de développement.</p></div>';
-}
 
 </script>
 </body>
