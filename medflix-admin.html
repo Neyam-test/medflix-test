@@ -1064,6 +1064,20 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
   </div>
 </div>
 
+<!-- MODAL DEACTIVATION CONFIRM -->
+<div id="deactivate-confirm-modal" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;padding:1rem;">
+  <div style="background:var(--sur);border:1px solid var(--redb);border-radius:20px;padding:2.5rem;width:100%;max-width:400px;animation:pop .25s ease;">
+    <div style="font-family:'Instrument Serif',serif;font-size:1.8rem;color:var(--txt);margin-bottom:.5rem;">Désactiver l'abonnement</div>
+    <div style="color:var(--mut);font-size:.9rem;line-height:1.5;margin-bottom:2rem;">
+      Êtes-vous sûr de vouloir désactiver cet abonnement ?<br><br>L'étudiant perdra l'accès à ce semestre immédiatement.
+    </div>
+    <div class="form-actions">
+      <button class="btn-ghost" onclick="closeDeactivateModal()">Annuler</button>
+      <button class="btn-red" onclick="executeDeactivate()">Désactiver</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL DECONNEXION ADMIN -->
 <div id="admin-logout-modal" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;padding:1rem;overflow-y:auto;">
   <div style="background:var(--sur);border:1px solid var(--line);border-radius:20px;padding:2.5rem;width:100%;max-width:400px;animation:pop .25s ease;">
@@ -2532,8 +2546,23 @@ async function smActivatePending(email) {
    openStudentModal(email);
 }
 
+var _subToDeactivate = null;
+
+function closeDeactivateModal() {
+  document.getElementById('deactivate-confirm-modal').style.display = 'none';
+  _subToDeactivate = null;
+}
+
 async function smDeactivate(subId) {
-  if(!confirm('Désactiver cet abonnement ?')) return;
+  _subToDeactivate = subId;
+  document.getElementById('deactivate-confirm-modal').style.display = 'flex';
+}
+
+async function executeDeactivate() {
+  var subId = _subToDeactivate;
+  if (!subId) return;
+  closeDeactivateModal();
+  
   var user = _smUser;
   if (!user) return;
   
