@@ -1,1 +1,0 @@
-[System.IO.File]::WriteAllText('c:\Users\EDG3\Downloads\medflix-v4\diff-clean.patch', [System.IO.File]::ReadAllText('c:\Users\EDG3\Downloads\medflix-v4\diff.txt', [System.Text.Encoding]::Unicode), [System.Text.Encoding]::UTF8)
