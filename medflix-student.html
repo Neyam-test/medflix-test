@@ -2089,7 +2089,7 @@
       // ✅ Étudiant valide
       isStudent = true;
       PAID = me.paid || [];
-      SESSION = { name: me.name, email: me.email, phone: me.phone || '', role: 'student', semester: me.semester, faculte: me.faculte, paid: PAID, activated: true, expiration: me.expiration, progress: me.progress, comment_banned_until: me.comment_banned_until };
+      SESSION = { name: me.name, email: me.email, phone: me.phone || '', role: 'student', semester: me.semester, faculte: me.faculte, paid: PAID, activated: true, expiration: me.expiration, progress: me.progress, comment_banned_until: me.comment_banned_until || me.ban_expiration };
       stats = me.progress || { cours: 0, tp: 0, quiz: 0, scores: [], latest: [] };
       if (!stats.scores) stats.scores = [];
       if (!stats.latest) stats.latest = [];
@@ -3011,16 +3011,22 @@
       _cmtBannedWords = await dbGetBannedWords();
     })();
 
-    function isCommentBanned() {
+    function isCommentBanned(silent = false) {
       if (!SESSION || !SESSION.comment_banned_until) return false;
+      if (SESSION.comment_banned_until === 'permanent') {
+        if (!silent) alert("🔒 Tes privilèges de commentaires ont été suspendus définitivement.\n\nMotif : Violations répétées des conditions d'utilisation.");
+        return true;
+      }
       var until = new Date(SESSION.comment_banned_until);
       if (until > new Date()) {
-        var diff = until - new Date();
-        var mins = Math.ceil(diff / 60000);
-        var hours = Math.floor(mins / 60);
-        var remMins = mins % 60;
-        var timeStr = hours > 0 ? hours + "h " + remMins + "min" : mins + "min";
-        alert("🔒 Tes privilèges de commentaires ont été suspendus.\n\nDéblocage dans : " + timeStr + "\nMotif : Utilisation de termes non autorisés ou comportement inapproprié.");
+        if (!silent) {
+          var diff = until - new Date();
+          var mins = Math.ceil(diff / 60000);
+          var hours = Math.floor(mins / 60);
+          var remMins = mins % 60;
+          var timeStr = hours > 0 ? hours + "h " + remMins + "min" : mins + "min";
+          alert("🔒 Tes privilèges de commentaires ont été suspendus.\n\nDéblocage dans : " + timeStr + "\nMotif : Utilisation de termes non autorisés ou comportement inapproprié.");
+        }
         return true;
       }
       return false;
@@ -3077,11 +3083,48 @@
     }
 
     // ── Toggle panel ──
-    function toggleCommentPanel() {
+    async function toggleCommentPanel() {
       var win = document.getElementById('comment-win');
       _cmtPanelOpen = !_cmtPanelOpen;
       win.classList.toggle('open', _cmtPanelOpen);
-      if (_cmtPanelOpen && _cmtCourseId) loadComments();
+      if (_cmtPanelOpen && _cmtCourseId) {
+        // Real-time ban check when opening panel
+        if (SESSION && SESSION.email) {
+          var u = await dbGetUser(SESSION.email);
+          if (u) {
+            SESSION.comment_banned_until = u.comment_banned_until || u.ban_expiration;
+            localStorage.setItem('medflix_session', JSON.stringify(SESSION));
+          }
+        }
+        
+        var wrap = document.querySelector('.cmt-inp-wrap');
+        var existingMsg = document.getElementById('cmt-ban-msg');
+        if (existingMsg) existingMsg.remove();
+        
+        if (isCommentBanned(true)) {
+          if (wrap) wrap.style.display = 'none';
+          var msgText = (SESSION.comment_banned_until === 'permanent') 
+            ? '🔒 Privilèges suspendus définitivement.' 
+            : '🔒 Privilèges suspendus temporairement.';
+            
+          var msgDiv = document.createElement('div');
+          msgDiv.id = 'cmt-ban-msg';
+          msgDiv.style.padding = '1rem';
+          msgDiv.style.textAlign = 'center';
+          msgDiv.style.color = '#f87171';
+          msgDiv.style.background = 'rgba(248,113,113,.1)';
+          msgDiv.style.borderTop = '1px solid var(--line)';
+          msgDiv.style.fontSize = '.85rem';
+          msgDiv.style.fontWeight = '600';
+          msgDiv.style.flexShrink = '0';
+          msgDiv.innerHTML = msgText + '<br><small style="color:var(--mut);font-weight:normal;cursor:pointer;text-decoration:underline;margin-top:.25rem;display:inline-block;" onclick="isCommentBanned(false)">Plus de détails</small>';
+          win.appendChild(msgDiv);
+        } else {
+          if (wrap) wrap.style.display = 'flex';
+        }
+
+        loadComments();
+      }
     }
 
     // ── Load & render ──
@@ -3120,8 +3163,14 @@
     function renderComments() {
       var list = document.getElementById('cmt-list');
       // Sort roots by score desc
+      // Filter out moderated comments (banned/deleted)
       var roots = _cmtData
-        .filter(function(c){ return !c.parent_id; })
+        .filter(function(c){ 
+          if (c.parent_id) return false;
+          var content = (c.content || '').trim().toUpperCase();
+          if (content.startsWith('[BANNI]') || content.startsWith('[SUPPRIMÉ]')) return false;
+          return true;
+        })
         .sort(function(a,b){ return ((b.upvotes||0)-(b.downvotes||0)) - ((a.upvotes||0)-(a.downvotes||0)); });
 
       if (!roots.length) {
@@ -3132,9 +3181,14 @@
       var html = '';
       roots.forEach(function(c) {
         html += renderCmtCard(c, false);
-        // replies sorted by score
+        // replies sorted by score + filter moderated
         var replies = _cmtData
-          .filter(function(r){ return r.parent_id === c.id; })
+          .filter(function(r){ 
+             if (r.parent_id !== c.id) return false;
+             var content = (r.content || '').trim().toUpperCase();
+             if (content.startsWith('[BANNI]') || content.startsWith('[SUPPRIMÉ]')) return false;
+             return true;
+          })
           .sort(function(a,b){ return ((b.upvotes||0)-(b.downvotes||0)) - ((a.upvotes||0)-(a.downvotes||0)); });
         replies.forEach(function(r) { html += renderCmtCard(r, true); });
       });
@@ -3165,7 +3219,7 @@
           '<button class="vote-btn ' + (votedDown ? 'voted-down' : '') + '" onclick="voteComment(\'' + c.id + '\',\'down\')">' +
             '&#9660; <span>' + (c.downvotes||0) + '</span>' +
           '</button>' +
-          (!isReply ? '<button class="cmt-reply-btn" onclick="toggleReplyForm(\'' + c.id + '\', \'' + esc(c.author) + '\')">' +
+          (!isReply && !isCommentBanned(true) ? '<button class="cmt-reply-btn" onclick="toggleReplyForm(\'' + c.id + '\', \'' + esc(c.author) + '\')">' +
             '&#8617; Répondre' +
           '</button>' : '') +
         '</div>' +

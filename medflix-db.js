@@ -109,6 +109,8 @@ async function dbUpdateUser(email, updates) {
   if ('expiration' in updates) mapped.expiration = updates.expiration || null;
   if ('activatedDate' in updates) mapped.activated_date = updates.activatedDate;
   if ('paidDetails' in updates) mapped.paid_details = updates.paidDetails;
+  if ('ban_expiration' in updates) mapped.ban_expiration = updates.ban_expiration;
+  if ('comment_banned_until' in updates) mapped.comment_banned_until = updates.comment_banned_until;
   if ('progress' in updates) mapped.progress = updates.progress;
   
   var { error } = await sb.from('profiles').update(mapped).eq('email', email);
@@ -212,6 +214,7 @@ function dbMapUser(row) {
     activatedDate: row.activated_date || null,
     date: row.created_at ? new Date(row.created_at).toLocaleDateString('fr-FR') : '',
     progress: row.progress || { cours: 0, tp: 0, quiz: 0, score: 0, latest: [] },
+    ban_expiration: row.ban_expiration || null,
     comment_banned_until: row.comment_banned_until || null
   };
 }

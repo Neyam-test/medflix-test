@@ -2903,15 +2903,16 @@ async function loadBannedUsersAdmin() {
   
   var users = await dbGetUsers();
   var bannedUsers = users.filter(function(u) {
-     if (!u.ban_expiration) return false;
+     var banExp = u.comment_banned_until || u.ban_expiration;
+     if (!banExp) return false;
      
      if (q) {
        var str = (u.name + ' ' + u.email + ' ' + (u.phone||'')).toLowerCase();
        if (!str.includes(q)) return false;
      }
 
-     if (u.ban_expiration === 'permanent') return true;
-     return new Date(u.ban_expiration) > new Date();
+     if (banExp === 'permanent') return true;
+     return new Date(banExp) > new Date();
   });
   
   if (bannedUsers.length === 0) {
@@ -2921,10 +2922,11 @@ async function loadBannedUsersAdmin() {
   
   tbody.innerHTML = bannedUsers.map(function(u) {
      var timeLeftStr = '';
-     if (u.ban_expiration === 'permanent') {
+     var banExp = u.comment_banned_until || u.ban_expiration;
+     if (banExp === 'permanent') {
         timeLeftStr = '<span class="br" style="background:var(--redd);color:var(--redl);">Ban Définitif</span>';
      } else {
-        var diff = new Date(u.ban_expiration) - new Date();
+        var diff = new Date(banExp) - new Date();
         var h = Math.floor(diff / 3600000);
         var m = Math.floor((diff % 3600000) / 60000);
         timeLeftStr = '<span class="ba">' + h + 'h ' + m + 'min restantes</span>';
@@ -2936,8 +2938,8 @@ async function loadBannedUsersAdmin() {
        '<td>' + timeLeftStr + '</td>' +
        '<td style="white-space:nowrap;">' +
          '<button class="btn-grn" onclick="event.stopPropagation(); unbanUser(\'' + u.email + '\')" style="margin-right:.5rem;">✅ Débannir</button>' +
-         (u.ban_expiration !== 'permanent' ? '<button class="btn-ghost" onclick="event.stopPropagation(); modifyBanTime(\'' + u.email + '\')" style="padding:.4rem .8rem;margin-right:.5rem;">⏳ Modifier</button>' : '') +
-         (u.ban_expiration !== 'permanent' ? '<button class="btn-del" onclick="event.stopPropagation(); permaBanUser(\'' + u.email + '\')" style="padding:.4rem .8rem;">🔨 Ban à vie</button>' : '') +
+         (banExp !== 'permanent' ? '<button class="btn-ghost" onclick="event.stopPropagation(); modifyBanTime(\'' + u.email + '\')" style="padding:.4rem .8rem;margin-right:.5rem;">⏳ Modifier</button>' : '') +
+         (banExp !== 'permanent' ? '<button class="btn-del" onclick="event.stopPropagation(); permaBanUser(\'' + u.email + '\')" style="padding:.4rem .8rem;">🔨 Ban à vie</button>' : '') +
        '</td>' +
      '</tr>';
   }).join('');
@@ -3001,9 +3003,9 @@ async function unbanUser(email) {
          content: 'Levée de sanction manuelle.',
          admin: adminName
      });
-     await dbUpdateUser(email, { ban_expiration: null, progress: prog });
+     await dbUpdateUser(email, { comment_banned_until: null, progress: prog });
   } else {
-     await dbUpdateUser(email, { ban_expiration: null });
+     await dbUpdateUser(email, { comment_banned_until: null });
   }
   toast('Étudiant débanni', 'ok');
   loadBannedUsersAdmin();
@@ -3026,9 +3028,9 @@ async function permaBanUser(email) {
         content: 'Action manuelle depuis le panel administrateur.',
         admin: adminName
      });
-     await dbUpdateUser(email, { ban_expiration: 'permanent', progress: prog });
+     await dbUpdateUser(email, { comment_banned_until: 'permanent', progress: prog });
   } else {
-     await dbUpdateUser(email, { ban_expiration: 'permanent' });
+     await dbUpdateUser(email, { comment_banned_until: 'permanent' });
   }
   toast('Étudiant banni à vie', 'ok');
   loadBannedUsersAdmin();
@@ -3057,9 +3059,9 @@ async function modifyBanTime(email, ignoreParam) {
         content: 'Sanction ajustée manuellement (Nouveau durée : ' + h + 'h).',
         admin: adminName
      });
-     await dbUpdateUser(email, { ban_expiration: newExp, progress: prog });
+     await dbUpdateUser(email, { comment_banned_until: newExp, progress: prog });
   } else {
-     await dbUpdateUser(email, { ban_expiration: newExp });
+     await dbUpdateUser(email, { comment_banned_until: newExp });
   }
   toast('Durée modifiée', 'ok');
   loadBannedUsersAdmin();
@@ -3201,9 +3203,9 @@ async function adminPunishComment(id, mode) {
           content: c.content,
           admin: adminName
        });
-     await dbUpdateUser(c.email, { ban_expiration: exp, progress: prog });
+     await dbUpdateUser(c.email, { comment_banned_until: exp, progress: prog });
   } else {
-     await dbUpdateUser(c.email, { ban_expiration: exp });
+     await dbUpdateUser(c.email, { comment_banned_until: exp });
   }
 
   // 2. Supprimer le com (Soft Delete)
@@ -3232,8 +3234,9 @@ async function openModerationHistoryMode(email) {
    document.getElementById('mod-name').textContent = u.name;
    document.getElementById('mod-email').textContent = u.email;
    
-   var isPermanent = u.ban_expiration === 'permanent';
-   var isBanned = isPermanent || (u.ban_expiration && new Date(u.ban_expiration) > new Date());
+   var isPermanent = u.comment_banned_until === 'permanent' || u.ban_expiration === 'permanent';
+   var banExp = u.comment_banned_until || u.ban_expiration;
+   var isBanned = isPermanent || (banExp && new Date(banExp) > new Date());
    
    var actionsDiv = document.getElementById('mod-actions');
    actionsDiv.innerHTML = '';
@@ -3252,8 +3255,7 @@ async function openModerationHistoryMode(email) {
    var hist = prog.moderation_history || [];
    
    if (hist.length === 0) {
-      if (u.ban_expiration && new Date(u.ban_expiration) > new Date() || u.ban_expiration === 'permanent') {
-         var isPermanent = u.ban_expiration === 'permanent';
+      if (banExp && new Date(banExp) > new Date() || isPermanent) {
          var desc = isPermanent ? "Ban Définitif" : "Sanction active";
          historyList.innerHTML = '<div style="background:var(--sur2);border:1px solid var(--line);border-radius:12px;padding:1.2rem;">' +
            '<div style="display:flex;justify-content:space-between;margin-bottom:.8rem;align-items:center;">' +
@@ -3261,7 +3263,7 @@ async function openModerationHistoryMode(email) {
              '<span style="font-size:.7rem;color:var(--mut2);">Antérieur au suivi</span>' +
            '</div>' +
            '<div style="font-size:.85rem;color:var(--mut);line-height:1.4;background:rgba(0,0,0,.2);padding:1rem;border-radius:8px;border-left:3px solid var(--line);">' + 
-           'Cet étudiant a été banni récemment (' + (isPermanent ? 'À vie' : 'expire le ' + new Date(u.ban_expiration).toLocaleString('fr-FR')) + '), mais cette sanction a été appliquée avant l\'activation de l\'historique des commentaires. Le motif textuel n\'a pas pu être enregistré.' +
+           'Cet étudiant a été banni récemment (' + (isPermanent ? 'À vie' : 'expire le ' + new Date(banExp).toLocaleString('fr-FR')) + '), mais cette sanction a été appliquée avant l\'activation de l\'historique des commentaires. Le motif textuel n\'a pas pu être enregistré.' +
            '</div>' +
          '</div>';
       } else {
@@ -3311,3 +3313,4 @@ async function adminDeleteComment(id) {
 </script>
 </body>
 </html>
+
