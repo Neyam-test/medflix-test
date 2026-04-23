@@ -906,6 +906,30 @@
       background: rgba(248, 113, 113, .08);
     }
 
+    .qp-explication {
+      margin-top: 1.5rem;
+      padding: 1.25rem;
+      background: rgba(255, 255, 255, .03);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      font-size: .88rem;
+      line-height: 1.5;
+      color: var(--mut);
+      animation: slideDown 0.3s ease-out;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
     .opt-letter {
       width: 26px;
       height: 26px;
@@ -2494,6 +2518,14 @@
       answered = true;
       document.getElementById('opt-' + correct).classList.add('correct');
       if (answers[curQ] !== correct) document.getElementById('opt-' + answers[curQ]).classList.add('wrong');
+
+      if (q.explication) {
+        var expl = document.createElement('div');
+        expl.className = 'qp-explication';
+        expl.innerHTML = '<strong>Explication :</strong><br>' + q.explication;
+        document.querySelector('.qp-opts').appendChild(expl);
+      }
+
       var btn = document.getElementById('btn-val');
       btn.textContent = curQ < activeQuiz.questions.length - 1 ? 'Suivant →' : 'Résultats →';
       btn.disabled = false; btn.onclick = nextQ;
