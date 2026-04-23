@@ -1263,7 +1263,10 @@ async function refreshDashboard() {
 
   var abos = await dbGetAbonnements();
   GLOBAL_ABOS = abos; // Cache for revenue analytics
-  var rev = abos.filter(function(a){ return a.statut === 'Actif'; }).length * 199;
+  
+  // Summing revenue from all non-pending subscriptions (Actif and Résilié)
+  var rev = abos.filter(function(a){ return a.statut === 'Actif' || a.statut === 'Résilié'; })
+                .reduce(function(acc, curr){ return acc + (parseInt(curr.montant) || 199); }, 0);
 
   var expiring = active.filter(function(u){
     var tr = getTimeRemaining(u.expiration);
@@ -1761,6 +1764,7 @@ async function addManual(activate) {
 //  ACTIVER ABONNEMENT — COMPTE EXISTANT
 // ══════════════════════════════════
 var _eaSelectedUser = null;
+var _eaSearchResults = [];
 
 async function eaSearchStudents() {
   var q = document.getElementById('ea-search').value.trim().toLowerCase();
@@ -1778,9 +1782,11 @@ async function eaSearchStudents() {
     return;
   }
 
+  _eaSearchResults = filtered;
+
   resDiv.style.display = 'block';
-  resDiv.innerHTML = filtered.map(function(u) {
-    return '<div onclick="eaSelectStudent(' + JSON.stringify(JSON.stringify(u)) + ')" '
+  resDiv.innerHTML = filtered.map(function(u, idx) {
+    return '<div onclick="eaSelectStudent(' + idx + ')" '
       + 'style="padding:.7rem 1rem;cursor:pointer;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;" '
       + 'onmouseover="this.style.background=\'rgba(255,255,255,.05)\'" onmouseout="this.style.background=\'none\'">'
       + '<div>'
@@ -1793,8 +1799,8 @@ async function eaSearchStudents() {
   }).join('');
 }
 
-function eaSelectStudent(userJson) {
-  _eaSelectedUser = JSON.parse(userJson);
+function eaSelectStudent(idx) {
+  _eaSelectedUser = _eaSearchResults[idx];
   document.getElementById('ea-results').style.display = 'none';
   document.getElementById('ea-search').value = '';
   document.getElementById('ea-selected-name').textContent = _eaSelectedUser.name;
