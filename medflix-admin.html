@@ -1093,7 +1093,7 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
         </div>
       </div>
       <table>
-        <thead><tr><th>Semestre</th><th>Début</th><th>Fin</th><th>Statut</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Semestre</th><th>Début</th><th>Fin</th><th>Statut</th><th>Reçu</th><th>Actions</th></tr></thead>
         <tbody id="sm-history-tbody"></tbody>
       </table>
     </div>
@@ -2624,19 +2624,30 @@ function renderStudentModal() {
          acts = '<button class="btn-grn" style="padding:.25rem .5rem;font-size:.68rem;" onclick="smReactivate(\''+p.id+'\')">Réactiver</button>';
       }
       
+      var matchingAbo = _smAllAbosCache.find(function(a){ return a.semestre === p.sem; });
+      var recuHtml = (matchingAbo && matchingAbo.recu) 
+          ? '<a href="'+matchingAbo.recu+'" target="_blank" style="color:var(--redl);text-decoration:none;font-weight:600;padding:2px 6px;background:var(--redd);border-radius:4px;display:inline-block;font-size:0.7rem;">Voir</a>'
+          : '<span style="color:var(--mut2);">—</span>';
+      
       return '<tr><td style="color:var(--txt);font-weight:600;">' + p.sem + '</td>'
            + '<td>' + formatDateTime(p.start) + '</td>'
            + '<td>' + formatDateTime(p.exp) + '</td>'
            + '<td>' + badge + '</td>'
+           + '<td>' + recuHtml + '</td>'
            + '<td>' + acts + '</td></tr>';
     }).join('');
     
     if (_smPendingAbosCache.length > 0) {
       html += _smPendingAbosCache.map(function(a) {
+        var recuHtml = a.recu 
+            ? '<a href="'+a.recu+'" target="_blank" style="color:var(--redl);text-decoration:none;font-weight:600;padding:2px 6px;background:var(--redd);border-radius:4px;display:inline-block;font-size:0.7rem;">Voir</a>'
+            : '<span style="color:var(--mut2);">—</span>';
+
         return '<tr><td style="color:var(--txt);font-weight:600;opacity:.8;">📝 ' + a.semestre + '</td>'
              + '<td style="opacity:.7;">' + formatDateTime(a.created_at) + '</td>'
              + '<td style="opacity:.6;">—</td>'
              + '<td><span class="ba" style="opacity:.8;">En attente validation</span></td>'
+             + '<td>' + recuHtml + '</td>'
              + '<td><button class="btn-grn" style="padding:.25rem .5rem;font-size:.68rem;" onclick="smActivateAdditional(\''+a.email+'\', \''+a.semestre+'\', \''+a.id+'\')">✅ Activer l\'ajout</button></td></tr>';
       }).join('');
     }
