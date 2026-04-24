@@ -651,7 +651,7 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
     <div class="card">
       <div class="card-head"><span class="card-title">Toutes les transactions</span></div>
       <table>
-        <thead><tr><th>Étudiant</th><th>Semestre</th><th>Montant</th><th>Méthode</th><th>Date</th><th>Statut</th></tr></thead>
+        <thead><tr><th>Étudiant</th><th>Semestre</th><th>Montant</th><th>Méthode</th><th>Date</th><th>Statut</th><th>Reçu</th></tr></thead>
         <tbody id="abo-tbody"></tbody>
       </table>
     </div>
@@ -2402,13 +2402,33 @@ async function renderAbonnements() {
 
   // All transactions
   var tbody = document.getElementById('abo-tbody');
-  if (!abos.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Aucune transaction</td></tr>'; return; }
+  if (!abos.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Aucune transaction</td></tr>'; return; }
   tbody.innerHTML = abos.map(function(a){
     var cls = a.statut==='Actif' ? 'bg' : a.statut==='En attente' ? 'ba' : 'br';
+    var recuBtn = a.recu 
+      ? '<a href="'+a.recu+'" target="_blank" style="color:var(--redl);text-decoration:none;font-weight:600;padding:4px 8px;background:var(--redd);border-radius:6px;display:inline-block;">Voir le reçu</a>' 
+      : '<label style="cursor:pointer;color:var(--mut);font-size:0.8rem;text-decoration:underline;background:rgba(255,255,255,0.05);padding:4px 8px;border-radius:6px;">+ Ajouter<input type="file" style="display:none;" onchange="uploadRetroReceipt(this.files[0], '+a.id+')"></label>';
     return '<tr><td style="color:var(--txt);font-weight:600;">' + a.nom + '</td>'
       + '<td>' + a.semestre + '</td><td>' + a.montant + ' DH</td><td>' + a.methode + '</td><td>' + a.date + '</td>'
-      + '<td><span class="' + cls + '">' + a.statut + '</span></td></tr>';
+      + '<td><span class="' + cls + '">' + a.statut + '</span></td><td>' + recuBtn + '</td></tr>';
   }).join('');
+}
+
+window.uploadRetroReceipt = async function(file, id) {
+  if(!file) return;
+  toast('Upload du reçu en cours...', 'ok');
+  var url = await uploadReceiptFile(file);
+  if(url) {
+    await dbUpdateAbonnement(id, { recu: url });
+    toast('Reçu ajouté avec succès !', 'ok');
+    if(window.GLOBAL_ABOS) {
+      var item = window.GLOBAL_ABOS.find(function(x){ return x.id == id; });
+      if(item) item.recu = url;
+    }
+    renderAbonnements();
+  } else {
+    toast('Erreur lors de l\'upload', 'err');
+  }
 }
 
 // ══════════════════════════════════

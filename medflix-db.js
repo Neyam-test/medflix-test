@@ -360,22 +360,62 @@ async function dbDeleteQCM(id) {
 async function dbGetAbonnements() {
   var { data, error } = await sb.from('abonnements').select('*').order('created_at', { ascending: false });
   if (error) { console.error('dbGetAbonnements:', error); return []; }
+  
+  var retro = {};
+  try {
+    var rData = await sb.from('config').select('value').eq('key', 'retro_receipts').single();
+    if (rData && rData.data) retro = JSON.parse(rData.data.value) || {};
+  } catch(e) {}
+
   return (data || []).map(function(r) {
-    return { id: r.id, nom: r.nom, email: r.email, semestre: r.semestre, montant: r.montant, methode: r.methode, statut: r.statut, expiration: r.expiration, date: new Date(r.created_at).toLocaleDateString('fr-FR'), created_at: r.created_at, recu: r.recu || null, admin: r.admin || null };
+    return { id: r.id, nom: r.nom, email: r.email, semestre: r.semestre, montant: r.montant, methode: r.methode, statut: r.statut, expiration: r.expiration, date: new Date(r.created_at).toLocaleDateString('fr-FR'), created_at: r.created_at, recu: r.recu || retro[r.id] || null, admin: r.admin || null };
   });
 }
 
 async function dbAddAbonnement(a) {
-  var { error } = await sb.from('abonnements').insert({
+  var payload = {
     nom: a.nom, email: a.email, semestre: a.semestre, montant: a.montant || 199, 
     methode: a.methode, statut: a.statut, expiration: a.expiration || null,
     recu: a.recu || null, admin: a.admin || null
-  });
+  };
+  var { error, data } = await sb.from('abonnements').insert(payload).select().single();
+  
+  while (error && (error.code === '42703' || error.code === 'PGRST204')) {
+    var match = error.message.match(/column "(.*?)"/) || error.message.match(/the '(.*?)' column/);
+    var col = match ? match[1] : null;
+    if (col) { 
+      delete payload[col]; 
+      var r = await sb.from('abonnements').insert(payload).select().single(); 
+      error = r.error; 
+      data = r.data;
+    } else break;
+  }
+  
+  if (!error && data && a.recu && !('recu' in payload)) {
+    await dbSetRetroReceipt(data.id, a.recu);
+  }
+  
   if (error) console.error('dbAddAbonnement:', error);
 }
 
 async function dbUpdateAbonnement(id, updates) {
-  var { error } = await sb.from('abonnements').update(updates).eq('id', id);
+  var payload = Object.assign({}, updates);
+  var { error } = await sb.from('abonnements').update(payload).eq('id', id);
+  
+  while (error && (error.code === '42703' || error.code === 'PGRST204')) {
+    var match = error.message.match(/column "(.*?)"/) || error.message.match(/the '(.*?)' column/);
+    var col = match ? match[1] : null;
+    if (col) { 
+      delete payload[col]; 
+      var r = await sb.from('abonnements').update(payload).eq('id', id); 
+      error = r.error; 
+    } else break;
+  }
+
+  if (!error && updates.recu && !('recu' in payload)) {
+    await dbSetRetroReceipt(id, updates.recu);
+  }
+
   if (error) console.error('dbUpdateAbonnement:', error);
 }
 
@@ -455,6 +495,16 @@ async function dbSetBannedWords(words) {
     var { error } = await sb.from('config').upsert({ key: 'banned_words', value: JSON.stringify(words) }, { onConflict: 'key' });
     if (error) console.error('dbSetBannedWords:', error);
   } catch(e) {}
+}
+
+async function dbSetRetroReceipt(id, url) {
+  try {
+    var dict = {};
+    var { data, error } = await sb.from('config').select('value').eq('key', 'retro_receipts').single();
+    if (!error && data) dict = JSON.parse(data.value) || {};
+    dict[id] = url;
+    await sb.from('config').upsert({ key: 'retro_receipts', value: JSON.stringify(dict) }, { onConflict: 'key' });
+  } catch(e) { console.error('dbSetRetroReceipt', e); }
 }
 
 // ══════════════════════════════════
