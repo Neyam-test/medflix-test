@@ -3198,9 +3198,9 @@ async function unbanUser(email) {
          content: 'Levée de sanction manuelle.',
          admin: adminName
      });
-     await dbUpdateUser(email, { comment_banned_until: null, progress: prog });
+     await dbUpdateUser(email, { comment_banned_until: null, ban_expiration: null, progress: prog });
   } else {
-     await dbUpdateUser(email, { comment_banned_until: null });
+     await dbUpdateUser(email, { comment_banned_until: null, ban_expiration: null });
   }
   toast('Étudiant débanni', 'ok');
   loadBannedUsersAdmin();
@@ -3223,9 +3223,9 @@ async function permaBanUser(email) {
         content: 'Action manuelle depuis le panel administrateur.',
         admin: adminName
      });
-     await dbUpdateUser(email, { comment_banned_until: 'permanent', progress: prog });
+     await dbUpdateUser(email, { comment_banned_until: 'permanent', ban_expiration: 'permanent', progress: prog });
   } else {
-     await dbUpdateUser(email, { comment_banned_until: 'permanent' });
+     await dbUpdateUser(email, { comment_banned_until: 'permanent', ban_expiration: 'permanent' });
   }
   toast('Étudiant banni à vie', 'ok');
   loadBannedUsersAdmin();
@@ -3267,7 +3267,7 @@ async function modifyBanTime(email) {
     admin: adminName
   });
 
-  await dbUpdateUser(email, { comment_banned_until: newExp, progress: prog });
+  await dbUpdateUser(email, { comment_banned_until: newExp, ban_expiration: newExp, progress: prog });
   toast('Sanction modifiée', 'ok');
   loadBannedUsersAdmin();
   var modModal = document.getElementById('moderation-modal');
@@ -3411,9 +3411,9 @@ async function adminPunishComment(id, mode) {
           content: c.content,
           admin: adminName
        });
-     await dbUpdateUser(c.email, { comment_banned_until: exp, progress: prog });
+     await dbUpdateUser(c.email, { comment_banned_until: exp, ban_expiration: exp, progress: prog });
   } else {
-     await dbUpdateUser(c.email, { comment_banned_until: exp });
+     await dbUpdateUser(c.email, { comment_banned_until: exp, ban_expiration: exp });
   }
 
   // 2. Supprimer le com (Soft Delete)
