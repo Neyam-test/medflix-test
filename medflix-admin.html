@@ -1264,9 +1264,11 @@ async function refreshDashboard() {
   var abos = await dbGetAbonnements();
   GLOBAL_ABOS = abos; // Cache for revenue analytics
   
-  // Summing revenue from RIB and Billeterie only (Actif and Résilié)
+  // Summing revenue from RIB and Billeterie only (Actif and Résilié) since reset date (2026-04-24)
   var rev = abos.filter(function(a){ 
     if (a.statut !== 'Actif' && a.statut !== 'Résilié') return false;
+    // Reset date: 24/04/2026
+    if (new Date(a.created_at) < new Date('2026-04-24T16:00:00Z')) return false;
     var m = (a.methode || '').toLowerCase();
     return m.includes('rib') || m.includes('virement') || m.includes('billeterie');
   }).reduce(function(acc, curr){ return acc + (parseInt(curr.montant) || 199); }, 0);
@@ -1393,6 +1395,9 @@ function renderRevenueHistory() {
    GLOBAL_ABOS.forEach(function(a) {
        var tDate = new Date(a.created_at);
        var tTime = tDate.getTime();
+       
+       // RESET GLOBAL DU COMPTEUR (24/04/2026)
+       if (tTime < new Date('2026-04-24T16:00:00Z').getTime()) return;
        
        if (periodFilter === 'today' && tTime < todayStart) return;
        if (periodFilter === 'week' && tTime < weekStart) return;
