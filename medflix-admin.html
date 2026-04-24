@@ -1678,10 +1678,36 @@ async function _doActivateUser(email, targetSemestre, aboId, receiptUrl, methode
     expiration: latestExp, paid: paid, paidDetails: paidDetails
   });
 
+  var adminName = getCurrentAdminName();
+  var nowISO = new Date().toISOString();
+
   if (aboId) {
-    await dbUpdateAbonnement(aboId, { statut: 'Actif', expiration: expDate, methode: methode, recu: receiptUrl, admin: adminName });
+    // Supprimer l'ancienne demande "En attente" et créer un NOUVEL enregistrement
+    // Cela garantit que created_at = maintenant (géré par Supabase), afin que le revenu soit compté
+    await dbDeleteAbonnement(aboId);
+    await dbAddAbonnement({
+      nom: user.name,
+      email: email,
+      semestre: sem,
+      montant: 199,
+      methode: methode,
+      statut: 'Actif',
+      expiration: expDate,
+      recu: receiptUrl,
+      admin: adminName
+    });
   } else {
-    await dbAddAbonnement({ nom:user.name, email:email, semestre:sem, montant:199, methode:methode, statut:'Actif', expiration:expDate, recu: receiptUrl, admin: adminName });
+    await dbAddAbonnement({ 
+      nom:user.name, 
+      email:email, 
+      semestre:sem, 
+      montant:199, 
+      methode:methode, 
+      statut:'Actif', 
+      expiration:expDate, 
+      recu: receiptUrl, 
+      admin: adminName 
+    });
   }
 
   var expFormatted = new Date(expDate).toLocaleDateString('fr-FR');
