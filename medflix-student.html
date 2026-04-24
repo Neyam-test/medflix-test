@@ -3071,9 +3071,41 @@
       if (found) {
         // Apply 4 hour ban
         var until = new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString();
-        await dbUpdateUser(SESSION.email, { comment_banned_until: until });
+        
+        // Fetch current user to get progress for history
+        var u = await dbGetUser(SESSION.email);
+        var prog = u ? (typeof u.progress === 'string' ? JSON.parse(u.progress) : (u.progress || {})) : {};
+        if (!prog.moderation_history) prog.moderation_history = [];
+        prog.moderation_history.push({
+           date: new Date().toISOString(),
+           action: 'Auto-Ban 4h',
+           content: 'Mot interdit utilisé : "' + found + '"',
+           admin: 'Système'
+        });
+
+        await dbUpdateUser(SESSION.email, { comment_banned_until: until, ban_expiration: until, progress: prog });
         SESSION.comment_banned_until = until;
+        SESSION.ban_expiration = until;
+        SESSION.progress = prog;
         localStorage.setItem('medflix_session', JSON.stringify(SESSION));
+        
+        // Hide UI immediately
+        var wrap = document.querySelector('.cmt-inp-wrap');
+        if (wrap) wrap.style.display = 'none';
+        
+        var msgDiv = document.createElement('div');
+        msgDiv.id = 'cmt-ban-msg';
+        msgDiv.style.padding = '1rem';
+        msgDiv.style.textAlign = 'center';
+        msgDiv.style.color = '#f87171';
+        msgDiv.style.background = 'rgba(248,113,113,.1)';
+        msgDiv.style.borderTop = '1px solid var(--line)';
+        msgDiv.style.fontSize = '.85rem';
+        msgDiv.style.fontWeight = '600';
+        msgDiv.textContent = '🔒 Privilèges suspendus temporairement.';
+        var cont = document.getElementById('comment-win');
+        if (cont && !document.getElementById('cmt-ban-msg')) cont.appendChild(msgDiv);
+
         alert("⚠️ Ton message contient un terme non autorisé : \"" + found + "\".\n\nTes privilèges de commentaires ont été suspendus pour 4 heures par mesure de sécurité.");
         return true;
       }
