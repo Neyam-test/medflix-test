@@ -1148,6 +1148,45 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
   </div>
 </div>
 
+<!-- MODAL BAN PERSONNALISÉ -->
+<div id="ban-modal" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;padding:1rem;">
+  <div style="background:var(--sur);border:1px solid var(--redb);border-radius:20px;padding:2.5rem;width:100%;max-width:480px;animation:pop .25s ease;">
+    <div style="font-family:'Instrument Serif',serif;font-size:1.8rem;color:var(--txt);margin-bottom:.3rem;">Bannissement Personnalisé</div>
+    <div style="font-size:.85rem;color:var(--mut);margin-bottom:1.75rem;" id="bm-subtitle">—</div>
+    
+    <div class="field">
+      <label>Date et heure d'expiration du ban</label>
+      <input type="datetime-local" id="bm-date" style="color-scheme:dark;">
+    </div>
+    
+    <div class="fr2" style="margin-bottom:1rem;">
+      <button class="btn-ghost" onclick="bmAddHours(4)">+4 heures</button>
+      <button class="btn-ghost" onclick="bmAddHours(24)">+24 heures</button>
+    </div>
+    <div class="fr2" style="margin-bottom:1.5rem;">
+      <button class="btn-ghost" onclick="bmAddHours(48)">+48 heures</button>
+      <button class="btn-ghost" onclick="bmAddHours(168)">+1 semaine</button>
+    </div>
+    
+    <div class="form-actions">
+      <button class="btn-ghost" style="flex:1;" onclick="closeBanModal(false)">Annuler</button>
+      <button class="btn-red" style="flex:1;" onclick="closeBanModal(true)">💾 Appliquer le Ban</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMATION GENERIQUE -->
+<div id="confirm-modal" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;padding:1rem;">
+  <div style="background:var(--sur);border:1px solid var(--redb);border-radius:20px;padding:2.5rem;width:100%;max-width:440px;animation:pop .25s ease;">
+    <div style="font-family:'Instrument Serif',serif;font-size:1.8rem;color:var(--txt);margin-bottom:.5rem;" id="cm-title">Confirmation</div>
+    <div style="font-size:1rem;color:var(--mut);margin-bottom:2rem;line-height:1.5;" id="cm-msg">Êtes-vous sûr de vouloir effectuer cette action ?</div>
+    <div class="form-actions">
+      <button class="btn-ghost" style="flex:1;" onclick="closeConfirm(false)">Annuler</button>
+      <button class="btn-red" style="flex:1;" id="cm-yes-btn">Confirmer</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ══════════════════════════════════
 //  CONFIG
@@ -1947,7 +1986,7 @@ async function processBulkRenewal() {
    var sem = document.getElementById('rn-semestre').value;
    if (!sem || _renewalsUsersList.length === 0) return;
    
-   if (!confirm('Êtes-vous sûr de vouloir RÉVOQUER l\'abonnement au ' + sem + ' pour ' + _renewalsUsersList.length + ' étudiants et de leur envoyer le mail de fin de saison ?')) return;
+   if (!(await showConfirm('Révocation Bulk', 'Êtes-vous sûr de vouloir RÉVOQUER l\'abonnement au ' + sem + ' pour ' + _renewalsUsersList.length + ' étudiants et de leur envoyer le mail de fin de saison ?'))) return;
    
    var btn = document.getElementById('btn-rn-execute');
    btn.disabled = true;
@@ -2150,7 +2189,7 @@ function renderGroupedHTML(list, type) {
 }
 
 async function deleteDocument(type, id) {
-  if (!confirm('Voulez-vous vraiment supprimer ce document ?')) return;
+  if (!(await showConfirm('Suppression', 'Voulez-vous vraiment supprimer ce document ?'))) return;
   if (type === 'cours') await dbDeleteCours(id);
   else if (type === 'tp') await dbDeleteTP(id);
   else if (type === 'qcm') await dbDeleteQCM(id);
@@ -2768,6 +2807,50 @@ async function openDateModal(subId, isReactivate) {
 
 function closeDateModal() { document.getElementById('date-modal').style.display = 'none'; _dmSubId=''; }
 
+// --- MODAL HELPERS ---
+var _confirmResolver = null;
+function showConfirm(title, msg) {
+  document.getElementById('cm-title').textContent = title;
+  document.getElementById('cm-msg').textContent = msg;
+  document.getElementById('confirm-modal').style.display = 'flex';
+  return new Promise(resolve => {
+    _confirmResolver = resolve;
+    document.getElementById('cm-yes-btn').onclick = () => {
+      document.getElementById('confirm-modal').style.display = 'none';
+      resolve(true);
+    };
+  });
+}
+function closeConfirm(val) {
+  document.getElementById('confirm-modal').style.display = 'none';
+  if(_confirmResolver) _confirmResolver(val);
+}
+
+var _banResolver = null;
+function showBanModal(subtitle) {
+  document.getElementById('bm-subtitle').textContent = subtitle;
+  var d = new Date();
+  var offset = d.getTimezoneOffset() * 60000;
+  document.getElementById('bm-date').value = (new Date(d - offset)).toISOString().slice(0, 16);
+  document.getElementById('ban-modal').style.display = 'flex';
+  return new Promise(resolve => {
+    _banResolver = resolve;
+  });
+}
+function closeBanModal(val) {
+  document.getElementById('ban-modal').style.display = 'none';
+  if(_banResolver) {
+    if(val) _banResolver(document.getElementById('bm-date').value);
+    else _banResolver(null);
+  }
+}
+function bmAddHours(h) {
+  var d = document.getElementById('bm-date').value ? new Date(document.getElementById('bm-date').value) : new Date();
+  d.setHours(d.getHours() + h);
+  var offset = d.getTimezoneOffset() * 60000;
+  document.getElementById('bm-date').value = (new Date(d - offset)).toISOString().slice(0, 16);
+}
+
 function dmAddDays(days) {
   var input = document.getElementById('dm-date');
   var base = new Date();
@@ -3098,7 +3181,7 @@ async function loadGlobalModerationAdmin() {
   tbody.innerHTML = rows;
 }
 async function unbanUser(email) {
-  if (!confirm('Débannir cet étudiant ?')) return;
+  if (!(await showConfirm('Débannir', 'Débannir cet étudiant ?'))) return;
   var u = await dbGetUser(email);
   var adminName = (SESS && SESS.name) ? SESS.name : 'Admin';
   if (u) {
@@ -3123,7 +3206,7 @@ async function unbanUser(email) {
 }
 
 async function permaBanUser(email) {
-  if (!confirm('Bannir DÉFINITIVEMENT cet étudiant ? Il ne pourra plus jamais commenter.')) return;
+  if (!(await showConfirm('Ban Définitif', 'Bannir DÉFINITIVEMENT cet étudiant ? Il ne pourra plus jamais commenter.'))) return;
   var u = await dbGetUser(email);
   var adminName = (SESS && SESS.name) ? SESS.name : 'Admin';
   if (u) {
@@ -3245,7 +3328,7 @@ function escAdmin(str) {
 }
 
 async function adminDeleteComment(id) {
-  if (!confirm('Supprimer ce commentaire et toutes ses réponses ?')) return;
+  if (!(await showConfirm('Supprimer', 'Supprimer ce commentaire et toutes ses réponses ?'))) return;
 
   var c = _allComments.find(function(x){ return String(x.id) === String(id); });
   if (c && c.email) {
@@ -3280,19 +3363,17 @@ async function adminPunishComment(id, mode) {
 
   var msg = mode === 'permanent' ? 'Bannir DÉFINITIVEMENT cet étudiant ?' : 
             (mode === 4 ? 'Bannir l\'étudiant pour 4 heures ?' : 'Bannir avec durée personnalisée ?');
-  if (!confirm('Attention : Ceci va SUPPRIMER le commentaire ET ' + msg)) return;
+  if (!(await showConfirm('Attention', 'Ceci va SUPPRIMER le commentaire ET ' + msg))) return;
 
   var exp = '';
   var hours = 4;
   if (mode === 'permanent') {
     exp = 'permanent';
   } else if (mode === 'custom') {
-    var h = prompt('Entrez la durée du ban en heures :', '24');
-    if (!h) return;
-    h = parseFloat(h);
-    if (isNaN(h) || h <= 0) return;
-    hours = h;
-    exp = new Date(Date.now() + h * 3600000).toISOString();
+    var val = await showBanModal(c.author + ' — ' + c.course_title);
+    if (!val) return;
+    exp = new Date(val).toISOString();
+    hours = Math.round((new Date(exp) - Date.now()) / 3600000);
   } else {
     exp = new Date(Date.now() + 4 * 3600000).toISOString();
   }
@@ -3404,17 +3485,7 @@ function closeModerationHistory() {
    if (modModal) modModal.style.display = 'none';
 }
 
-async function adminDeleteComment(id) {
-  if (!confirm('Supprimer ce commentaire et toutes ses réponses ?')) return;
-  await dbDeleteComment(id);
-  _allComments = _allComments.filter(function(c){ return c.id !== id && c.parent_id !== id; });
-  // update badge
-  var nb = document.getElementById('nb-comments');
-  if (_allComments.length > 0) { nb.textContent = _allComments.length; nb.style.display = 'inline'; }
-  else { nb.style.display = 'none'; }
-  renderCommentsAdmin();
-  toast('Commentaire supprimé', 'ok');
-}
+// adminDeleteComment redundant copy removed to use the main version with history logging.
 
 
 </script>
