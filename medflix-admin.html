@@ -1151,26 +1151,30 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
 <!-- MODAL BAN PERSONNALISÉ -->
 <div id="ban-modal" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;padding:1rem;">
   <div style="background:var(--sur);border:1px solid var(--redb);border-radius:20px;padding:2.5rem;width:100%;max-width:480px;animation:pop .25s ease;">
-    <div style="font-family:'Instrument Serif',serif;font-size:1.8rem;color:var(--txt);margin-bottom:.3rem;">Bannissement Personnalisé</div>
-    <div style="font-size:.85rem;color:var(--mut);margin-bottom:1.75rem;" id="bm-subtitle">—</div>
+    <div style="font-family:'Instrument Serif',serif;font-size:1.8rem;color:var(--txt);margin-bottom:.3rem;">Durée du bannissement</div>
+    <div style="font-size:.85rem;color:var(--mut);margin-bottom:1.5rem;" id="bm-subtitle">—</div>
     
+    <div style="margin-bottom:1.5rem;display:flex;flex-direction:column;gap:0.5rem;">
+      <button class="btn-ghost" style="padding:.8rem;border-color:var(--grn);color:var(--grn);font-weight:600;" onclick="closeBanModal('unban')">✅ Débannir instantanément</button>
+      <button class="btn-del" style="padding:.8rem;font-weight:600;" onclick="closeBanModal('permanent')">🔨 Bannir à vie</button>
+    </div>
+
     <div class="field">
-      <label>Date et heure d'expiration du ban</label>
+      <label>Date et heure d'expiration personnalisée</label>
       <input type="datetime-local" id="bm-date" style="color-scheme:dark;">
     </div>
     
     <div class="fr2" style="margin-bottom:1rem;">
-      <button class="btn-ghost" onclick="bmAddHours(4)">+4 heures</button>
       <button class="btn-ghost" onclick="bmAddHours(24)">+24 heures</button>
+      <button class="btn-ghost" onclick="bmAddHours(48)">+48 heures</button>
     </div>
     <div class="fr2" style="margin-bottom:1.5rem;">
-      <button class="btn-ghost" onclick="bmAddHours(48)">+48 heures</button>
-      <button class="btn-ghost" onclick="bmAddHours(168)">+1 semaine</button>
+      <button class="btn-ghost" onclick="bmAddHours(168)" style="grid-column:1/-1;">+1 semaine</button>
     </div>
     
     <div class="form-actions">
       <button class="btn-ghost" style="flex:1;" onclick="closeBanModal(false)">Annuler</button>
-      <button class="btn-red" style="flex:1;" onclick="closeBanModal(true)">💾 Appliquer le Ban</button>
+      <button class="btn-red" style="flex:1;" onclick="closeBanModal(true)">💾 Appliquer</button>
     </div>
   </div>
 </div>
@@ -2840,7 +2844,8 @@ function showBanModal(subtitle) {
 function closeBanModal(val) {
   document.getElementById('ban-modal').style.display = 'none';
   if(_banResolver) {
-    if(val) _banResolver(document.getElementById('bm-date').value);
+    if(val === 'unban' || val === 'permanent') _banResolver(val);
+    else if(val === true || typeof val === 'string') _banResolver(document.getElementById('bm-date').value);
     else _banResolver(null);
   }
 }
@@ -3230,30 +3235,40 @@ async function permaBanUser(email) {
   }
 }
 
-async function modifyBanTime(email, ignoreParam) {
-  var h = prompt('Entrez la nouvelle durée totale du ban RESTANTE en heures (ex: 24) :', '4');
-  if (!h) return;
-  h = parseFloat(h);
-  if (isNaN(h) || h <= 0) return;
-  
-  var newExp = new Date(Date.now() + h * 3600000).toISOString();
-  
+async function modifyBanTime(email) {
   var u = await dbGetUser(email);
-  var adminName = (SESS && SESS.name) ? SESS.name : 'Admin';
-  if (u) {
-     var prog = typeof u.progress === 'string' ? JSON.parse(u.progress) : (u.progress || {});
-     if (!prog.moderation_history) prog.moderation_history = [];
-     prog.moderation_history.push({
-        date: new Date().toISOString(),
-        action: 'Ajustement Manuel (Ban ' + h + 'h)',
-        content: 'Sanction ajustée manuellement (Nouveau durée : ' + h + 'h).',
-        admin: adminName
-     });
-     await dbUpdateUser(email, { comment_banned_until: newExp, progress: prog });
+  if (!u) return;
+
+  var val = await showBanModal(u.name + ' (' + u.email + ')');
+  if (!val) return;
+
+  var newExp = '';
+  var actionText = '';
+  
+  if (val === 'unban') {
+    newExp = null;
+    actionText = 'Débannissement (Levée manuelle)';
+  } else if (val === 'permanent') {
+    newExp = 'permanent';
+    actionText = 'Ban Définitif (Action manuelle)';
   } else {
-     await dbUpdateUser(email, { comment_banned_until: newExp });
+    newExp = new Date(val).toISOString();
+    var hours = Math.round((new Date(newExp) - Date.now()) / 3600000);
+    actionText = 'Ajustement Manuel (Ban ' + hours + 'h)';
   }
-  toast('Durée modifiée', 'ok');
+  
+  var adminName = (SESS && SESS.name) ? SESS.name : 'Admin';
+  var prog = typeof u.progress === 'string' ? JSON.parse(u.progress) : (u.progress || {});
+  if (!prog.moderation_history) prog.moderation_history = [];
+  prog.moderation_history.push({
+    date: new Date().toISOString(),
+    action: actionText,
+    content: 'Sanction ajustée manuellement via le panel étudiant.',
+    admin: adminName
+  });
+
+  await dbUpdateUser(email, { comment_banned_until: newExp, progress: prog });
+  toast('Sanction modifiée', 'ok');
   loadBannedUsersAdmin();
   var modModal = document.getElementById('moderation-modal');
   if (modModal && modModal.style.display === 'flex' && document.getElementById('mod-email').textContent === email) {
@@ -3371,9 +3386,14 @@ async function adminPunishComment(id, mode) {
     exp = 'permanent';
   } else if (mode === 'custom') {
     var val = await showBanModal(c.author + ' — ' + c.course_title);
-    if (!val) return;
-    exp = new Date(val).toISOString();
-    hours = Math.round((new Date(exp) - Date.now()) / 3600000);
+    if (!val || val === 'unban') return;
+    if (val === 'permanent') {
+       exp = 'permanent';
+       hours = 0;
+    } else {
+       exp = new Date(val).toISOString();
+       hours = Math.round((new Date(exp) - Date.now()) / 3600000);
+    }
   } else {
     exp = new Date(Date.now() + 4 * 3600000).toISOString();
   }
@@ -3429,12 +3449,12 @@ async function openModerationHistoryMode(email) {
    var actionsDiv = document.getElementById('mod-actions');
    actionsDiv.innerHTML = '';
    if (isBanned && !isPermanent) {
-       actionsDiv.innerHTML = '<button class="btn-ghost" style="padding:.3rem .8rem;font-size:.75rem;" onclick="modifyBanTime(\''+u.email+'\')">⏳ Modifier durée</button>' +
+       actionsDiv.innerHTML = '<button class="btn-ghost" style="padding:.3rem .8rem;font-size:.75rem;" onclick="modifyBanTime(\''+u.email+'\')">⏳ Modifier la durée de ban</button>' +
                               '<button class="btn-del" style="padding:.3rem .8rem;font-size:.75rem;" onclick="permaBanUser(\''+u.email+'\')">🔨 Bannir à vie</button>';
    } else if (isBanned && isPermanent) {
-       actionsDiv.innerHTML = '<button class="btn-ghost" style="padding:.3rem .8rem;font-size:.75rem;" onclick="modifyBanTime(\''+u.email+'\')">⏳ Alléger le ban (Modifier)</button>';
+       actionsDiv.innerHTML = '<button class="btn-ghost" style="padding:.3rem .8rem;font-size:.75rem;" onclick="modifyBanTime(\''+u.email+'\')">⏳ Modifier la durée de ban</button>';
    } else {
-       actionsDiv.innerHTML = '<button class="btn-ghost" style="border-color:var(--redd);color:var(--redl);padding:.3rem .8rem;font-size:.75rem;" onclick="modifyBanTime(\''+u.email+'\')">⏳ Bannir temporairement</button>' +
+       actionsDiv.innerHTML = '<button class="btn-ghost" style="border-color:var(--redd);color:var(--redl);padding:.3rem .8rem;font-size:.75rem;" onclick="modifyBanTime(\''+u.email+'\')">⏳ Modifier la durée de ban</button>' +
                               '<button class="btn-del" style="padding:.3rem .8rem;font-size:.75rem;" onclick="permaBanUser(\''+u.email+'\')">🔨 Bannir à vie</button>';
    }
    
