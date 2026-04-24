@@ -361,13 +361,15 @@ async function dbGetAbonnements() {
   var { data, error } = await sb.from('abonnements').select('*').order('created_at', { ascending: false });
   if (error) { console.error('dbGetAbonnements:', error); return []; }
   return (data || []).map(function(r) {
-    return { id: r.id, nom: r.nom, email: r.email, semestre: r.semestre, montant: r.montant, methode: r.methode, statut: r.statut, expiration: r.expiration, date: new Date(r.created_at).toLocaleDateString('fr-FR'), created_at: r.created_at };
+    return { id: r.id, nom: r.nom, email: r.email, semestre: r.semestre, montant: r.montant, methode: r.methode, statut: r.statut, expiration: r.expiration, date: new Date(r.created_at).toLocaleDateString('fr-FR'), created_at: r.created_at, recu: r.recu || null, admin: r.admin || null };
   });
 }
 
 async function dbAddAbonnement(a) {
   var { error } = await sb.from('abonnements').insert({
-    nom: a.nom, email: a.email, semestre: a.semestre, montant: a.montant || 199, methode: a.methode, statut: a.statut, expiration: a.expiration || null
+    nom: a.nom, email: a.email, semestre: a.semestre, montant: a.montant || 199, 
+    methode: a.methode, statut: a.statut, expiration: a.expiration || null,
+    recu: a.recu || null, admin: a.admin || null
   });
   if (error) console.error('dbAddAbonnement:', error);
 }
