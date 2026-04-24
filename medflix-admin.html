@@ -1264,9 +1264,12 @@ async function refreshDashboard() {
   var abos = await dbGetAbonnements();
   GLOBAL_ABOS = abos; // Cache for revenue analytics
   
-  // Summing revenue from all non-pending subscriptions (Actif and Résilié)
-  var rev = abos.filter(function(a){ return a.statut === 'Actif' || a.statut === 'Résilié'; })
-                .reduce(function(acc, curr){ return acc + (parseInt(curr.montant) || 199); }, 0);
+  // Summing revenue from RIB and Billeterie only (Actif and Résilié)
+  var rev = abos.filter(function(a){ 
+    if (a.statut !== 'Actif' && a.statut !== 'Résilié') return false;
+    var m = (a.methode || '').toLowerCase();
+    return m.includes('rib') || m.includes('virement') || m.includes('billeterie');
+  }).reduce(function(acc, curr){ return acc + (parseInt(curr.montant) || 199); }, 0);
 
   var expiring = active.filter(function(u){
     var tr = getTimeRemaining(u.expiration);
@@ -1431,8 +1434,8 @@ function renderRevenueHistory() {
 
    document.getElementById('rev-rib').textContent = revRib + ' DH';
    document.getElementById('rev-bill').textContent = revBill + ' DH';
-   document.getElementById('rev-aut').textContent = revAutres + ' DH';
-   document.getElementById('rev-tot').textContent = (revRib + revBill + revAutres) + ' DH';
+   document.getElementById('rev-aut').textContent = revAutres + ' DH (Non compté)';
+   document.getElementById('rev-tot').textContent = (revRib + revBill) + ' DH';
 
    if (!tHtml) tHtml = '<tr><td colspan="7" style="padding:2rem;text-align:center;color:var(--mut2);">Aucune transaction trouvée pour ces filtres.</td></tr>';
    document.getElementById('rev-tbody').innerHTML = tHtml;
