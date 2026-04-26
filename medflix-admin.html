@@ -1302,7 +1302,16 @@ async function refreshDashboard() {
   document.getElementById('ds-total').textContent = users.length || '—';
 
   var pending = users.filter(function(u){ return !u.activated && !u.resiliated; });
-  var active  = users.filter(function(u){ return u.activated; });
+  var active = users.filter(function(u){
+    if (!u.activated || u.resiliated) return false;
+    if (u.paidDetails && u.paidDetails.length > 0) {
+      return u.paidDetails.some(function(p) { return getPaidDetailStatus(p) === 'actif'; });
+    }
+    if (u.expiration) {
+      return new Date(u.expiration) > new Date();
+    }
+    return true;
+  });
 
   var abos = await dbGetAbonnements();
   GLOBAL_ABOS = abos; // Cache for revenue analytics
@@ -2440,9 +2449,18 @@ async function renderQCMList() {
 // ══════════════════════════════════
 async function renderAbonnements() {
   var abos = await dbGetAbonnements();
-  var actifs  = abos.filter(function(a){ return a.statut==='Actif'; }).length;
+  var users = await dbGetUsers();
+  var actifs = users.filter(function(u){
+    if (!u.activated || u.resiliated) return false;
+    if (u.paidDetails && u.paidDetails.length > 0) {
+      return u.paidDetails.some(function(p) { return getPaidDetailStatus(p) === 'actif'; });
+    }
+    if (u.expiration) {
+      return new Date(u.expiration) > new Date();
+    }
+    return true;
+  }).length;
   var pending = abos.filter(function(a){ return a.statut==='En attente'; });
-  var rev     = actifs * 199;
   document.getElementById('abo-actifs').textContent  = actifs || '—';
   document.getElementById('abo-attente').textContent = pending.length || '—';
 
