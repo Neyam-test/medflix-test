@@ -1316,10 +1316,26 @@ async function refreshDashboard() {
     return m.includes('rib') || m.includes('virement') || m.includes('billeterie');
   }).reduce(function(acc, curr){ return acc + (parseInt(curr.montant) || 199); }, 0);
 
-  var expiring = active.filter(function(u){
-    var tr = getTimeRemaining(u.expiration);
-    return tr.days <= 30;
+  var expiring = [];
+  active.forEach(function(u) {
+    if (u.paidDetails && u.paidDetails.length > 0) {
+      u.paidDetails.forEach(function(p) {
+        if (p.status === 'actif') {
+          var tr = getTimeRemaining(p.exp);
+          if (tr.days <= 30) {
+            expiring.push({ name: u.name, email: u.email, semester: p.sem, expiration: p.exp, days: tr.days });
+          }
+        }
+      });
+    } else if (u.expiration) {
+      var tr = getTimeRemaining(u.expiration);
+      if (tr.days <= 30) {
+        expiring.push({ name: u.name, email: u.email, semester: u.semester || '—', expiration: u.expiration, days: tr.days });
+      }
+    }
   });
+
+  expiring.sort(function(a, b) { return a.days - b.days; });
 
   // ── Pending abonnements (existing accounts requesting a new semester) ──
   var pendingAbos = abos.filter(function(a){ return a.statut === 'En attente'; });
@@ -1375,11 +1391,11 @@ async function refreshDashboard() {
 
   var dExp = document.getElementById('dash-expiring');
   if (!expiring.length) { dExp.innerHTML = '<tr class="empty-row"><td colspan="5">Aucun abonnement expirant</td></tr>'; }
-  else dExp.innerHTML = expiring.map(function(u){
-    var tr = getTimeRemaining(u.expiration);
-    return '<tr><td style="color:var(--txt);font-weight:600;">' + u.name + '</td><td>' + u.email + '</td><td>' + u.semester + '</td>'
+  else dExp.innerHTML = expiring.map(function(sub){
+    var tr = getTimeRemaining(sub.expiration);
+    return '<tr><td style="color:var(--txt);font-weight:600;">' + sub.name + '</td><td>' + sub.email + '</td><td>' + sub.semester + '</td>'
       + '<td><span class="'+tr.cls+'">' + tr.text + '</span></td>'
-      + '<td><button class="btn-ghost" style="padding:.3rem .6rem;font-size:.72rem;" onclick="openStudentModal(\'' + u.email + '\')">Ouvrir la fiche</button></td></tr>';
+      + '<td><button class="btn-ghost" style="padding:.3rem .6rem;font-size:.72rem;" onclick="openStudentModal(\'' + sub.email + '\')">Ouvrir la fiche</button></td></tr>';
   }).join('');
 
   var dRecent = document.getElementById('dash-recent');
