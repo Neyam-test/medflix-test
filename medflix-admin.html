@@ -1232,7 +1232,12 @@ var ADMIN_PASS  = 'admin1234';
 function getCurrentAdminName() {
   try {
     var sess = JSON.parse(localStorage.getItem('medflix_session'));
-    if (sess && sess.name) return sess.name.split(' ')[0];
+    if (sess) {
+       var n = sess.name || '';
+       var e = sess.email || '';
+       if (e === 'medflix@admin.ma' || e === 'admin@medflix.ma' || n.toLowerCase().includes('aymane')) return 'Aymane';
+       if (n) return n.split(' ')[0];
+    }
   } catch(e){}
   return 'Admin';
 }
@@ -2663,16 +2668,17 @@ function renderStudentModal() {
     
     html += pdList.map(function(p) {
       var st = getPaidDetailStatus(p); 
-      var byTxt = p.by ? p.by : 'Aymane';
+      var byTxt = (p.by && p.by !== 'Admin') ? p.by : 'Aymane';
       var badge = st === 'actif' ? '<span class="bg">En cours</span>' : st === 'expire' ? '<span class="br">Expiré</span>' : '<span class="br" style="background:rgba(248,113,113,.06);color:#f87171;">Résilié</span>';
       
+      var actTxt = 'Activé par : ' + byTxt;
+      
       if (st === 'resilie') {
-         var resiliatedByTxt = p.resiliatedBy || p.by || 'Aymane';
+         var resiliatedByTxt = (p.resiliatedBy && p.resiliatedBy !== 'Admin') ? p.resiliatedBy : 'Aymane';
          var dateTxt = p.dateResil ? formatDateTime(p.dateResil) : '—';
-         var actTxt = p.resiliatedBy ? 'Activé par : ' + byTxt + '<br>' : '';
-         badge += '<div style="font-size:0.65rem;color:var(--mut);margin-top:0.3rem;">' + actTxt + 'Résilié par : ' + resiliatedByTxt + '<br>Le ' + dateTxt + '</div>';
+         badge += '<div style="font-size:0.65rem;color:var(--mut);margin-top:0.3rem;">' + actTxt + '<br>Résilié par : ' + resiliatedByTxt + '<br>Le ' + dateTxt + '</div>';
       } else {
-         badge += '<div style="font-size:0.65rem;color:var(--mut);margin-top:0.3rem;">Activé par : ' + byTxt + '</div>';
+         badge += '<div style="font-size:0.65rem;color:var(--mut);margin-top:0.3rem;">' + actTxt + '</div>';
       }
       
       var acts = '';
@@ -2897,15 +2903,17 @@ async function saveDateModal() {
          var d = new Date(); var offset = d.getTimezoneOffset() * 60000;
          var nowLocal = (new Date(d - offset)).toISOString().slice(0, 16);
          pd.push({
-           id: pd[i].sem + '-' + nowLocal, // Make completely unique id to override
+           id: pd[i].sem + '-' + nowLocal, 
            sem: pd[i].sem,
            start: nowLocal,
            exp: newDate,
-           status: 'actif'
+           status: 'actif',
+           by: getCurrentAdminName()
          });
       } else {
          pd[i].exp = newDate;
          pd[i].status = 'actif';
+         pd[i].by = getCurrentAdminName(); // Update who modified it
       }
       break;
     }
