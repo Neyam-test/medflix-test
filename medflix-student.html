@@ -1980,8 +1980,7 @@
       </div>
     </div>
     <div style="flex:1;position:relative;overflow:hidden;">
-      <iframe id="doc-viewer-iframe" src="" style="width:100%;height:100%;border:none;"
-        sandbox="allow-scripts allow-same-origin allow-popups" allowfullscreen></iframe>
+      <iframe id="doc-viewer-iframe" src="" style="width:100%;height:100%;border:none;" allowfullscreen></iframe>
     </div>
   </div>
 
@@ -2307,7 +2306,8 @@
         html += '<div><h4 style="font-family:\'Instrument Serif\',serif;font-size:1.45rem;color:var(--txt);margin-bottom:1.2rem;display:flex;align-items:center;gap:.5rem;"><span style="color:var(--redl);">📄</span> Fichiers de Cours</h4><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;">';
         files.cours.forEach(function (c) {
           var annee = c.annee ? '<span style="background:rgba(255,255,255,.05);border:1px solid var(--line);padding:.2rem .5rem;border-radius:4px;font-size:.65rem;color:var(--mut);font-weight:600;letter-spacing:0.5px;">📅 ' + c.annee + '</span>' : '';
-          html += '<button onclick="openDocViewer(\'' + (c.lien || '').replace(/'/g, "\\'") + '\', \'' + c.titre.replace(/'/g, "\\'") + '\', \'' + c.id + '\');trackActivity(\'cours\', \'' + c.titre.replace(/'/g, "\\'") + '\', \'' + sem.replace(/'/g, "\\'") + '\', \'' + mod.replace(/'/g, "\\'") + '\')" style="text-align:left;display:block;background:var(--sur);border:1px solid var(--line);border-radius:12px;padding:1.25rem;transition:all .2s;color:var(--txt);cursor:pointer;width:100%;">'
+          var docUrl = c.pdf_link || c.lien || '';
+          html += '<button onclick="openDocViewer(\'' + docUrl.replace(/'/g, "\\'") + '\', \'' + c.titre.replace(/'/g, "\\'") + '\', \'' + c.id + '\');trackActivity(\'cours\', \'' + c.titre.replace(/'/g, "\\'") + '\', \'' + sem.replace(/'/g, "\\'") + '\', \'' + mod.replace(/'/g, "\\'") + '\')" style="text-align:left;display:block;background:var(--sur);border:1px solid var(--line);border-radius:12px;padding:1.25rem;transition:all .2s;color:var(--txt);cursor:pointer;width:100%;">'
             + '<div style="font-weight:600;font-size:.95rem;margin-bottom:.6rem;line-height:1.4;">' + c.titre + '</div>'
             + '<div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:.75rem;color:var(--mut2);font-weight:500;">' + (c.desc || 'Visualiser le document →') + '</span>' + annee + '</div></button>';
         });
@@ -2319,7 +2319,8 @@
         html += '<div><h4 style="font-family:\'Instrument Serif\',serif;font-size:1.45rem;color:var(--txt);margin-bottom:1.2rem;display:flex;align-items:center;gap:.5rem;"><span style="color:#60a5fa;">🔬</span> Travaux Pratiques & Examens</h4><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;">';
         files.tp.forEach(function (t) {
           var annee = t.annee ? '<span style="background:rgba(255,255,255,.05);border:1px solid rgba(96,165,250,.2);padding:.2rem .5rem;border-radius:4px;font-size:.65rem;color:#60a5fa;font-weight:600;letter-spacing:0.5px;">📅 ' + t.annee + '</span>' : '';
-          html += '<button onclick="openDocViewer(\'' + (t.lien || '').replace(/'/g, "\\'") + '\', \'' + t.titre.replace(/'/g, "\\'") + '\', \'' + t.id + '\');trackActivity(\'tp\', \'' + t.titre.replace(/'/g, "\\'") + '\', \'' + sem.replace(/'/g, "\\'") + '\', \'' + mod.replace(/'/g, "\\'") + '\')" style="text-align:left;display:block;background:var(--sur);border:1px solid rgba(96,165,250,.2);border-radius:12px;padding:1.25rem;transition:all .2s;color:var(--txt);cursor:pointer;width:100%;">'
+          var docUrl = t.pdf_link || t.lien || '';
+          html += '<button onclick="openDocViewer(\'' + docUrl.replace(/'/g, "\\'") + '\', \'' + t.titre.replace(/'/g, "\\'") + '\', \'' + t.id + '\');trackActivity(\'tp\', \'' + t.titre.replace(/'/g, "\\'") + '\', \'' + sem.replace(/'/g, "\\'") + '\', \'' + mod.replace(/'/g, "\\'") + '\')" style="text-align:left;display:block;background:var(--sur);border:1px solid rgba(96,165,250,.2);border-radius:12px;padding:1.25rem;transition:all .2s;color:var(--txt);cursor:pointer;width:100%;">'
             + '<div style="font-weight:600;font-size:.95rem;margin-bottom:.6rem;line-height:1.4;">' + t.titre + '</div>'
             + '<div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:.72rem;color:#60a5fa;background:rgba(96,165,250,.1);padding:.2rem .5rem;border-radius:4px;font-weight:600;text-transform:uppercase;">' + (t.type || 'TP') + '</span>' + annee + '</div></button>';
         });
@@ -2347,34 +2348,10 @@
       panel.innerHTML = html;
     }
 
-    // ══ DOCUMENT VIEWER (embedded PDF/Drive) ══
+    // ══ DOCUMENT VIEWER (embedded PDF) ══
     function getEmbedUrl(url) {
       if (!url) return '';
-
-      // Google Drive: /file/d/ID/view → /file/d/ID/preview
-      var driveMatch = url.match(/drive\.google\.com\/file\/d\/([^\/]+)/);
-      if (driveMatch) {
-        return 'https://drive.google.com/file/d/' + driveMatch[1] + '/preview';
-      }
-
-      // Google Drive: open?id=ID → file/d/ID/preview
-      var driveMatch2 = url.match(/drive\.google\.com\/open\?id=([^&]+)/);
-      if (driveMatch2) {
-        return 'https://drive.google.com/file/d/' + driveMatch2[1] + '/preview';
-      }
-
-      // Google Docs/Slides/Sheets → embed
-      if (url.includes('docs.google.com')) {
-        return url.replace(/\/edit.*$/, '/preview').replace(/\/view.*$/, '/preview');
-      }
-
-      // Direct PDF URL → use Google Docs viewer
-      if (url.toLowerCase().endsWith('.pdf') || url.includes('.pdf')) {
-        return 'https://docs.google.com/gview?embedded=true&url=' + encodeURIComponent(url);
-      }
-
-      // Fallback: wrap in Google Docs viewer
-      return 'https://docs.google.com/gview?embedded=true&url=' + encodeURIComponent(url);
+      return url;
     }
 
     function openDocViewer(url, title) {

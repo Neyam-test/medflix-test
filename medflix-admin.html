@@ -481,7 +481,6 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
           <div class="field"><label>Année</label><input type="text" id="c-annee" list="db-annees" placeholder="Ex : 2023–2024" autocomplete="off"></div>
         </div>
         <div class="field"><label>Titre du cours</label><input type="text" id="c-titre" placeholder="Ex : Appareil locomoteur — Ostéologie"></div>
-        <div class="field"><label>Lien Vidéo (Loom / Drive / OneDrive)</label><input type="url" id="c-link" placeholder="https://www.loom.com/share/..."></div>
         
         <div class="field">
           <label>📜 PDF du cours (Hébergement Medflix direct)</label>
@@ -491,16 +490,16 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
                onclick="document.getElementById('cours-pdf-input').click()"
                ondragover="event.preventDefault();this.classList.add('dz-active')"
                ondragleave="this.classList.remove('dz-active')"
-               ondrop="handlePDFDrop(event,'cours-dropzone','c-pdf-link')"
+               ondrop="handlePDFDrop(event,'cours-dropzone','c-link')"
                style="border:2px dashed var(--line);border-radius:14px;padding:2rem;text-align:center;cursor:pointer;transition:all .2s;background:rgba(255,255,255,.02);">
             <div id="cours-dropzone-label">
               <span style="font-size:1.5rem;display:block;margin-bottom:.5rem;">📄</span>
               <span style="font-size:.85rem;color:var(--mut);">Glissez le PDF ici ou <strong>cliquez pour héberger</strong></span>
             </div>
             <div id="cours-dropzone-progress" style="display:none;font-size:0.9rem;font-weight:600;"></div>
-            <input type="file" id="cours-pdf-input" style="display:none;" accept="application/pdf" onchange="handlePDFFileSelect(this.files[0],'cours-dropzone','c-pdf-link')">
+            <input type="file" id="cours-pdf-input" style="display:none;" accept="application/pdf" onchange="handlePDFFileSelect(this.files[0],'cours-dropzone','c-link')">
           </div>
-          <input type="hidden" id="c-pdf-link">
+          <input type="hidden" id="c-link">
         </div>
         <div class="field"><label>Description (optionnel)</label><textarea id="c-desc" placeholder="Résumé du contenu..."></textarea></div>
         <div class="form-actions">
@@ -545,7 +544,6 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
           <div class="field"><label>Année</label><input type="text" id="tp-annee" list="db-annees" placeholder="Ex : 2023–2024" autocomplete="off"></div>
           <div class="field"><label>Titre</label><input type="text" id="tp-titre" placeholder="Ex : TP 1 — Observation microscopique"></div>
         </div>
-        <div class="field"><label>Lien Google Drive / OneDrive</label><input type="url" id="tp-link" placeholder="https://drive.google.com/file/..."></div>
         
         <div class="field">
           <label>📁 Hébergement direct (PDF Medflix)</label>
@@ -564,6 +562,7 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
             <div id="tp-dropzone-progress" style="display:none;font-size:0.9rem;font-weight:600;"></div>
             <input type="file" id="tp-pdf-input" style="display:none;" accept="application/pdf" onchange="handlePDFFileSelect(this.files[0],'tp-dropzone','tp-link')">
           </div>
+          <input type="hidden" id="tp-link">
         </div>
         <div class="form-actions">
           <button class="btn-ghost" onclick="saveTP('brouillon')">Sauver brouillon</button>
@@ -1695,6 +1694,86 @@ async function uploadReceiptFile(file) {
   }
 }
 
+// ══════════════════════════════════
+//  UPLOAD PDF (COURS & TP)
+// ══════════════════════════════════
+
+async function handlePDFDrop(event, dropzoneId, linkInputId) {
+  event.preventDefault();
+  document.getElementById(dropzoneId).classList.remove('dz-active');
+  
+  var file;
+  if (event.dataTransfer.items) {
+    if (event.dataTransfer.items[0].kind === 'file') {
+      file = event.dataTransfer.items[0].getAsFile();
+    }
+  } else {
+    file = event.dataTransfer.files[0];
+  }
+  
+  if (file && file.type === 'application/pdf') {
+    await uploadDocumentFile(file, dropzoneId, linkInputId);
+  } else {
+    alert('Veuillez déposer un fichier PDF valide.');
+  }
+}
+
+async function handlePDFFileSelect(file, dropzoneId, linkInputId) {
+  if(!file) return;
+  if(file.type !== 'application/pdf') {
+    alert('Veuillez sélectionner un fichier PDF valide.');
+    return;
+  }
+  await uploadDocumentFile(file, dropzoneId, linkInputId);
+}
+
+async function uploadDocumentFile(file, dropzoneId, linkInputId) {
+  var dropzone = document.getElementById(dropzoneId);
+  var label = dropzone.querySelector('div[id$="-label"]');
+  var progress = dropzone.querySelector('div[id$="-progress"]');
+  
+  if (label && progress) {
+    label.style.display = 'none';
+    progress.style.display = 'block';
+    progress.textContent = 'Upload en cours vers Supabase...';
+    progress.style.color = 'var(--amb)';
+  }
+  
+  try {
+    var ext = file.name.split('.').pop();
+    var fileName = 'doc_' + Date.now() + '_' + Math.random().toString(36).substring(7) + '.' + ext;
+    
+    var { data, error } = await sb.storage.from('medflix-pdfs').upload(fileName, file, {
+      cacheControl: '3600',
+      upsert: false
+    });
+    
+    if (error) throw error;
+    
+    var { data: pub } = sb.storage.from('medflix-pdfs').getPublicUrl(fileName);
+    
+    document.getElementById(linkInputId).value = pub.publicUrl;
+    
+    if (progress) {
+      progress.textContent = 'Upload réussi ! Lien généré.';
+      progress.style.color = 'var(--grn)';
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Erreur upload document: " + err.message);
+    if (label && progress) {
+      progress.textContent = 'Erreur d\'upload.';
+      progress.style.color = 'var(--redl)';
+      setTimeout(() => {
+        progress.style.display = 'none';
+        label.style.display = 'block';
+        progress.style.color = '';
+      }, 3000);
+    }
+  }
+}
+
+
 async function submitPaymentValidation() {
   try {
     var methode = _pvMethod === 'Autre' ? document.getElementById('pv-autre-input').value : _pvMethod;
@@ -2313,10 +2392,9 @@ async function saveCours(mode) {
   var annee  = document.getElementById('c-annee').value.trim();
   var titre  = document.getElementById('c-titre').value.trim();
   var link   = document.getElementById('c-link').value.trim();
-  var pdf_link = document.getElementById('c-pdf-link').value.trim();
   if (!sem || !module || !titre) { toast('Semestre, Module et Titre obligatoires', 'err'); return; }
 
-  var payload = { titre:titre, semestre:sem, module:module, sous_module:sous_module, annee:annee, lien:link, pdf_link:pdf_link, desc:document.getElementById('c-desc').value.trim(), statut:mode==='publier'?'Publié':'Brouillon' };
+  var payload = { titre:titre, semestre:sem, module:module, sous_module:sous_module, annee:annee, lien:link, desc:document.getElementById('c-desc').value.trim(), statut:mode==='publier'?'Publié':'Brouillon' };
   
   if (editingIds.cours) {
     await dbUpdateCours(editingIds.cours, payload);
@@ -2328,7 +2406,7 @@ async function saveCours(mode) {
     await dbAddCours(payload);
   }
 
-  ['c-sem','c-module','c-sous-module','c-annee','c-titre','c-link','c-pdf-link', 'c-desc'].forEach(function(id){ var el=document.getElementById(id); if(el.tagName==='SELECT')el.selectedIndex=0; else el.value=''; });
+  ['c-sem','c-module','c-sous-module','c-annee','c-titre','c-link','c-desc'].forEach(function(id){ var el=document.getElementById(id); if(el.tagName==='SELECT')el.selectedIndex=0; else el.value=''; });
   renderCours();
   updateDataLists();
   toast(mode==='publier' ? '✓ Cours "' + titre + '" enregistré !' : '💾 Brouillon sauvegardé');
