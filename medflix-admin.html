@@ -633,11 +633,7 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
         <div class="stat-val" id="abo-attente" style="color:var(--amb);">—</div>
         <div class="stat-lbl">En attente de validation</div>
       </div>
-      <div class="stat">
-        <div class="stat-icon">💰</div>
-        <div class="stat-val" id="abo-rev">—</div>
-        <div class="stat-lbl">Revenus totaux (DH)</div>
-      </div>
+
     </div>
 
     <div class="card" style="margin-bottom:1.5rem;">
@@ -2450,7 +2446,7 @@ async function renderAbonnements() {
   var rev     = actifs * 199;
   document.getElementById('abo-actifs').textContent  = actifs || '—';
   document.getElementById('abo-attente').textContent = pending.length || '—';
-  document.getElementById('abo-rev').textContent     = rev ? rev + ' DH' : '—';
+
 
   // Pending requests
   var pTbody = document.getElementById('abo-pending-tbody');
