@@ -2444,7 +2444,7 @@
           : { location: { url: url } };
 
         _adobeCurrentView.previewFile(
-          { content: contentObj, metaData: { fileName: (title || 'Doc') + '.pdf' } },
+          { content: contentObj, metaData: { id: _adobeCurrentDocId || 'doc-id', fileName: (title || 'Doc') + '.pdf' } },
           { 
             embedMode: 'FULL_WINDOW', 
             showAnnotationTools: true,
