@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Test Annotations Adobe</title>
+<script src="https://acrobatservices.adobe.com/view-sdk/viewer.js"></script>
+<style>
+  body { margin:0; background:#111; color:#eee; font-family:monospace; display:flex; flex-direction:column; height:100vh; }
+  #controls { padding:10px; background:#222; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  button { padding:6px 14px; background:#e02020; color:#fff; border:none; border-radius:6px; cursor:pointer; font-family:monospace; }
+  button:hover { background:#c01010; }
+  #adobe-dc-view { flex:1; }
+  #log { position:fixed; bottom:0; left:0; right:0; height:160px; background:rgba(0,0,0,.9); overflow-y:auto; padding:8px; font-size:11px; border-top:1px solid #333; }
+  .ok  { color:#4ade80; }
+  .err { color:#f87171; }
+  .inf { color:#60a5fa; }
+</style>
+</head>
+<body>
+<div id="controls">
+  <strong style="color:#aaa">Adobe Test</strong>
+  <button onclick="doGetAnnotations()">📋 getAnnotations()</button>
+  <button onclick="doSaveLS()">💾 Save LS</button>
+  <button onclick="doLoadLS()">📂 Load LS</button>
+  <button onclick="doClearLog()">🗑 Clear</button>
+  <span id="status" style="color:#fbbf24;font-size:12px;margin-left:8px;">Chargement...</span>
+</div>
+<div id="adobe-dc-view"></div>
+<div id="log"></div>
+
+<script>
+var _view = null;
+var _annotMgr = null;
+var LS_KEY = 'test_annotations_v2';
+
+function log(msg, cls) {
+  var d = document.getElementById('log');
+  var line = document.createElement('div');
+  line.className = cls || 'inf';
+  line.textContent = new Date().toLocaleTimeString() + ' › ' + msg;
+  d.appendChild(line);
+  d.scrollTop = d.scrollHeight;
+  console.log('[TEST]', msg);
+}
+function doClearLog() { document.getElementById('log').innerHTML = ''; }
+function status(msg) { document.getElementById('status').textContent = msg; console.log('[STATUS]', msg); }
+
+// Retry getAPIs until it resolves
+function tryGetAPIs(attempt) {
+  attempt = attempt || 1;
+  if (attempt > 10) { log('getAPIs() échec après 10 tentatives', 'err'); return; }
+  log('Tentative getAPIs() #' + attempt, 'inf');
+  var done = false;
+  var timer = setTimeout(function() {
+    if (!done) { log('getAPIs() timeout #' + attempt + ' — retry dans 2s', 'err'); tryGetAPIs(attempt + 1); }
+  }, 3000);
+  _view.getAPIs().then(function(apis) {
+    done = true; clearTimeout(timer);
+    log('getAPIs() OK ✓  clés=' + Object.keys(apis).join(','), 'ok');
+    var mgr = apis.getAnnotationManager();
+    var isPromise = mgr && typeof mgr.then === 'function';
+    log('getAnnotationManager() → ' + (isPromise ? 'PROMISE' : 'OBJECT'), 'ok');
+    return isPromise ? mgr : Promise.resolve(mgr);
+  }).then(function(mgr) {
+    _annotMgr = mgr;
+    log('annotMgr prêt ✓', 'ok');
+    status('✅ Prêt — créez un surlignage puis cliquez getAnnotations()');
+    return mgr.getAnnotations({ pageRange: { start: 1, end: 9999 } });
+  }).then(function(a) {
+    log('Annotations initiales: ' + JSON.stringify(a).slice(0,300), 'ok');
+  }).catch(function(e) {
+    done = true; clearTimeout(timer);
+    log('ERREUR: ' + e, 'err');
+  });
+}
+
+document.addEventListener('adobe_dc_view_sdk.ready', function() {
+  log('SDK prêt', 'ok');
+    },
+    { autoSaveFrequency: 0, enableFocusPolling: false, showSaveButton: false }
+  );
+
+  // EVENT_LISTENER
+  _view.registerCallback(
+    AdobeDC.View.Enum.CallbackType.EVENT_LISTENER,
+    function(event) {
+      log('EVENT: ' + event.type + (event.data ? ' data=' + JSON.stringify(event.data).slice(0,120) : ''), 'inf');
+      if (event.type === 'PDF_VIEWER_READY') {
+        status('PDF_VIEWER_READY — initialisation annotMgr dans 1.5s...');
+        setTimeout(function() {
+          _view.getAPIs().then(function(apis) {
+            log('getAPIs() OK. Clés: ' + Object.keys(apis).join(', '), 'ok');
+            var mgr = apis.getAnnotationManager();
+            log('getAnnotationManager() retourne: ' + (mgr && mgr.then ? 'PROMISE (async)' : 'OBJECT (sync)'), 'ok');
+            return (mgr && mgr.then) ? mgr : Promise.resolve(mgr);
+          }).then(function(mgr) {
+            _annotMgr = mgr;
+            log('annotMgr prêt. Méthodes: ' + (mgr ? Object.getOwnPropertyNames(Object.getPrototypeOf(mgr)).join(', ') : 'null'), 'ok');
+            status('✅ annotMgr prêt — testez les boutons !');
+            mgr.getAnnotations({ pageRange: { start: 1, end: 9999 } }).then(function(annots) {
+              log('Annotations initiales: ' + JSON.stringify(annots), 'ok');
+            }).catch(function(e) { log('getAnnotations() ERREUR: ' + e, 'err'); });
+          }).catch(function(e) {
+            log('Erreur init annotMgr: ' + e, 'err');
+          });
+        }, 1500);
+      }
+    },
+    { listenOn: ['PDF_VIEWER_READY', 'ANNOTATION_ADDED', 'ANNOTATION_UPDATED', 'ANNOTATION_DELETED'] }
+  );
+
+  _view.previewFile({
+    content: { location: { url: 'https://acrobatservices.adobe.com/view-sdk-demo/PDFs/Bodea%20Brochure.pdf' } },
+    metaData: { fileName: 'Bodea Brochure.pdf' }
+  }, {
+    embedMode: 'FULL_WINDOW',
+    showDownloadPDF: false,
+    showPrintPDF: false,
+    showAnnotationTools: true,
+    showLeftHandPanel: false
+  });
+});
+
+// ── Boutons ──
+async function doGetAnnotations() {
+  if (!_annotMgr) { log('annotMgr non prêt', 'err'); return; }
+  try {
+    var a = await _annotMgr.getAnnotations({ pageRange: { start: 1, end: 9999 } });
+    log('getAnnotations result (' + (a ? a.length : 0) + '): ' + JSON.stringify(a), 'ok');
+  } catch(e) { log('ERREUR: ' + e, 'err'); }
+}
+
+async function doAddTestAnnotation() {
+  if (!_annotMgr) { log('annotMgr non prêt', 'err'); return; }
+  var testAnnot = [{
+    "@context": ["https://www.w3.org/ns/anno.jsonld", "https://comments.acrobat.com/ns/anno.jsonld"],
+    "type": "Annotation",
+    "id": "test-annot-" + Date.now(),
+    "motivation": "commenting",
+    "bodyValue": "Test annotation " + new Date().toLocaleTimeString(),
+    "target": {
+      "source": "https://acrobatservices.adobe.com/view-sdk-demo/PDFs/Bodea%20Brochure.pdf",
+      "selector": { "node": { "index": 0 } }
+    }
+  }];
+  try {
+    await _annotMgr.addAnnotations(testAnnot);
+    log('addAnnotations() OK', 'ok');
+    await doGetAnnotations();
+  } catch(e) { log('addAnnotations() ERREUR: ' + e, 'err'); }
+}
+
+async function doSaveLS() {
+  if (!_annotMgr) { log('annotMgr non prêt', 'err'); return; }
+  try {
+    var a = await _annotMgr.getAnnotations({ pageRange: { start: 1, end: 9999 } });
+    localStorage.setItem(LS_KEY, JSON.stringify(a));
+    log('Sauvé ' + (a ? a.length : 0) + ' annotations en localStorage', 'ok');
+  } catch(e) { log('ERREUR save: ' + e, 'err'); }
+}
+
+async function doLoadLS() {
+  if (!_annotMgr) { log('annotMgr non prêt', 'err'); return; }
+  try {
+    var raw = localStorage.getItem(LS_KEY);
+    if (!raw) { log('Rien en localStorage', 'err'); return; }
+    var a = JSON.parse(raw);
+    log('Chargement de ' + a.length + ' annotations...', 'inf');
+    await _annotMgr.addAnnotations(a);
+    log('addAnnotations() OK — vérifiez le PDF', 'ok');
+  } catch(e) { log('ERREUR load: ' + e, 'err'); }
+}
+</script>
+</body>
+</html>

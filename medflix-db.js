@@ -641,3 +641,26 @@ async function dbDeleteComment(id) {
   var { error } = await sb.from('comments').delete().eq('id', id);
   if (error) console.error('dbDeleteComment:', error);
 }
+
+// ══════════════════════════════════
+//  PDF ANNOTATIONS (surlignage, commentaires, etc.)
+// ══════════════════════════════════
+async function dbGetAnnotations(userEmail, docId) {
+  var { data, error } = await sb.from('pdf_annotations')
+    .select('annotations')
+    .eq('user_email', userEmail)
+    .eq('document_id', docId)
+    .single();
+  if (error || !data) return [];
+  return data.annotations || [];
+}
+
+async function dbSaveAnnotations(userEmail, docId, annotations) {
+  var { error } = await sb.from('pdf_annotations').upsert({
+    user_email: userEmail,
+    document_id: docId,
+    annotations: annotations,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'user_email,document_id' });
+  if (error) console.error('dbSaveAnnotations:', error);
+}
