@@ -2512,9 +2512,9 @@
 
         _adobeCurrentView.previewFile(
           { content: contentObj, metaData: { fileName: (title || 'Document') + '.pdf' } },
-          { embedMode: 'SIZED_CONTAINER', showDownloadPDF: false, showPrintPDF: false,
+          { embedMode: 'FULL_WINDOW', showDownloadPDF: false, showPrintPDF: false,
             showAnnotationTools: true, showLeftHandPanel: false,
-            enableFormFilling: false, defaultViewMode: 'FIT_PAGE' }
+            enableFormFilling: false }
         );
 
         // Cleanup at close
