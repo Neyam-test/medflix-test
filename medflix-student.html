@@ -2365,9 +2365,12 @@
     }
 
     // ══ DOCUMENT VIEWER (Adobe PDF Embed API + Annotations persistantes via SAVE_API) ══
-    var _adobeClientId = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-      ? '556174f4efb64034a4391f0354600462'
-      : '6eeddd274ba54bef8c4fef784af7413b';
+    var _adobeClientId = '556174f4efb64034a4391f0354600462'; // Par défaut localhost
+    if (window.location.hostname === 'neyam-test.github.io') {
+      _adobeClientId = 'a859b5482caf4d35bcddf12562de9673';
+    } else if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      _adobeClientId = '6eeddd274ba54bef8c4fef784af7413b'; // Production
+    }
 
     var _adobeCurrentView  = null;
     var _adobeCurrentDocId = null;
