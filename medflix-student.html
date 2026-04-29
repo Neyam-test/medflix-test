@@ -2404,71 +2404,64 @@
       if (!url) { alert('Lien du document introuvable.'); return; }
 
       _adobeCurrentDocId = courseId || null;
-      _adobeCurrentUrl   = url;
-
       document.getElementById('doc-viewer-title').textContent = title || 'Document';
       document.getElementById('doc-viewer-modal').style.display = 'flex';
+      
       var container = document.getElementById('adobe-dc-view');
+      // Forcer la taille pour SIZED_CONTAINER
+      container.style.height = 'calc(100vh - 60px)';
       container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;gap:.75rem;color:rgba(237,232,224,.4);font-family:Outfit,sans-serif;"><div style="width:28px;height:28px;border:3px solid rgba(255,255,255,.12);border-top-color:#e02020;border-radius:50%;animation:spin 1s linear infinite;flex-shrink:0;"></div><span>Chargement du document...</span></div>';
 
       var _annotPoll = null;
 
       function _launch() {
-        console.log('[Annot] Lancement du viewer...');
+        console.log('[Annot] Lancement SIZED_CONTAINER...');
         _adobeCurrentView = new AdobeDC.View({ clientId: _adobeClientId, divId: 'adobe-dc-view' });
 
         _adobeCurrentView.previewFile(
           { content: { location: { url: url } }, metaData: { id: _adobeCurrentDocId || 'doc-id', fileName: (title || 'Doc') + '.pdf' } },
-          { embedMode: 'FULL_WINDOW', showAnnotationTools: true, enableAnnotationAPIs: true, includePDFAnnotations: true, showLeftHandPanel: false, showDownloadPDF: false, showPrintPDF: false, enableFormFilling: false }
+          { embedMode: 'SIZED_CONTAINER', showAnnotationTools: true, enableAnnotationAPIs: true, includePDFAnnotations: true, showLeftHandPanel: false, showDownloadPDF: false, showPrintPDF: false, enableFormFilling: false }
         );
 
-        // Récupérer le manager d'annotations
-        _adobeCurrentView.getAPIs().then(function(apis) {
-          apis.getAnnotationManager().then(function(mgr) {
-            console.log('[Annot] Manager prêt ✓');
-
-            // 1. Charger les anciennes annotations depuis Supabase
-            if (SESSION && SESSION.email && _adobeCurrentDocId) {
-              dbGetAnnotations(SESSION.email, _adobeCurrentDocId).then(function(anns) {
-                if (anns && anns.length > 0) {
-                  mgr.addAnnotations(anns);
-                  console.log('[Annot] Restauration de', anns.length, 'surlignages ✓');
+        _adobeCurrentView.registerCallback(AdobeDC.View.Enum.CallbackType.EVENT_LISTENER, function(event) {
+          if (event.type === 'PREVIEW_RENDERED') {
+            _adobeCurrentView.getAPIs().then(function(apis) {
+              apis.getAnnotationManager().then(function(mgr) {
+                console.log('[Annot] Manager prêt ✓');
+                if (SESSION && SESSION.email && _adobeCurrentDocId) {
+                  dbGetAnnotations(SESSION.email, _adobeCurrentDocId).then(function(anns) {
+                    if (anns && anns.length > 0) mgr.addAnnotations(anns);
+                  });
                 }
+                var lastSnap = "";
+                _annotPoll = setInterval(function() {
+                  mgr.getAnnotations().then(function(currentAnns) {
+                    var snap = JSON.stringify(currentAnns || []);
+                    if (snap !== lastSnap) {
+                      lastSnap = snap;
+                      console.log('[Annot] Sync...');
+                      dbSaveAnnotations(SESSION.email, _adobeCurrentDocId, currentAnns || []);
+                    }
+                  });
+                }, 3000);
               });
-            }
-
-            // 2. Surveiller les changements toutes les 3 secondes
-            var lastSnap = "";
-            _annotPoll = setInterval(function() {
-              mgr.getAnnotations().then(function(currentAnns) {
-                var snap = JSON.stringify(currentAnns || []);
-                if (snap !== lastSnap) {
-                  lastSnap = snap;
-                  console.log('[Annot] Synchronisation...');
-                  if (SESSION && SESSION.email && _adobeCurrentDocId) {
-                    dbSaveAnnotations(SESSION.email, _adobeCurrentDocId, currentAnns || []);
-                  }
-                }
-              });
-            }, 3000);
-          });
-        });
+            });
+          }
+        }, { listenOn: ['PREVIEW_RENDERED'] });
       }
 
-      if (window.AdobeDC) { _launch(); }
-      else { document.addEventListener("adobe_dc_view_sdk.ready", _launch); }
+      if (window.AdobeDC) _launch();
+      else document.addEventListener("adobe_dc_view_sdk.ready", _launch);
 
-      // Nettoyage à la fermeture
       window.__closeAnnot = function() { if (_annotPoll) clearInterval(_annotPoll); };
     }
 
     function closeDocViewer() {
       if (window.__closeAnnot) window.__closeAnnot();
       document.getElementById('doc-viewer-modal').style.display = 'none';
-      _adobeCurrentView  = null;
-      _adobeCurrentDocId = null;
+      _adobeCurrentView = null;
       var c = document.getElementById('adobe-dc-view');
-      if (c) c.innerHTML = '';
+      if (c) { c.innerHTML = ''; c.style.height = ''; }
     }
 
     // ══ PROTECTION ANTI-COPIE ══
