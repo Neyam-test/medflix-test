@@ -2512,9 +2512,16 @@
 
         _adobeCurrentView.previewFile(
           { content: contentObj, metaData: { fileName: (title || 'Document') + '.pdf' } },
-          { embedMode: 'FULL_WINDOW', showDownloadPDF: false, showPrintPDF: false,
-            showAnnotationTools: true, showLeftHandPanel: false,
-            enableFormFilling: false }
+          { 
+            embedMode: 'FULL_WINDOW', 
+            showDownloadPDF: false, 
+            showPrintPDF: false,
+            showAnnotationTools: true,
+            enableAnnotationAPIs: true,
+            includePDFAnnotations: true,
+            showLeftHandPanel: true, // On l'active pour voir si ça débloque la barre complète
+            enableFormFilling: false
+          }
         );
 
         // Cleanup at close
