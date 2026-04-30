@@ -2698,8 +2698,8 @@
         );
 
         // Attendre que le viewer soit prêt via la Promise de previewFile
-        previewObj.then(function() {
-          _adobeCurrentView.getAPIs().then(function(apis) {
+        previewObj.then(function(adobeViewer) {
+          adobeViewer.getAPIs().then(function(apis) {
             apis.getAnnotationManager().then(function(mgr) {
               console.log('[Annot] Système de synchro prêt ✓');
               
