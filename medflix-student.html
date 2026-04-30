@@ -2678,59 +2678,55 @@
 
     function openDocViewer(url, title, courseId) {
       console.log('--- OPEN VIEWER ---', url);
-      if (!url) { alert('Lien du document introuvable.'); return; }
+      if (!url) { alert('Lien introuvable.'); return; }
 
       _adobeCurrentDocId = courseId || null;
       document.getElementById('doc-viewer-title').textContent = title || 'Document';
       document.getElementById('doc-viewer-modal').style.display = 'flex';
-
+      
       var container = document.getElementById('adobe-dc-view');
-      // Forcer la taille pour SIZED_CONTAINER
-      container.style.height = 'calc(100vh - 60px)';
+      container.style.height = '100%'; 
       container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;gap:.75rem;color:rgba(237,232,224,.4);font-family:Outfit,sans-serif;"><div style="width:28px;height:28px;border:3px solid rgba(255,255,255,.12);border-top-color:#e02020;border-radius:50%;animation:spin 1s linear infinite;flex-shrink:0;"></div><span>Chargement du document...</span></div>';
 
-      var _annotPoll = null;
-
       function _launch() {
-        console.log('[Annot] Lancement v1.0.1 (SIZED_CONTAINER)...');
+        console.log('[Annot] Lancement FULL_WINDOW...');
         _adobeCurrentView = new AdobeDC.View({ clientId: _adobeClientId, divId: 'adobe-dc-view' });
 
-        _adobeCurrentView.previewFile(
-          { content: { location: { url: url } }, metaData: { id: _adobeCurrentDocId || 'doc-id', fileName: (title || 'Doc') + '.pdf' } },
-          { embedMode: 'SIZED_CONTAINER', showAnnotationTools: true, enableAnnotationAPIs: true, includePDFAnnotations: true, showLeftHandPanel: false, showDownloadPDF: false, showPrintPDF: false, enableFormFilling: false }
+        _adobeCurrentView.registerCallback(
+          AdobeDC.View.Enum.CallbackType.SAVE_API,
+          function(metaData, content, options) {
+            console.log('[Annot] Sauvegarde en cours...');
+            if (content && content.promise) {
+              content.promise.then(function(result) {
+                if (result && result.fileData) {
+                  var b64 = _uint8ToB64(result.fileData);
+                  localStorage.setItem(_pdfKey(_adobeCurrentDocId), b64);
+                  if (SESSION && SESSION.email) {
+                    dbSaveAnnotations(SESSION.email, _adobeCurrentDocId, [{ type: 'pdf_blob', data: b64 }]);
+                  }
+                  console.log('[Annot] Sauvegarde réussie ✓');
+                }
+              });
+            }
+            return Promise.resolve({ code: AdobeDC.View.Enum.ApiResponseCode.SUCCESS, data: { metaData: { fileName: (title || 'Doc') + '.pdf' } } });
+          },
+          { autoSaveFrequency: 5, enableFocusPolling: true, showSaveButton: false }
         );
 
-        _adobeCurrentView.registerCallback(AdobeDC.View.Enum.CallbackType.EVENT_LISTENER, function (event) {
-          if (event.type === 'PREVIEW_RENDERED') {
-            _adobeCurrentView.getAPIs().then(function (apis) {
-              apis.getAnnotationManager().then(function (mgr) {
-                console.log('[Annot] Manager prêt ✓');
-                if (SESSION && SESSION.email && _adobeCurrentDocId) {
-                  dbGetAnnotations(SESSION.email, _adobeCurrentDocId).then(function (anns) {
-                    if (anns && anns.length > 0) mgr.addAnnotations(anns);
-                  });
-                }
-                var lastSnap = "";
-                _annotPoll = setInterval(function () {
-                  mgr.getAnnotations().then(function (currentAnns) {
-                    var snap = JSON.stringify(currentAnns || []);
-                    if (snap !== lastSnap) {
-                      lastSnap = snap;
-                      console.log('[Annot] Sync...');
-                      dbSaveAnnotations(SESSION.email, _adobeCurrentDocId, currentAnns || []);
-                    }
-                  });
-                }, 3000);
-              });
-            });
-          }
-        }, { listenOn: ['PREVIEW_RENDERED'] });
+        var savedB64 = null;
+        try { savedB64 = localStorage.getItem(_pdfKey(courseId)); } catch(e) {}
+        var contentObj = savedB64
+          ? { promise: Promise.resolve({ fileData: _b64ToUint8(savedB64) }) }
+          : { location: { url: url } };
+
+        _adobeCurrentView.previewFile(
+          { content: contentObj, metaData: { id: _adobeCurrentDocId || 'doc-id', fileName: (title || 'Doc') + '.pdf' } },
+          { embedMode: 'FULL_WINDOW', showAnnotationTools: true, showDownloadPDF: false, showPrintPDF: false, enableFormFilling: false }
+        );
       }
 
       if (window.AdobeDC) _launch();
       else document.addEventListener("adobe_dc_view_sdk.ready", _launch);
-
-      window.__closeAnnot = function () { if (_annotPoll) clearInterval(_annotPoll); };
     }
 
     function closeDocViewer() {
