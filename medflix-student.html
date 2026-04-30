@@ -1429,93 +1429,370 @@
     }
 
     @keyframes spin {
-      to { transform: rotate(360deg); }
+      to {
+        transform: rotate(360deg);
+      }
     }
   </style>
   <style>
     /* ── COMMENTS FLOAT ── */
     .comment-btn {
       position: fixed;
-      bottom: 1.75rem; left: 1.75rem;
+      bottom: 1.75rem;
+      left: 1.75rem;
       z-index: 10001;
-      width: 50px; height: 50px;
+      width: 50px;
+      height: 50px;
       border-radius: 50%;
       background: var(--sur);
       border: 1px solid var(--redb);
       cursor: pointer;
       display: none;
-      align-items: center; justify-content: center;
+      align-items: center;
+      justify-content: center;
       font-size: 1.25rem;
-      box-shadow: 0 4px 20px rgba(0,0,0,.5);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, .5);
       transition: all .2s;
     }
-    .comment-btn.visible { display: flex; }
-    .comment-btn:hover { background: var(--redd); transform: scale(1.08); }
+
+    .comment-btn.visible {
+      display: flex;
+    }
+
+    .comment-btn:hover {
+      background: var(--redd);
+      transform: scale(1.08);
+    }
 
     /* Indicateur de sauvegarde annotation — clignote vert */
     .comment-btn.annot-saved {
       border-color: #22c55e !important;
       animation: annot-save-pulse 0.55s ease-out 3;
     }
+
     @keyframes annot-save-pulse {
-      0%   { box-shadow: 0 0 0 0   rgba(34,197,94,.85); }
-      70%  { box-shadow: 0 0 0 12px rgba(34,197,94,0);   }
-      100% { box-shadow: 0 0 0 0   rgba(34,197,94,0);    }
+      0% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, .85);
+      }
+
+      70% {
+        box-shadow: 0 0 0 12px rgba(34, 197, 94, 0);
+      }
+
+      100% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+      }
     }
+
     .comment-btn .cb-badge {
-      position: absolute; top: -4px; right: -4px;
-      background: var(--red); color: white;
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      background: var(--red);
+      color: white;
       border-radius: 100px;
-      font-size: .6rem; font-weight: 700;
-      min-width: 16px; height: 16px; line-height: 16px;
-      text-align: center; padding: 0 3px; display: none;
+      font-size: .6rem;
+      font-weight: 700;
+      min-width: 16px;
+      height: 16px;
+      line-height: 16px;
+      text-align: center;
+      padding: 0 3px;
+      display: none;
     }
+
     .comment-win {
       position: fixed;
-      bottom: 5.25rem; left: 1.75rem;
+      bottom: 5.25rem;
+      left: 1.75rem;
       z-index: 10000;
-      width: 370px; height: 530px;
+      width: 370px;
+      height: 530px;
       background: var(--sur);
       border: 1px solid var(--redb);
       border-radius: 18px;
-      display: none; flex-direction: column;
+      display: none;
+      flex-direction: column;
       overflow: hidden;
-      box-shadow: 0 8px 40px rgba(0,0,0,.6);
+      box-shadow: 0 8px 40px rgba(0, 0, 0, .6);
     }
-    .comment-win.open { display: flex; animation: pop .22s ease; }
-    .cmt-head { padding: .95rem 1.25rem; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
-    .cmt-head-title { display: flex; align-items: center; gap: .55rem; font-weight: 700; font-size: .88rem; color: var(--txt); }
-    .cmt-x { background: none; border: none; cursor: pointer; color: var(--mut); font-size: 1.2rem; line-height: 1; transition: color .2s; }
-    .cmt-x:hover { color: var(--redl); }
-    .cmt-course-label { padding: .5rem 1.25rem; font-size: .72rem; color: var(--mut); background: var(--sur2); border-bottom: 1px solid var(--line); flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .cmt-list { flex: 1; overflow-y: auto; padding: .75rem; display: flex; flex-direction: column; gap: .6rem; }
-    .cmt-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: .5rem; color: var(--mut2); font-size: .83rem; }
-    .cmt-card { background: var(--sur2); border: 1px solid var(--line); border-radius: 12px; padding: .75rem .85rem; transition: border-color .2s; }
-    .cmt-card:hover { border-color: rgba(224,32,32,.18); }
-    .cmt-card.reply { margin-left: 1.25rem; border-left: 2px solid var(--redb); border-radius: 0 10px 10px 0; background: rgba(224,32,32,.03); }
-    .cmt-meta { display: flex; align-items: center; gap: .5rem; margin-bottom: .4rem; flex-wrap: wrap; }
-    .cmt-author { font-weight: 700; font-size: .8rem; color: var(--txt); }
-    .cmt-time { font-size: .68rem; color: var(--mut2); margin-left: auto; white-space: nowrap; }
-    .cmt-content { font-size: .83rem; color: var(--txt); line-height: 1.5; word-break: break-word; margin-bottom: .5rem; }
-    .cmt-actions { display: flex; align-items: center; gap: .35rem; }
-    .vote-btn { background: none; border: 1px solid var(--line); border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: .3rem; padding: .2rem .45rem; font-size: .72rem; font-weight: 700; color: var(--mut); transition: all .15s; font-family: 'Outfit', sans-serif; }
-    .vote-btn:hover { border-color: var(--redb); color: var(--txt); }
-    .vote-btn.voted-up   { background: rgba(34,197,94,.12); border-color: rgba(34,197,94,.35); color: #4ade80; }
-    .vote-btn.voted-down { background: rgba(248,113,113,.1); border-color: rgba(248,113,113,.3); color: #f87171; }
-    .cmt-score { font-size: .72rem; font-weight: 700; color: var(--mut); min-width: 20px; text-align: center; }
-    .cmt-score.pos { color: #4ade80; } .cmt-score.neg { color: #f87171; }
-    .cmt-reply-btn { margin-left: auto; background: none; border: none; cursor: pointer; font-size: .72rem; color: var(--mut); font-family: 'Outfit', sans-serif; padding: .2rem .4rem; border-radius: 5px; transition: color .15s; }
-    .cmt-reply-btn:hover { color: var(--redl); }
-    .cmt-reply-form { margin-top: .5rem; display: none; gap: .4rem; }
-    .cmt-reply-form.open { display: flex; }
-    .cmt-reply-inp { flex: 1; background: rgba(255,255,255,.04); border: 1px solid var(--redb); border-radius: 8px; padding: .4rem .65rem; font-family: 'Outfit', sans-serif; font-size: .78rem; color: var(--txt); outline: none; resize: none; }
-    .cmt-reply-send { background: var(--red); color: white; border: none; border-radius: 8px; width: 32px; height: 32px; cursor: pointer; font-size: .85rem; flex-shrink: 0; align-self: flex-end; transition: background .2s; }
-    .cmt-reply-send:hover { background: var(--redl); }
-    .cmt-inp-wrap { padding: .65rem .9rem; border-top: 1px solid var(--line); display: flex; gap: .5rem; flex-shrink: 0; }
-    .cmt-inp { flex: 1; background: var(--sur2); border: 1px solid var(--line); border-radius: 9px; padding: .55rem .8rem; font-family: 'Outfit', sans-serif; font-size: .83rem; color: var(--txt); outline: none; resize: none; height: 38px; transition: border-color .2s; }
-    .cmt-inp:focus { border-color: var(--redb); }
-    .cmt-send { background: var(--red); color: white; border: none; border-radius: 9px; width: 38px; height: 38px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: .95rem; flex-shrink: 0; transition: background .2s; }
-    .cmt-send:hover { background: var(--redl); }
+
+    .comment-win.open {
+      display: flex;
+      animation: pop .22s ease;
+    }
+
+    .cmt-head {
+      padding: .95rem 1.25rem;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .cmt-head-title {
+      display: flex;
+      align-items: center;
+      gap: .55rem;
+      font-weight: 700;
+      font-size: .88rem;
+      color: var(--txt);
+    }
+
+    .cmt-x {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--mut);
+      font-size: 1.2rem;
+      line-height: 1;
+      transition: color .2s;
+    }
+
+    .cmt-x:hover {
+      color: var(--redl);
+    }
+
+    .cmt-course-label {
+      padding: .5rem 1.25rem;
+      font-size: .72rem;
+      color: var(--mut);
+      background: var(--sur2);
+      border-bottom: 1px solid var(--line);
+      flex-shrink: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .cmt-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: .75rem;
+      display: flex;
+      flex-direction: column;
+      gap: .6rem;
+    }
+
+    .cmt-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: .5rem;
+      color: var(--mut2);
+      font-size: .83rem;
+    }
+
+    .cmt-card {
+      background: var(--sur2);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: .75rem .85rem;
+      transition: border-color .2s;
+    }
+
+    .cmt-card:hover {
+      border-color: rgba(224, 32, 32, .18);
+    }
+
+    .cmt-card.reply {
+      margin-left: 1.25rem;
+      border-left: 2px solid var(--redb);
+      border-radius: 0 10px 10px 0;
+      background: rgba(224, 32, 32, .03);
+    }
+
+    .cmt-meta {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      margin-bottom: .4rem;
+      flex-wrap: wrap;
+    }
+
+    .cmt-author {
+      font-weight: 700;
+      font-size: .8rem;
+      color: var(--txt);
+    }
+
+    .cmt-time {
+      font-size: .68rem;
+      color: var(--mut2);
+      margin-left: auto;
+      white-space: nowrap;
+    }
+
+    .cmt-content {
+      font-size: .83rem;
+      color: var(--txt);
+      line-height: 1.5;
+      word-break: break-word;
+      margin-bottom: .5rem;
+    }
+
+    .cmt-actions {
+      display: flex;
+      align-items: center;
+      gap: .35rem;
+    }
+
+    .vote-btn {
+      background: none;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: .3rem;
+      padding: .2rem .45rem;
+      font-size: .72rem;
+      font-weight: 700;
+      color: var(--mut);
+      transition: all .15s;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .vote-btn:hover {
+      border-color: var(--redb);
+      color: var(--txt);
+    }
+
+    .vote-btn.voted-up {
+      background: rgba(34, 197, 94, .12);
+      border-color: rgba(34, 197, 94, .35);
+      color: #4ade80;
+    }
+
+    .vote-btn.voted-down {
+      background: rgba(248, 113, 113, .1);
+      border-color: rgba(248, 113, 113, .3);
+      color: #f87171;
+    }
+
+    .cmt-score {
+      font-size: .72rem;
+      font-weight: 700;
+      color: var(--mut);
+      min-width: 20px;
+      text-align: center;
+    }
+
+    .cmt-score.pos {
+      color: #4ade80;
+    }
+
+    .cmt-score.neg {
+      color: #f87171;
+    }
+
+    .cmt-reply-btn {
+      margin-left: auto;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: .72rem;
+      color: var(--mut);
+      font-family: 'Outfit', sans-serif;
+      padding: .2rem .4rem;
+      border-radius: 5px;
+      transition: color .15s;
+    }
+
+    .cmt-reply-btn:hover {
+      color: var(--redl);
+    }
+
+    .cmt-reply-form {
+      margin-top: .5rem;
+      display: none;
+      gap: .4rem;
+    }
+
+    .cmt-reply-form.open {
+      display: flex;
+    }
+
+    .cmt-reply-inp {
+      flex: 1;
+      background: rgba(255, 255, 255, .04);
+      border: 1px solid var(--redb);
+      border-radius: 8px;
+      padding: .4rem .65rem;
+      font-family: 'Outfit', sans-serif;
+      font-size: .78rem;
+      color: var(--txt);
+      outline: none;
+      resize: none;
+    }
+
+    .cmt-reply-send {
+      background: var(--red);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      font-size: .85rem;
+      flex-shrink: 0;
+      align-self: flex-end;
+      transition: background .2s;
+    }
+
+    .cmt-reply-send:hover {
+      background: var(--redl);
+    }
+
+    .cmt-inp-wrap {
+      padding: .65rem .9rem;
+      border-top: 1px solid var(--line);
+      display: flex;
+      gap: .5rem;
+      flex-shrink: 0;
+    }
+
+    .cmt-inp {
+      flex: 1;
+      background: var(--sur2);
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      padding: .55rem .8rem;
+      font-family: 'Outfit', sans-serif;
+      font-size: .83rem;
+      color: var(--txt);
+      outline: none;
+      resize: none;
+      height: 38px;
+      transition: border-color .2s;
+    }
+
+    .cmt-inp:focus {
+      border-color: var(--redb);
+    }
+
+    .cmt-send {
+      background: var(--red);
+      color: white;
+      border: none;
+      border-radius: 9px;
+      width: 38px;
+      height: 38px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .95rem;
+      flex-shrink: 0;
+      transition: background .2s;
+    }
+
+    .cmt-send:hover {
+      background: var(--redl);
+    }
   </style>
 </head>
 
@@ -2372,9 +2649,9 @@
       _adobeClientId = '6eeddd274ba54bef8c4fef784af7413b'; // Production
     }
 
-    var _adobeCurrentView  = null;
+    var _adobeCurrentView = null;
     var _adobeCurrentDocId = null;
-    var _adobeCurrentUrl   = null; // URL originale (pour fallback)
+    var _adobeCurrentUrl = null; // URL originale (pour fallback)
 
     function _pdfKey(docId) {
       return 'mf_pdf_' + (SESSION && SESSION.email ? SESSION.email : 'x') + '_' + docId;
@@ -2395,7 +2672,7 @@
       return u8;
     }
 
-    window.addEventListener('beforeunload', function() {
+    window.addEventListener('beforeunload', function () {
       // Rien de spécifique ici — SAVE_API gère la sauvegarde
     });
 
@@ -2406,7 +2683,7 @@
       _adobeCurrentDocId = courseId || null;
       document.getElementById('doc-viewer-title').textContent = title || 'Document';
       document.getElementById('doc-viewer-modal').style.display = 'flex';
-      
+
       var container = document.getElementById('adobe-dc-view');
       // Forcer la taille pour SIZED_CONTAINER
       container.style.height = 'calc(100vh - 60px)';
@@ -2423,19 +2700,19 @@
           { embedMode: 'SIZED_CONTAINER', showAnnotationTools: true, enableAnnotationAPIs: true, includePDFAnnotations: true, showLeftHandPanel: false, showDownloadPDF: false, showPrintPDF: false, enableFormFilling: false }
         );
 
-        _adobeCurrentView.registerCallback(AdobeDC.View.Enum.CallbackType.EVENT_LISTENER, function(event) {
+        _adobeCurrentView.registerCallback(AdobeDC.View.Enum.CallbackType.EVENT_LISTENER, function (event) {
           if (event.type === 'PREVIEW_RENDERED') {
-            _adobeCurrentView.getAPIs().then(function(apis) {
-              apis.getAnnotationManager().then(function(mgr) {
+            _adobeCurrentView.getAPIs().then(function (apis) {
+              apis.getAnnotationManager().then(function (mgr) {
                 console.log('[Annot] Manager prêt ✓');
                 if (SESSION && SESSION.email && _adobeCurrentDocId) {
-                  dbGetAnnotations(SESSION.email, _adobeCurrentDocId).then(function(anns) {
+                  dbGetAnnotations(SESSION.email, _adobeCurrentDocId).then(function (anns) {
                     if (anns && anns.length > 0) mgr.addAnnotations(anns);
                   });
                 }
                 var lastSnap = "";
-                _annotPoll = setInterval(function() {
-                  mgr.getAnnotations().then(function(currentAnns) {
+                _annotPoll = setInterval(function () {
+                  mgr.getAnnotations().then(function (currentAnns) {
                     var snap = JSON.stringify(currentAnns || []);
                     if (snap !== lastSnap) {
                       lastSnap = snap;
@@ -2453,7 +2730,7 @@
       if (window.AdobeDC) _launch();
       else document.addEventListener("adobe_dc_view_sdk.ready", _launch);
 
-      window.__closeAnnot = function() { if (_annotPoll) clearInterval(_annotPoll); };
+      window.__closeAnnot = function () { if (_annotPoll) clearInterval(_annotPoll); };
     }
 
     function closeDocViewer() {
@@ -3076,7 +3353,7 @@
           + '💳 Montant : 199 DH\n\n'
           + 'Connecte-toi au panneau admin pour valider le paiement et activer l\'accès.'
         );
-      } catch(e) {}
+      } catch (e) { }
 
       closeNewSemModal();
       document.getElementById('success-sem-modal').style.display = 'flex';
@@ -3088,14 +3365,14 @@
   <!-- ══ COMMENTS SYSTEM ══ -->
   <script>
     // ── State ──
-    var _cmtCourseId    = null;
+    var _cmtCourseId = null;
     var _cmtCourseTitle = '';
-    var _cmtData        = [];  // flat list from DB
-    var _cmtPanelOpen   = false;
+    var _cmtData = [];  // flat list from DB
+    var _cmtPanelOpen = false;
     var _cmtBannedWords = [];
 
     // Load banned words once
-    (async function() {
+    (async function () {
       _cmtBannedWords = await dbGetBannedWords();
     })();
 
@@ -3123,20 +3400,20 @@
     async function checkContentForBannedWords(text) {
       if (!text) return false;
       var low = text.toLowerCase();
-      var found = _cmtBannedWords.find(function(w) { return low.includes(w.toLowerCase()); });
+      var found = _cmtBannedWords.find(function (w) { return low.includes(w.toLowerCase()); });
       if (found) {
         // Apply 4 hour ban
         var until = new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString();
-        
+
         // Fetch current user to get progress for history
         var u = await dbGetUser(SESSION.email);
         var prog = u ? (typeof u.progress === 'string' ? JSON.parse(u.progress) : (u.progress || {})) : {};
         if (!prog.moderation_history) prog.moderation_history = [];
         prog.moderation_history.push({
-           date: new Date().toISOString(),
-           action: 'Auto-Ban 4h',
-           content: 'Mot interdit utilisé : "' + found + '"',
-           admin: 'Système'
+          date: new Date().toISOString(),
+          action: 'Auto-Ban 4h',
+          content: 'Mot interdit utilisé : "' + found + '"',
+          admin: 'Système'
         });
 
         await dbUpdateUser(SESSION.email, { comment_banned_until: until, ban_expiration: until, progress: prog });
@@ -3144,11 +3421,11 @@
         SESSION.ban_expiration = until;
         SESSION.progress = prog;
         localStorage.setItem('medflix_session', JSON.stringify(SESSION));
-        
+
         // Hide UI immediately
         var wrap = document.querySelector('.cmt-inp-wrap');
         if (wrap) wrap.style.display = 'none';
-        
+
         var msgDiv = document.createElement('div');
         msgDiv.id = 'cmt-ban-msg';
         msgDiv.style.padding = '1rem';
@@ -3169,10 +3446,10 @@
     }
 
     // ── Patch openDocViewer to capture course id + show comment btn ──
-    (function() {
+    (function () {
       var _orig = openDocViewer;
-      openDocViewer = function(url, title, courseId) {
-        _cmtCourseId    = courseId || null;
+      openDocViewer = function (url, title, courseId) {
+        _cmtCourseId = courseId || null;
         _cmtCourseTitle = title || 'Document';
         _orig(url, title, courseId);
         // Show comment button
@@ -3184,7 +3461,7 @@
       };
 
       var _origClose = closeDocViewer;
-      closeDocViewer = function() {
+      closeDocViewer = function () {
         _origClose();
         document.getElementById('comment-btn').classList.remove('visible');
         // Close panel if open
@@ -3216,17 +3493,17 @@
             localStorage.setItem('medflix_session', JSON.stringify(SESSION));
           }
         }
-        
+
         var wrap = document.querySelector('.cmt-inp-wrap');
         var existingMsg = document.getElementById('cmt-ban-msg');
         if (existingMsg) existingMsg.remove();
-        
+
         if (isCommentBanned(true)) {
           if (wrap) wrap.style.display = 'none';
-          var msgText = (SESSION.comment_banned_until === 'permanent') 
-            ? '🔒 Privilèges suspendus définitivement.' 
+          var msgText = (SESSION.comment_banned_until === 'permanent')
+            ? '🔒 Privilèges suspendus définitivement.'
             : '🔒 Privilèges suspendus temporairement.';
-            
+
           var msgDiv = document.createElement('div');
           msgDiv.id = 'cmt-ban-msg';
           msgDiv.style.padding = '1rem';
@@ -3260,8 +3537,8 @@
     }
 
     function updateCommentBadge() {
-      var badge  = document.getElementById('comment-btn-badge');
-      var roots  = _cmtData.filter(function(c){ return !c.parent_id; }).length;
+      var badge = document.getElementById('comment-btn-badge');
+      var roots = _cmtData.filter(function (c) { return !c.parent_id; }).length;
       if (roots > 0) {
         badge.textContent = roots > 99 ? '99+' : roots;
         badge.style.display = 'block';
@@ -3272,12 +3549,12 @@
 
     function cmtTimeAgo(ts) {
       if (!ts) return '';
-      var d    = typeof ts === 'string' ? new Date(ts) : ts;
+      var d = typeof ts === 'string' ? new Date(ts) : ts;
       var diff = Math.floor((Date.now() - d) / 1000);
-      if (diff < 60)  return 'il y a ' + diff + 's';
-      if (diff < 3600) return 'il y a ' + Math.floor(diff/60) + 'min';
-      if (diff < 86400) return 'il y a ' + Math.floor(diff/3600) + 'h';
-      return 'il y a ' + Math.floor(diff/86400) + 'j';
+      if (diff < 60) return 'il y a ' + diff + 's';
+      if (diff < 3600) return 'il y a ' + Math.floor(diff / 60) + 'min';
+      if (diff < 86400) return 'il y a ' + Math.floor(diff / 3600) + 'h';
+      return 'il y a ' + Math.floor(diff / 86400) + 'j';
     }
 
     function renderComments() {
@@ -3285,13 +3562,13 @@
       // Sort roots by score desc
       // Filter out moderated comments (banned/deleted)
       var roots = _cmtData
-        .filter(function(c){ 
+        .filter(function (c) {
           if (c.parent_id) return false;
           var content = (c.content || '').trim().toUpperCase();
           if (content.startsWith('[BANNI]') || content.startsWith('[SUPPRIMÉ]')) return false;
           return true;
         })
-        .sort(function(a,b){ return ((b.upvotes||0)-(b.downvotes||0)) - ((a.upvotes||0)-(a.downvotes||0)); });
+        .sort(function (a, b) { return ((b.upvotes || 0) - (b.downvotes || 0)) - ((a.upvotes || 0) - (a.downvotes || 0)); });
 
       if (!roots.length) {
         list.innerHTML = '<div class="cmt-empty">💬<span>Soyez le premier à commenter !</span></div>';
@@ -3299,60 +3576,60 @@
       }
 
       var html = '';
-      roots.forEach(function(c) {
+      roots.forEach(function (c) {
         html += renderCmtCard(c, false);
         // replies sorted by score + filter moderated
         var replies = _cmtData
-          .filter(function(r){ 
-             if (r.parent_id !== c.id) return false;
-             var content = (r.content || '').trim().toUpperCase();
-             if (content.startsWith('[BANNI]') || content.startsWith('[SUPPRIMÉ]')) return false;
-             return true;
+          .filter(function (r) {
+            if (r.parent_id !== c.id) return false;
+            var content = (r.content || '').trim().toUpperCase();
+            if (content.startsWith('[BANNI]') || content.startsWith('[SUPPRIMÉ]')) return false;
+            return true;
           })
-          .sort(function(a,b){ return ((b.upvotes||0)-(b.downvotes||0)) - ((a.upvotes||0)-(a.downvotes||0)); });
-        replies.forEach(function(r) { html += renderCmtCard(r, true); });
+          .sort(function (a, b) { return ((b.upvotes || 0) - (b.downvotes || 0)) - ((a.upvotes || 0) - (a.downvotes || 0)); });
+        replies.forEach(function (r) { html += renderCmtCard(r, true); });
       });
       list.innerHTML = html;
     }
 
     function renderCmtCard(c, isReply) {
-      var email      = SESSION ? (SESSION.email || '') : '';
-      var upvoters   = c.upvoters   || [];
+      var email = SESSION ? (SESSION.email || '') : '';
+      var upvoters = c.upvoters || [];
       var downvoters = c.downvoters || [];
-      var votedUp    = upvoters.includes(email);
-      var votedDown  = downvoters.includes(email);
-      var score      = (c.upvotes||0) - (c.downvotes||0);
-      var scoreCls   = score > 0 ? 'pos' : score < 0 ? 'neg' : '';
+      var votedUp = upvoters.includes(email);
+      var votedDown = downvoters.includes(email);
+      var score = (c.upvotes || 0) - (c.downvotes || 0);
+      var scoreCls = score > 0 ? 'pos' : score < 0 ? 'neg' : '';
       var replyClass = isReply ? ' reply' : '';
 
       return '<div class="cmt-card' + replyClass + '" id="cmt-' + c.id + '">' +
         '<div class="cmt-meta">' +
-          '<span class="cmt-author">' + esc(c.author) + '</span>' +
-          '<span class="cmt-time">' + cmtTimeAgo(c.created_at) + '</span>' +
+        '<span class="cmt-author">' + esc(c.author) + '</span>' +
+        '<span class="cmt-time">' + cmtTimeAgo(c.created_at) + '</span>' +
         '</div>' +
         '<div class="cmt-content">' + esc(c.content) + '</div>' +
         '<div class="cmt-actions">' +
-          '<button class="vote-btn ' + (votedUp ? 'voted-up' : '') + '" onclick="voteComment(\'' + c.id + '\',\'up\')">' +
-            '&#9650; <span>' + (c.upvotes||0) + '</span>' +
-          '</button>' +
-          '<span class="cmt-score ' + scoreCls + '">' + score + '</span>' +
-          '<button class="vote-btn ' + (votedDown ? 'voted-down' : '') + '" onclick="voteComment(\'' + c.id + '\',\'down\')">' +
-            '&#9660; <span>' + (c.downvotes||0) + '</span>' +
-          '</button>' +
-          (!isReply && !isCommentBanned(true) ? '<button class="cmt-reply-btn" onclick="toggleReplyForm(\'' + c.id + '\', \'' + esc(c.author) + '\')">' +
-            '&#8617; Répondre' +
+        '<button class="vote-btn ' + (votedUp ? 'voted-up' : '') + '" onclick="voteComment(\'' + c.id + '\',\'up\')">' +
+        '&#9650; <span>' + (c.upvotes || 0) + '</span>' +
+        '</button>' +
+        '<span class="cmt-score ' + scoreCls + '">' + score + '</span>' +
+        '<button class="vote-btn ' + (votedDown ? 'voted-down' : '') + '" onclick="voteComment(\'' + c.id + '\',\'down\')">' +
+        '&#9660; <span>' + (c.downvotes || 0) + '</span>' +
+        '</button>' +
+        (!isReply && !isCommentBanned(true) ? '<button class="cmt-reply-btn" onclick="toggleReplyForm(\'' + c.id + '\', \'' + esc(c.author) + '\')">' +
+          '&#8617; Répondre' +
           '</button>' : '') +
         '</div>' +
         (!isReply ? '<div class="cmt-reply-form" id="rf-' + c.id + '">' +
           '<textarea class="cmt-reply-inp" id="ri-' + c.id + '" placeholder="Répondre à ' + esc(c.author) + '..." rows="1"></textarea>' +
           '<button class="cmt-reply-send" onclick="submitReply(\'' + c.id + '\')">↑</button>' +
-        '</div>' : '') +
-      '</div>';
+          '</div>' : '') +
+        '</div>';
     }
 
     function esc(str) {
       if (!str) return '';
-      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
     // ── Toggle reply form ──
@@ -3385,12 +3662,12 @@
 
       ta.disabled = true;
       await dbAddComment({
-        course_id:    _cmtCourseId,
+        course_id: _cmtCourseId,
         course_title: _cmtCourseTitle,
-        author:       SESSION.name || SESSION.email,
-        email:        SESSION.email,
-        content:      content,
-        parent_id:    parentId
+        author: SESSION.name || SESSION.email,
+        email: SESSION.email,
+        content: content,
+        parent_id: parentId
       });
       ta.value = '';
       ta.disabled = false;
@@ -3404,7 +3681,7 @@
       if (!SESSION || !SESSION.email) return;
       if (isCommentBanned()) return;
       if (!_cmtCourseId) { alert('Ouvrez d\'abord un cours pour commenter.'); return; }
-      
+
       var ta = document.getElementById('cmt-inp');
       var content = ta.value.trim();
       if (!content) return;
@@ -3416,12 +3693,12 @@
 
       ta.disabled = true;
       await dbAddComment({
-        course_id:    _cmtCourseId,
+        course_id: _cmtCourseId,
         course_title: _cmtCourseTitle,
-        author:       SESSION.name || SESSION.email,
-        email:        SESSION.email,
-        content:      content,
-        parent_id:    null
+        author: SESSION.name || SESSION.email,
+        email: SESSION.email,
+        content: content,
+        parent_id: null
       });
       ta.value = '';
       ta.disabled = false;
@@ -3429,7 +3706,7 @@
     }
 
     // Enter to submit (Shift+Enter = new line)
-    document.getElementById('cmt-inp').addEventListener('keydown', function(e) {
+    document.getElementById('cmt-inp').addEventListener('keydown', function (e) {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitComment(); }
     });
 
