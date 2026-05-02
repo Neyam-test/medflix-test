@@ -2734,7 +2734,6 @@
         var savedB64 = null;
         try { savedB64 = localStorage.getItem(_pdfKey(courseId)); } catch(e) {}
         
-        // Si on n'a pas le fichier en local, on doit le récupérer depuis Supabase
         var contentPromise = null;
         if (savedB64) {
           contentPromise = Promise.resolve({ fileData: _b64ToUint8(savedB64).buffer });
@@ -2744,22 +2743,30 @@
               try { localStorage.setItem(_pdfKey(_adobeCurrentDocId), anns[0].data); } catch(e){}
               return { fileData: _b64ToUint8(anns[0].data).buffer };
             }
-            return null; // Force fallback to URL
+            return null;
           });
+        }
+
+        function _doPreview(contentParam) {
+          _adobeCurrentView.previewFile(
+            { content: contentParam, metaData: { id: _adobeCurrentDocId || 'doc-id', fileName: (title || 'Doc') + '.pdf' } },
+            { embedMode: 'FULL_WINDOW', showAnnotationTools: true, showDownloadPDF: false, showPrintPDF: false, enableFormFilling: false }
+          );
         }
 
         if (contentPromise) {
           contentPromise.then(function(contentObj) {
-            _adobeCurrentView.previewFile(
-              { content: { promise: Promise.resolve(contentObj || { location: { url: url } }) }, metaData: { id: _adobeCurrentDocId || 'doc-id', fileName: (title || 'Doc') + '.pdf' } },
-              { embedMode: 'FULL_WINDOW', showAnnotationTools: true, showDownloadPDF: false, showPrintPDF: false, enableFormFilling: false }
-            );
+            if (contentObj) {
+              _doPreview({ promise: Promise.resolve(contentObj) });
+            } else {
+              _doPreview({ location: { url: url } });
+            }
+          }).catch(function(err) {
+            console.error("Erreur chargement PDF", err);
+            _doPreview({ location: { url: url } });
           });
         } else {
-          _adobeCurrentView.previewFile(
-            { content: { location: { url: url } }, metaData: { id: _adobeCurrentDocId || 'doc-id', fileName: (title || 'Doc') + '.pdf' } },
-            { embedMode: 'FULL_WINDOW', showAnnotationTools: true, showDownloadPDF: false, showPrintPDF: false, enableFormFilling: false }
-          );
+          _doPreview({ location: { url: url } });
         }
       }
 
