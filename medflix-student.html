@@ -2700,35 +2700,50 @@
         _adobeCurrentView.registerCallback(
           AdobeDC.View.Enum.CallbackType.SAVE_API,
           function(metaData, content, options) {
-            console.log('[Annot] Sauvegarde en cours...');
+            console.log('[Annot] Sauvegarde déclenchée...');
             if (content && content.promise) {
               content.promise.then(function(result) {
+                console.log('[Annot] Fichier préparé par Adobe:', result ? 'OK' : 'NULL');
                 if (result && result.fileData) {
                   try {
+                    console.log('[Annot] Taille du fichier (octets):', result.fileData.byteLength);
                     var u8 = new Uint8Array(result.fileData);
+                    console.log('[Annot] Conversion en cours...');
                     var b64 = _uint8ToB64(u8);
+                    console.log('[Annot] Conversion terminée (Taille B64:', b64.length, ')');
                     
-                    try { localStorage.setItem(_pdfKey(_adobeCurrentDocId), b64); } 
-                    catch(e) { console.warn('[Annot] Stockage local plein, utilisation du cloud uniquement.'); }
+                    try { 
+                      localStorage.setItem(_pdfKey(_adobeCurrentDocId), b64); 
+                      console.log('[Annot] Cache local OK');
+                    } catch(e) { 
+                      console.warn('[Annot] Cache local plein ou refusé'); 
+                    }
                     
                     if (SESSION && SESSION.email) {
-                      dbSaveAnnotations(SESSION.email, _adobeCurrentDocId, [{ type: 'pdf_blob', data: b64 }]).then(function() {
-                        console.log('[Annot] Sauvegarde réussie ✓');
-                      });
-                    } else {
-                      console.log('[Annot] Sauvegarde locale réussie ✓ (non connecté)');
+                      console.log('[Annot] Envoi vers Supabase...');
+                      dbSaveAnnotations(SESSION.email, _adobeCurrentDocId, [{ type: 'pdf_blob', data: b64 }])
+                        .then(function(res) {
+                          console.log('[Annot] Sauvegarde réussie ✓', res);
+                        })
+                        .catch(function(err) {
+                          console.error('[Annot] Échec Supabase (Fichier trop lourd ?):', err);
+                        });
                     }
                   } catch (err) {
-                    console.error('[Annot] Erreur lors de la conversion PDF:', err);
+                    console.error('[Annot] Erreur de traitement:', err);
                   }
+                } else {
+                  console.warn('[Annot] fileData manquant dans le résultat');
                 }
               }).catch(function(err) {
                 console.error('[Annot] Promesse de fichier échouée:', err);
               });
+            } else {
+              console.warn('[Annot] Objet content invalide:', content);
             }
             return Promise.resolve({ code: AdobeDC.View.Enum.ApiResponseCode.SUCCESS, data: { metaData: { fileName: (title || 'Doc') + '.pdf' } } });
           },
-          { autoSaveFrequency: 15, enableFocusPolling: true, showSaveButton: true }
+          { autoSaveFrequency: 10, enableFocusPolling: true, showSaveButton: true }
         );
 
         var savedB64 = null;
