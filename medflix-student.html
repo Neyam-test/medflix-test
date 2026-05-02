@@ -2692,32 +2692,32 @@
         console.log('[Annot] Lancement FULL_WINDOW (Version Finale)...');
         _adobeCurrentView = new AdobeDC.View({ clientId: _adobeClientId, divId: 'adobe-dc-view' });
 
-        var previewObj = _adobeCurrentView.previewFile(
+        _adobeCurrentView.previewFile(
           { content: { location: { url: url } }, metaData: { id: _adobeCurrentDocId || 'doc-id', fileName: (title || 'Doc') + '.pdf' } },
-          { embedMode: 'FULL_WINDOW', showAnnotationTools: true, showDownloadPDF: false, showPrintPDF: false, enableFormFilling: false }
-        );
-
-        // Attendre que le viewer soit prêt via la Promise de previewFile
-        previewObj.then(function(adobeViewer) {
+          { embedMode: 'FULL_WINDOW', showAnnotationTools: true, enableAnnotationAPIs: true, includePDFAnnotations: true, showDownloadPDF: false, showPrintPDF: false, enableFormFilling: false }
+        ).then(function(adobeViewer) {
           adobeViewer.getAPIs().then(function(apis) {
-            apis.getAnnotationManager().then(function(mgr) {
-              console.log('[Annot] Système de synchro prêt ✓');
-              
-              // 1. Restaurer
-              if (SESSION && SESSION.email && _adobeCurrentDocId) {
-                dbGetAnnotations(SESSION.email, _adobeCurrentDocId).then(function(anns) {
-                  if (anns && anns.length > 0) mgr.addAnnotations(anns);
-                });
-              }
+            console.log('[Annot] APIs récupérées:', Object.keys(apis));
+            if (apis.getAnnotationManager) {
+              apis.getAnnotationManager().then(function(mgr) {
+                console.log('[Annot] Système de synchro prêt ✓');
+                
+                if (SESSION && SESSION.email && _adobeCurrentDocId) {
+                  dbGetAnnotations(SESSION.email, _adobeCurrentDocId).then(function(anns) {
+                    if (anns && anns.length > 0) mgr.addAnnotations(anns);
+                  });
+                }
 
-              // 2. Écouter les changements
-              mgr.registerEventListener(function() {
-                mgr.getAnnotations().then(function(currentAnns) {
-                  console.log('[Annot] Enregistrement...');
-                  dbSaveAnnotations(SESSION.email, _adobeCurrentDocId, currentAnns || []);
-                });
-              }, { listenOn: ["ANNOTATION_ADDED", "ANNOTATION_UPDATED", "ANNOTATION_DELETED"] });
-            });
+                mgr.registerEventListener(function() {
+                  mgr.getAnnotations().then(function(currentAnns) {
+                    console.log('[Annot] Enregistrement...');
+                    dbSaveAnnotations(SESSION.email, _adobeCurrentDocId, currentAnns || []);
+                  });
+                }, { listenOn: ["ANNOTATION_ADDED", "ANNOTATION_UPDATED", "ANNOTATION_DELETED"] });
+              });
+            } else {
+              console.error('[Annot] getAnnotationManager non trouvé dans apis');
+            }
           });
         });
       }
