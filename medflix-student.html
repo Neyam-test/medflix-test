@@ -2701,46 +2701,57 @@
           AdobeDC.View.Enum.CallbackType.SAVE_API,
           function(metaData, content, options) {
             console.log('[Annot] Sauvegarde déclenchée...');
-            if (content && content.promise) {
-              content.promise.then(function(result) {
-                console.log('[Annot] Fichier préparé par Adobe:', result ? 'OK' : 'NULL');
-                if (result && result.fileData) {
-                  try {
-                    console.log('[Annot] Taille du fichier (octets):', result.fileData.byteLength);
-                    var u8 = new Uint8Array(result.fileData);
-                    console.log('[Annot] Conversion en cours...');
-                    var b64 = _uint8ToB64(u8);
-                    console.log('[Annot] Conversion terminée (Taille B64:', b64.length, ')');
-                    
-                    try { 
-                      localStorage.setItem(_pdfKey(_adobeCurrentDocId), b64); 
-                      console.log('[Annot] Cache local OK');
-                    } catch(e) { 
-                      console.warn('[Annot] Cache local plein ou refusé'); 
-                    }
-                    
-                    if (SESSION && SESSION.email) {
-                      console.log('[Annot] Envoi vers Supabase...');
-                      dbSaveAnnotations(SESSION.email, _adobeCurrentDocId, [{ type: 'pdf_blob', data: b64 }])
-                        .then(function(res) {
-                          console.log('[Annot] Sauvegarde réussie ✓', res);
-                        })
-                        .catch(function(err) {
-                          console.error('[Annot] Échec Supabase (Fichier trop lourd ?):', err);
-                        });
-                    }
-                  } catch (err) {
-                    console.error('[Annot] Erreur de traitement:', err);
-                  }
-                } else {
-                  console.warn('[Annot] fileData manquant dans le résultat');
+            
+            // Fonction interne pour traiter le buffer
+            function _processData(fileData) {
+              try {
+                console.log('[Annot] Taille du fichier (octets):', fileData.byteLength);
+                var u8 = new Uint8Array(fileData);
+                console.log('[Annot] Conversion en cours...');
+                var b64 = _uint8ToB64(u8);
+                console.log('[Annot] Conversion terminée (Taille B64:', b64.length, ')');
+                
+                try { 
+                  localStorage.setItem(_pdfKey(_adobeCurrentDocId), b64); 
+                  console.log('[Annot] Cache local OK');
+                } catch(e) { 
+                  console.warn('[Annot] Cache local plein ou refusé'); 
                 }
+                
+                if (SESSION && SESSION.email) {
+                  console.log('[Annot] Envoi vers Supabase...');
+                  dbSaveAnnotations(SESSION.email, _adobeCurrentDocId, [{ type: 'pdf_blob', data: b64 }])
+                    .then(function(res) {
+                      console.log('[Annot] Sauvegarde réussie ✓', res);
+                    })
+                    .catch(function(err) {
+                      console.error('[Annot] Échec Supabase:', err);
+                    });
+                }
+              } catch (err) {
+                console.error('[Annot] Erreur de traitement:', err);
+              }
+            }
+
+            // Adobe peut renvoyer soit une Promise, soit directement le Buffer (selon la version)
+            if (content instanceof ArrayBuffer) {
+              console.log('[Annot] Fichier reçu directement (ArrayBuffer)');
+              _processData(content);
+            } else if (content && content.buffer instanceof ArrayBuffer) {
+              console.log('[Annot] Fichier reçu directement (TypedArray)');
+              _processData(content.buffer);
+            } else if (content && content.promise) {
+              console.log('[Annot] Fichier reçu via Promise');
+              content.promise.then(function(result) {
+                if (result && result.fileData) _processData(result.fileData);
+                else console.warn('[Annot] fileData manquant dans la Promise');
               }).catch(function(err) {
-                console.error('[Annot] Promesse de fichier échouée:', err);
+                console.error('[Annot] Promesse échouée:', err);
               });
             } else {
-              console.warn('[Annot] Objet content invalide:', content);
+              console.warn('[Annot] Format content inconnu:', content);
             }
+            
             return Promise.resolve({ code: AdobeDC.View.Enum.ApiResponseCode.SUCCESS, data: { metaData: { fileName: (title || 'Doc') + '.pdf' } } });
           },
           { autoSaveFrequency: 10, enableFocusPolling: true, showSaveButton: true }
