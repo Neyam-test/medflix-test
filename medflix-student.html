@@ -2685,19 +2685,29 @@
       document.getElementById('doc-viewer-modal').style.display = 'flex';
       
       var container = document.getElementById('adobe-dc-view');
-      container.style.height = '100%';
+      container.style.height = 'calc(100vh - 60px)';
       container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;gap:.75rem;color:rgba(237,232,224,.4);font-family:Outfit,sans-serif;"><div style="width:28px;height:28px;border:3px solid rgba(255,255,255,.12);border-top-color:#e02020;border-radius:50%;animation:spin 1s linear infinite;flex-shrink:0;"></div><span>Chargement du document...</span></div>';
 
       function _launch() {
-        console.log('[Annot] Lancement FULL_WINDOW (Version Finale)...');
+        console.log('[Annot] Lancement SIZED_CONTAINER (Fix Outils)...');
         _adobeCurrentView = new AdobeDC.View({ clientId: _adobeClientId, divId: 'adobe-dc-view' });
 
-        _adobeCurrentView.previewFile(
+        var previewObj = _adobeCurrentView.previewFile(
           { content: { location: { url: url } }, metaData: { id: _adobeCurrentDocId || 'doc-id', fileName: (title || 'Doc') + '.pdf' } },
-          { embedMode: 'FULL_WINDOW', showAnnotationTools: true, enableAnnotationAPIs: true, includePDFAnnotations: true, showDownloadPDF: false, showPrintPDF: false, enableFormFilling: false }
-        ).then(function(adobeViewer) {
+          { 
+            embedMode: 'SIZED_CONTAINER', 
+            showAnnotationTools: true, 
+            showCommentsPanel: true, 
+            enableAnnotationAPIs: true, 
+            includePDFAnnotations: true, 
+            showDownloadPDF: false, 
+            showPrintPDF: false, 
+            enableFormFilling: false 
+          }
+        );
+
+        previewObj.then(function(adobeViewer) {
           adobeViewer.getAPIs().then(function(apis) {
-            console.log('[Annot] APIs récupérées:', Object.keys(apis));
             if (apis.getAnnotationManager) {
               apis.getAnnotationManager().then(function(mgr) {
                 console.log('[Annot] Système de synchro prêt ✓');
@@ -2710,13 +2720,13 @@
 
                 mgr.registerEventListener(function() {
                   mgr.getAnnotations().then(function(currentAnns) {
-                    console.log('[Annot] Enregistrement...');
+                    console.log('[Annot] Enregistrement rapide...');
                     dbSaveAnnotations(SESSION.email, _adobeCurrentDocId, currentAnns || []);
                   });
                 }, { listenOn: ["ANNOTATION_ADDED", "ANNOTATION_UPDATED", "ANNOTATION_DELETED"] });
               });
             } else {
-              console.error('[Annot] getAnnotationManager non trouvé dans apis');
+              console.error('[Annot] ERREUR FATALE: getAnnotationManager introuvable');
             }
           });
         });
