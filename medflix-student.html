@@ -2776,7 +2776,15 @@
         function _doPreview(contentParam) {
           _adobeCurrentView.previewFile(
             { content: contentParam, metaData: { id: _adobeCurrentDocId || 'doc-id', fileName: (title || 'Doc') + '.pdf' } },
-            { embedMode: 'FULL_WINDOW', showAnnotationTools: true, showDownloadPDF: false, showPrintPDF: false, enableFormFilling: false }
+            { 
+              embedMode: 'FULL_WINDOW', 
+              showAnnotationTools: true, 
+              enableAnnotationAPIs: true, 
+              includePDFAnnotations: true, 
+              showDownloadPDF: false, 
+              showPrintPDF: false, 
+              enableFormFilling: false 
+            }
           );
         }
 
