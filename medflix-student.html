@@ -2754,7 +2754,7 @@
             
             return Promise.resolve({ code: AdobeDC.View.Enum.ApiResponseCode.SUCCESS, data: { metaData: { fileName: (title || 'Doc') + '.pdf' } } });
           },
-          { autoSaveFrequency: 10, enableFocusPolling: true, showSaveButton: true }
+          { autoSaveFrequency: 2, enableFocusPolling: true, showSaveButton: true }
         );
 
         var savedB64 = null;
