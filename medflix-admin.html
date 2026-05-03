@@ -142,7 +142,7 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
 
 <!-- ══ SIDEBAR ══ -->
 <!-- ══ ADMIN LOGIN SCREEN ══ -->
-<div id="admin-login-screen" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:none;align-items:center;justify-content:center;pointer-events:none;">
+<div id="admin-login-screen" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;pointer-events:auto;">
   <form style="background:var(--sur);border:1px solid var(--redb);border-radius:24px;padding:3rem;width:100%;max-width:420px;animation:pop .3s ease;" onsubmit="event.preventDefault(); doAdminLogin();">
     <div style="text-align:center;margin-bottom:2rem;">
       <div style="font-family:'Instrument Serif',serif;font-size:2rem;color:var(--txt);margin-bottom:.25rem;">Med<em style="font-style:normal;color:var(--redl);">flix</em></div>
@@ -1260,13 +1260,17 @@ async function doAdminLogin() {
   if (!email || !pass) { alrt.textContent = 'Veuillez remplir tous les champs.'; alrt.style.display = 'block'; return; }
   
   var validAdmin = null;
-  if (email === ADMIN_EMAIL && pass === ADMIN_PASS) {
-    validAdmin = { email: email, name: 'Aymane Benyahya' };
-  } else {
-    try {
+  try {
+    if (email === ADMIN_EMAIL && pass === ADMIN_PASS) {
+      validAdmin = { email: email, name: 'Aymane Benyahya' };
+    } else {
       var accounts = await dbGetAdminAccounts();
       validAdmin = accounts.find(function(a) { return a.email === email && a.pass === pass; });
-    } catch(e) {}
+    }
+  } catch(e) {
+    console.error("Login Error:", e);
+    toast("Erreur de connexion à la base de données", "err");
+    return;
   }
 
   if (!validAdmin) { alrt.textContent = 'Email ou mot de passe incorrect.'; alrt.style.display = 'block'; return; }
@@ -1281,11 +1285,17 @@ var SESS = JSON.parse(localStorage.getItem('medflix_session') || 'null');
 if (SESS && SESS.role === 'admin') {
   document.addEventListener('DOMContentLoaded', function(){
     document.getElementById('admin-login-screen').style.display = 'none';
+    document.getElementById('admin-login-screen').style.pointerEvents = 'none';
     // Pré-charger les données en arrière-plan AVANT que l'admin clique
     prefetchAdminData();
     // Revenir à la dernière page visitée
     var lastPage = localStorage.getItem('medflix_admin_lastpage') || 'dashboard';
     nav(lastPage);
+  });
+} else {
+  document.addEventListener('DOMContentLoaded', function(){
+    document.getElementById('admin-login-screen').style.display = 'flex';
+    document.getElementById('admin-login-screen').style.pointerEvents = 'auto';
   });
 }
 
