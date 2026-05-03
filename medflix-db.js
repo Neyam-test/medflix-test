@@ -184,6 +184,7 @@ function dbMapUser(row) {
       start: computedStart,
       status: p.status || 'actif',
       by: p.by,
+      resiliatedBy: p.resiliatedBy,
       dateResil: p.dateResil
     };
   });
