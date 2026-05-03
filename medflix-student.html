@@ -2442,10 +2442,17 @@
       document.getElementById('s-score').textContent = avg;
     }
 
-    function trackActivity(type, title, sem, mod) {
-      if (type === 'cours') stats.cours = (stats.cours || 0) + 1;
-      if (type === 'tp') stats.tp = (stats.tp || 0) + 1;
-      if (type === 'quiz') stats.quiz = (stats.quiz || 0) + 1;
+    function trackActivity(type, title, sem, mod, id) {
+      if (!stats.viewedIds) stats.viewedIds = [];
+      var uniqueKey = id || title;
+      var isNew = !stats.viewedIds.includes(uniqueKey);
+
+      if (isNew) {
+        if (type === 'cours') stats.cours = (stats.cours || 0) + 1;
+        if (type === 'tp') stats.tp = (stats.tp || 0) + 1;
+        if (type === 'quiz') stats.quiz = (stats.quiz || 0) + 1;
+        stats.viewedIds.push(uniqueKey);
+      }
 
       var icon = type === 'cours' ? '🫀' : type === 'tp' ? '🔬' : '✏️';
       var color = type === 'cours' ? '#f87171' : type === 'tp' ? '#60a5fa' : '#4ade80';
@@ -2600,7 +2607,7 @@
         files.cours.forEach(function (c) {
           var annee = c.annee ? '<span style="background:rgba(255,255,255,.05);border:1px solid var(--line);padding:.2rem .5rem;border-radius:4px;font-size:.65rem;color:var(--mut);font-weight:600;letter-spacing:0.5px;">📅 ' + c.annee + '</span>' : '';
           var docUrl = c.pdf_link || c.lien || '';
-          html += '<button onclick="openDocViewer(\'' + docUrl.replace(/'/g, "\\'") + '\', \'' + c.titre.replace(/'/g, "\\'") + '\', \'' + c.id + '\');trackActivity(\'cours\', \'' + c.titre.replace(/'/g, "\\'") + '\', \'' + sem.replace(/'/g, "\\'") + '\', \'' + mod.replace(/'/g, "\\'") + '\')" style="text-align:left;display:block;background:var(--sur);border:1px solid var(--line);border-radius:12px;padding:1.25rem;transition:all .2s;color:var(--txt);cursor:pointer;width:100%;">'
+          html += '<button onclick="openDocViewer(\'' + docUrl.replace(/'/g, "\\'") + '\', \'' + c.titre.replace(/'/g, "\\'") + '\', \'' + c.id + '\');trackActivity(\'cours\', \'' + c.titre.replace(/'/g, "\\'") + '\', \'' + sem.replace(/'/g, "\\'") + '\', \'' + mod.replace(/'/g, "\\'") + '\', \'' + c.id + '\')" style="text-align:left;display:block;background:var(--sur);border:1px solid var(--line);border-radius:12px;padding:1.25rem;transition:all .2s;color:var(--txt);cursor:pointer;width:100%;">'
             + '<div style="font-weight:600;font-size:.95rem;margin-bottom:.6rem;line-height:1.4;">' + c.titre + '</div>'
             + '<div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:.75rem;color:var(--mut2);font-weight:500;">' + (c.desc || 'Visualiser le document →') + '</span>' + annee + '</div></button>';
         });
@@ -2613,7 +2620,7 @@
         files.tp.forEach(function (t) {
           var annee = t.annee ? '<span style="background:rgba(255,255,255,.05);border:1px solid rgba(96,165,250,.2);padding:.2rem .5rem;border-radius:4px;font-size:.65rem;color:#60a5fa;font-weight:600;letter-spacing:0.5px;">📅 ' + t.annee + '</span>' : '';
           var docUrl = t.pdf_link || t.lien || '';
-          html += '<button onclick="openDocViewer(\'' + docUrl.replace(/'/g, "\\'") + '\', \'' + t.titre.replace(/'/g, "\\'") + '\', \'' + t.id + '\');trackActivity(\'tp\', \'' + t.titre.replace(/'/g, "\\'") + '\', \'' + sem.replace(/'/g, "\\'") + '\', \'' + mod.replace(/'/g, "\\'") + '\')" style="text-align:left;display:block;background:var(--sur);border:1px solid rgba(96,165,250,.2);border-radius:12px;padding:1.25rem;transition:all .2s;color:var(--txt);cursor:pointer;width:100%;">'
+          html += '<button onclick="openDocViewer(\'' + docUrl.replace(/'/g, "\\'") + '\', \'' + t.titre.replace(/'/g, "\\'") + '\', \'' + t.id + '\');trackActivity(\'tp\', \'' + t.titre.replace(/'/g, "\\'") + '\', \'' + sem.replace(/'/g, "\\'") + '\', \'' + mod.replace(/'/g, "\\'") + '\', \'' + t.id + '\')" style="text-align:left;display:block;background:var(--sur);border:1px solid rgba(96,165,250,.2);border-radius:12px;padding:1.25rem;transition:all .2s;color:var(--txt);cursor:pointer;width:100%;">'
             + '<div style="font-weight:600;font-size:.95rem;margin-bottom:.6rem;line-height:1.4;">' + t.titre + '</div>'
             + '<div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:.72rem;color:#60a5fa;background:rgba(96,165,250,.1);padding:.2rem .5rem;border-radius:4px;font-weight:600;text-transform:uppercase;">' + (t.type || 'TP') + '</span>' + annee + '</div></button>';
         });
@@ -2943,7 +2950,7 @@
         var ok = answers.filter(function (a, i) { return a === ['A', 'B', 'C', 'D'].indexOf(activeQuiz.questions[i].bonne); }).length;
         var pct = Math.round((ok / activeQuiz.questions.length) * 100);
         stats.scores.push(pct);
-        trackActivity('quiz', activeQuiz.titre.replace(/'/g, "\\'"), activeQuiz.semestre.replace(/'/g, "\\'"), activeQuiz.module ? activeQuiz.module.replace(/'/g, "\\'") : 'Général');
+        trackActivity('quiz', activeQuiz.titre.replace(/'/g, "\\'"), activeQuiz.semestre.replace(/'/g, "\\'"), activeQuiz.module ? activeQuiz.module.replace(/'/g, "\\'") : 'Général', activeQuiz.id);
         document.getElementById('quiz-player').innerHTML =
           '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2.5rem;">'
           + '<div style="font-size:3rem;margin-bottom:1rem;">' + (pct >= 60 ? '🏆' : '📚') + '</div>'
