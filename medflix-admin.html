@@ -816,6 +816,22 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
       </div>
     </div>
 
+    <!-- GESTION DES ADMINS (Seulement pour admin@medflix.ma) -->
+    <div class="form-card" id="admin-management-card" style="display:none; margin-top:1.5rem; border-color:var(--amb); background:rgba(245,158,11,.03);">
+      <h3 style="color:var(--amb);">👑 Gestion des Administrateurs</h3>
+      <p style="font-size:.84rem;color:var(--mut);margin-bottom:1.5rem;">Créer un accès administrateur supplémentaire. (Réservé au super-admin)</p>
+      
+      <div class="fr2">
+        <div class="field"><label>Nom de l'admin</label><input type="text" id="new-admin-name" placeholder="Ex: Ali"></div>
+        <div class="field"><label>Email de connexion</label><input type="email" id="new-admin-email" placeholder="ali@medflix.ma"></div>
+      </div>
+      <div class="field"><label>Mot de passe</label><input type="password" id="new-admin-pass" placeholder="••••••••"></div>
+      
+      <div class="form-actions" style="margin-top:1.5rem;">
+        <button class="btn-red" style="background:var(--amb);color:white;width:100%;" onclick="createNewAdmin()">➕ Créer le compte admin</button>
+      </div>
+    </div>
+
     <!-- NATIVE HTMl Table -->
     <div class="card" style="margin-top:1.5rem;">
       <div class="card-head"><span class="card-title">Résumé actuel</span></div>
@@ -1236,21 +1252,33 @@ function getCurrentAdminName() {
   return 'Admin';
 }
 
-function doAdminLogin() {
+async function doAdminLogin() {
   var email = document.getElementById('admin-email').value.trim();
   var pass  = document.getElementById('admin-pass').value.trim();
   var alrt  = document.getElementById('admin-alert');
   alrt.style.display = 'none';
   if (!email || !pass) { alrt.textContent = 'Veuillez remplir tous les champs.'; alrt.style.display = 'block'; return; }
-  if (email !== ADMIN_EMAIL || pass !== ADMIN_PASS) { alrt.textContent = 'Email ou mot de passe incorrect.'; alrt.style.display = 'block'; return; }
-  localStorage.setItem('medflix_session', JSON.stringify({ name:'Aymane Benyahya', email:email, role:'admin', paid:[] }));
+  
+  var validAdmin = null;
+  if (email === ADMIN_EMAIL && pass === ADMIN_PASS) {
+    validAdmin = { email: email, name: 'Aymane Benyahya' };
+  } else {
+    try {
+      var accounts = await dbGetAdminAccounts();
+      validAdmin = accounts.find(function(a) { return a.email === email && a.pass === pass; });
+    } catch(e) {}
+  }
+
+  if (!validAdmin) { alrt.textContent = 'Email ou mot de passe incorrect.'; alrt.style.display = 'block'; return; }
+
+  localStorage.setItem('medflix_session', JSON.stringify({ name: validAdmin.name || 'Admin', email: validAdmin.email, role: 'admin', paid: [] }));
   document.getElementById('admin-login-screen').style.display = 'none';
   refreshDashboard();
 }
 
 // ══ GUARD ══
 var SESS = JSON.parse(localStorage.getItem('medflix_session') || 'null');
-if (SESS && SESS.role === 'admin' && SESS.email === ADMIN_EMAIL) {
+if (SESS && SESS.role === 'admin') {
   document.addEventListener('DOMContentLoaded', function(){
     document.getElementById('admin-login-screen').style.display = 'none';
     // Pré-charger les données en arrière-plan AVANT que l'admin clique
@@ -2636,6 +2664,32 @@ function renderParametres() {
       }
     }).catch(function(){});
   }
+
+  // ── 3. Gestion des admins (Super-admin uniquement) ──
+  var adminCard = document.getElementById('admin-management-card');
+  if (adminCard) {
+    if (SESS && SESS.email === 'admin@medflix.ma') {
+      adminCard.style.display = 'block';
+    } else {
+      adminCard.style.display = 'none';
+    }
+  }
+}
+
+async function createNewAdmin() {
+  var name = document.getElementById('new-admin-name').value.trim();
+  var email = document.getElementById('new-admin-email').value.trim();
+  var pass = document.getElementById('new-admin-pass').value.trim();
+  
+  if (!name || !email || !pass) { toast('Remplissez tous les champs', 'err'); return; }
+  if (pass.length < 6) { toast('Mot de passe trop court', 'err'); return; }
+  
+  await dbAddAdminAccount(email, pass, name);
+  toast('✅ Compte admin "'+name+'" créé avec succès !');
+  
+  document.getElementById('new-admin-name').value = '';
+  document.getElementById('new-admin-email').value = '';
+  document.getElementById('new-admin-pass').value = '';
 }
 
 async function saveParametres() {

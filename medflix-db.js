@@ -507,6 +507,32 @@ async function dbSetRetroReceipt(id, url) {
   } catch(e) { console.error('dbSetRetroReceipt', e); }
 }
 
+async function dbGetAdminAccounts() {
+  try {
+    var { data, error } = await sb.from('config').select('*').eq('key', 'admin_accounts');
+    if (!error && data && data.length > 0) {
+      try { return JSON.parse(data[0].value) || []; } catch(e){}
+    }
+  } catch(e) {}
+  return [];
+}
+
+async function dbAddAdminAccount(email, pass, name) {
+  var accounts = await dbGetAdminAccounts();
+  var exists = accounts.find(function(a) { return a.email === email; });
+  if (exists) {
+    exists.pass = pass;
+    exists.name = name;
+  } else {
+    accounts.push({ email: email, pass: pass, name: name });
+  }
+  try {
+    var { error } = await sb.from('config').upsert({ key: 'admin_accounts', value: JSON.stringify(accounts) }, { onConflict: 'key' });
+    if (error) console.error('dbAddAdminAccount:', error);
+  } catch(e) {}
+}
+
+
 // ══════════════════════════════════
 //  HELPERS
 // ══════════════════════════════════
