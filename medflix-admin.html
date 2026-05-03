@@ -1330,14 +1330,14 @@ async function refreshDashboard() {
       u.paidDetails.forEach(function(p) {
         if (p.status === 'actif') {
           var tr = getTimeRemaining(p.exp);
-          if (tr.days <= 30) {
+          if (tr.days > 0 && tr.days <= 30) {
             expiring.push({ name: u.name, email: u.email, semester: p.sem, expiration: p.exp, days: tr.days });
           }
         }
       });
     } else if (u.expiration) {
       var tr = getTimeRemaining(u.expiration);
-      if (tr.days <= 30) {
+      if (tr.days > 0 && tr.days <= 30) {
         expiring.push({ name: u.name, email: u.email, semester: u.semester || '—', expiration: u.expiration, days: tr.days });
       }
     }
