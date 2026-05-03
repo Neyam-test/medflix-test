@@ -362,13 +362,23 @@ async function dbGetAbonnements() {
   if (error) { console.error('dbGetAbonnements:', error); return []; }
   
   var retro = {};
+  var retroAdmins = {};
   try {
     var rData = await sb.from('config').select('value').eq('key', 'retro_receipts').single();
-    if (rData && rData.data) retro = JSON.parse(rData.data.value) || {};
+    if (rData && rData.data) {
+       var val = rData.data.value;
+       retro = (typeof val === 'string') ? JSON.parse(val) : val;
+    }
+    
+    var aData = await sb.from('config').select('value').eq('key', 'retro_admins').single();
+    if (aData && aData.data) {
+       var aval = aData.data.value;
+       retroAdmins = (typeof aval === 'string') ? JSON.parse(aval) : aval;
+    }
   } catch(e) {}
 
   return (data || []).map(function(r) {
-    return { id: r.id, nom: r.nom, email: r.email, semestre: r.semestre, montant: r.montant, methode: r.methode, statut: r.statut, expiration: r.expiration, date: new Date(r.created_at).toLocaleDateString('fr-FR'), created_at: r.created_at, recu: r.recu || retro[r.id] || null, admin: r.admin || null };
+    return { id: r.id, nom: r.nom, email: r.email, semestre: r.semestre, montant: r.montant, methode: r.methode, statut: r.statut, expiration: r.expiration, date: new Date(r.created_at).toLocaleDateString('fr-FR'), created_at: r.created_at, recu: r.recu || retro[r.id] || null, admin: r.admin || retroAdmins[r.id] || null };
   });
 }
 
@@ -391,8 +401,9 @@ async function dbAddAbonnement(a) {
     } else break;
   }
   
-  if (!error && data && a.recu && !('recu' in payload)) {
-    await dbSetRetroReceipt(data.id, a.recu);
+  if (!error && data) {
+    if (a.recu && !('recu' in payload)) await dbSetRetroReceipt(data.id, a.recu);
+    if (a.admin && !('admin' in payload)) await dbSetRetroAdmin(data.id, a.admin);
   }
   
   if (error) console.error('dbAddAbonnement:', error);
@@ -502,10 +513,26 @@ async function dbSetRetroReceipt(id, url) {
   try {
     var dict = {};
     var { data, error } = await sb.from('config').select('value').eq('key', 'retro_receipts').single();
-    if (!error && data) dict = JSON.parse(data.value) || {};
+    if (!error && data) {
+       var val = data.value;
+       dict = (typeof val === 'string') ? JSON.parse(val) : val;
+    }
     dict[id] = url;
-    await sb.from('config').upsert({ key: 'retro_receipts', value: JSON.stringify(dict) }, { onConflict: 'key' });
+    await sb.from('config').upsert({ key: 'retro_receipts', value: dict }, { onConflict: 'key' });
   } catch(e) { console.error('dbSetRetroReceipt', e); }
+}
+
+async function dbSetRetroAdmin(id, adminName) {
+  try {
+    var dict = {};
+    var { data, error } = await sb.from('config').select('value').eq('key', 'retro_admins').single();
+    if (!error && data) {
+       var val = data.value;
+       dict = (typeof val === 'string') ? JSON.parse(val) : val;
+    }
+    dict[id] = adminName;
+    await sb.from('config').upsert({ key: 'retro_admins', value: dict }, { onConflict: 'key' });
+  } catch(e) { console.error('dbSetRetroAdmin', e); }
 }
 
 async function dbGetAdminAccounts() {
