@@ -478,7 +478,8 @@ async function dbGetBannedWords() {
     var { data, error } = await sb.from('config').select('*').eq('key', 'banned_words');
     if (!error && data && data.length > 0) {
       try {
-        var arr = JSON.parse(data[0].value);
+        var val = data[0].value;
+        var arr = (typeof val === 'string') ? JSON.parse(val) : val;
         localStorage.setItem('cfg_banned', JSON.stringify(arr));
         return arr || [];
       } catch(e){}
@@ -492,7 +493,7 @@ async function dbGetBannedWords() {
 async function dbSetBannedWords(words) {
   localStorage.setItem('cfg_banned', JSON.stringify(words));
   try {
-    var { error } = await sb.from('config').upsert({ key: 'banned_words', value: JSON.stringify(words) }, { onConflict: 'key' });
+    var { error } = await sb.from('config').upsert({ key: 'banned_words', value: words }, { onConflict: 'key' });
     if (error) console.error('dbSetBannedWords:', error);
   } catch(e) {}
 }
@@ -511,7 +512,11 @@ async function dbGetAdminAccounts() {
   try {
     var { data, error } = await sb.from('config').select('*').eq('key', 'admin_accounts');
     if (!error && data && data.length > 0) {
-      try { return JSON.parse(data[0].value) || []; } catch(e){}
+      var val = data[0].value;
+      if (typeof val === 'string') {
+        try { return JSON.parse(val) || []; } catch(e){ return []; }
+      }
+      return val || [];
     }
   } catch(e) {}
   return [];
@@ -527,7 +532,7 @@ async function dbAddAdminAccount(email, pass, name) {
     accounts.push({ email: email, pass: pass, name: name });
   }
   try {
-    var { error } = await sb.from('config').upsert({ key: 'admin_accounts', value: JSON.stringify(accounts) }, { onConflict: 'key' });
+    var { error } = await sb.from('config').upsert({ key: 'admin_accounts', value: accounts }, { onConflict: 'key' });
     if (error) console.error('dbAddAdminAccount:', error);
   } catch(e) {}
 }
