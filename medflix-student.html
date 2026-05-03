@@ -2762,12 +2762,12 @@
         
         var contentPromise = null;
         if (savedB64) {
-          contentPromise = Promise.resolve({ fileData: _b64ToUint8(savedB64).buffer });
+          contentPromise = Promise.resolve(_b64ToUint8(savedB64).buffer);
         } else if (SESSION && SESSION.email && _adobeCurrentDocId) {
           contentPromise = dbGetAnnotations(SESSION.email, _adobeCurrentDocId).then(function(anns) {
             if (anns && anns.length > 0 && anns[0].type === 'pdf_blob') {
               try { localStorage.setItem(_pdfKey(_adobeCurrentDocId), anns[0].data); } catch(e){}
-              return { fileData: _b64ToUint8(anns[0].data).buffer };
+              return _b64ToUint8(anns[0].data).buffer;
             }
             return null;
           });
