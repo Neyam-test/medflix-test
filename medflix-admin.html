@@ -1611,7 +1611,10 @@ async function _renderActivationWithData(users, abos) {
   histo.innerHTML = actifs.map(function(a) {
     var dateStr = a.created_at ? formatDateTime(a.created_at) : '—';
     var methodeLabel = a.methode || '—';
-    var adminName = a.admin ? a.admin.split(' ')[0] : '—';
+    var rawAdmin = a.admin || '';
+    if (!rawAdmin || rawAdmin === 'admin@medflix.ma' || rawAdmin.toLowerCase() === 'admin') rawAdmin = 'Aymane';
+    var adminName = rawAdmin.split(' ')[0];
+
     var recuBtn = a.recu
       ? '<span style="color:var(--redl);font-size:.75rem;cursor:pointer;text-decoration:underline;" onclick="event.stopPropagation();window.open(\'' + a.recu + '\',\'_blank\')">📎 Voir</span>'
       : '<span style="color:var(--mut2);font-size:.75rem;">—</span>';
