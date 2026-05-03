@@ -1343,7 +1343,15 @@ async function refreshDashboard() {
     }
   });
 
-  expiring.sort(function(a, b) { return a.days - b.days; });
+  expiring.sort(function(a, b) {
+    var aExp = a.days <= 0;
+    var bExp = b.days <= 0;
+    if (aExp && !bExp) return 1;
+    if (!aExp && bExp) return -1;
+    if (aExp && bExp) return b.days - a.days;
+    return a.days - b.days;
+  });
+
 
   // ── Pending abonnements (existing accounts requesting a new semester) ──
   var pendingAbos = abos.filter(function(a){ return a.statut === 'En attente'; });
