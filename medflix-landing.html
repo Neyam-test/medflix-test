@@ -508,6 +508,8 @@ footer a:hover{color:var(--red-l);}
 
 <script>
 // ══ CONFIG ══
+var ADMIN_EMAIL = 'admin@medflix.ma';
+var ADMIN_PASS  = 'admin1234';
 var EJS_KEY    = 'SruyH4Rx1G-OS-gqE';
 var EJS_SVC    = 'service_chelsyk';
 var WA_NUM     = '212667344496';
@@ -588,10 +590,21 @@ async function doLogin(){
   if(!email||!pass){ showAlert('Veuillez remplir tous les champs.','err'); return; }
   setLoad('login',true); clearAlert();
 
-  // Admin check (hardcoded)
-  if(email==='admin@medflix.ma'&&pass==='admin1234'){
-    localStorage.setItem('medflix_session',JSON.stringify({name:'Aymane Benyahya',email:email,role:'admin',paid:[]}));
-    window.location.href='medflix-admin.html'; return;
+  // Admin check (hardcoded + dynamic)
+  var validAdmin = null;
+  if(email===ADMIN_EMAIL && pass===ADMIN_PASS){
+    validAdmin = { email: email, name: 'Aymane Benyahya' };
+  } else {
+    try {
+      var accounts = await dbGetAdminAccounts();
+      validAdmin = accounts.find(function(a) { return a.email === email && a.pass === pass; });
+    } catch(e) {}
+  }
+
+  if (validAdmin) {
+    localStorage.setItem('medflix_session', JSON.stringify({ name: validAdmin.name || 'Admin', email: validAdmin.email, role: 'admin', paid: [] }));
+    window.location.href = 'medflix-admin.html';
+    return;
   }
 
   // Pre-fetch user by email alone to show account status warnings FIRST (before password check)
