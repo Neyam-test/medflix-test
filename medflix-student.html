@@ -1817,6 +1817,7 @@
     <nav class="sb-nav">
       <div class="ns">Principal</div>
       <button class="ni active" id="ni-dashboard" onclick="nav('dashboard')">🏠 Tableau de bord</button>
+      <button class="ni" id="ni-feed" onclick="nav('feed')">📰 Actualités</button>
       <div class="ns">Contenu</div>
       <button class="ni" id="ni-cours" onclick="nav('cours')">📚 Mes Ressources</button>
       <button class="ni" id="ni-quiz" onclick="nav('quiz')">✏️ Lecteur QCM Annales</button>
@@ -1834,6 +1835,37 @@
     <div class="topbar">
       <div class="tb-title" id="tb-title">Tableau de bord</div>
       <div class="sub-pill" id="sub-pill"><span class="sub-dot"></span>Abonnement actif</div>
+    </div>
+
+    <!-- FEED ACTUALITES -->
+    <div class="page" id="page-feed">
+      <div class="feed-container" style="max-width: 600px; margin: 0 auto; padding-top: 1rem;">
+        <!-- Post creation box -->
+        <div class="create-post-box" style="background: var(--surface2); border: 1px solid var(--line); border-radius: 12px; padding: 1.2rem; margin-bottom: 2rem;">
+          <div style="display: flex; gap: 1rem; align-items: flex-start;">
+            <div style="width:40px;height:40px;border-radius:50%;background:var(--redd);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--redl);flex-shrink:0;" id="cp-avatar-placeholder">?</div>
+            <img id="cp-avatar" style="width:40px;height:40px;border-radius:50%;object-fit:cover;display:none;flex-shrink:0;">
+            <textarea id="cp-content" placeholder="Exprimez-vous, posez une question, partagez une ressource..." style="flex:1; background: transparent; border: none; outline: none; resize: none; color: var(--txt); font-family: 'Outfit', sans-serif; font-size: 0.95rem; min-height: 60px;"></textarea>
+          </div>
+          <div id="cp-media-preview" style="display:none; margin-top: 1rem; position: relative;">
+            <img id="cp-preview-img" style="max-width: 100%; max-height: 400px; object-fit: contain; border-radius: 8px; display: none;">
+            <video id="cp-preview-vid" controls style="max-width: 100%; max-height: 400px; border-radius: 8px; display: none;"></video>
+            <button onclick="clearPostMedia()" style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem;">×</button>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; border-top: 1px solid var(--line); padding-top: 0.8rem;">
+            <div style="display: flex; gap: 0.5rem;">
+              <input type="file" id="cp-file" accept="image/*,video/*" style="display: none;" onchange="handlePostMediaSelect(this)">
+              <button class="btn-o" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-color: var(--line); color: var(--txt);" onclick="document.getElementById('cp-file').click()">📷 Photo/Vidéo</button>
+            </div>
+            <button class="btn-p" id="cp-btn" onclick="publishPost()" style="padding: 0.4rem 1.2rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem;"><span id="cp-btn-txt">Publier</span><div class="spin" id="cp-spin" style="display:none;width:14px;height:14px;"></div></button>
+          </div>
+        </div>
+
+        <!-- Feed List -->
+        <div id="feed-list" style="display: flex; flex-direction: column; gap: 1.5rem; padding-bottom: 4rem;">
+          <div style="text-align: center; color: var(--mut); padding: 2rem;">Chargement du fil d'actualité...</div>
+        </div>
+      </div>
     </div>
 
     <!-- DASHBOARD -->
@@ -1971,6 +2003,38 @@
               style="opacity:.5;cursor:not-allowed;"></div>
           <button class="btn-ps" onclick="saveProfil()">Sauvegarder</button>
         </div>
+        
+        <!-- NEW SOCIAL PROFILE CARD -->
+        <div class="p-card" style="margin-bottom:1.25rem;">
+          <h3>Profil Social & Académique</h3>
+          <p style="color:var(--mut);font-size:0.85rem;margin-bottom:1.5rem;">Ces informations seront visibles par les autres étudiants sur votre profil public et vos publications.</p>
+          
+          <div class="p-field" style="margin-bottom:1rem;">
+             <label>Photo de Profil (Avatar)</label>
+             <div style="display:flex;align-items:center;gap:1rem;">
+               <img id="p-avatar-preview" style="width:60px;height:60px;border-radius:50%;object-fit:cover;background:var(--surface2);">
+               <input type="file" id="p-avatar-file" accept="image/*" style="display:none;" onchange="previewProfileImage(this, 'p-avatar-preview')">
+               <button class="btn-o" style="padding:0.4rem 0.8rem;font-size:0.8rem;" onclick="document.getElementById('p-avatar-file').click()">Changer</button>
+             </div>
+          </div>
+          
+          <div class="p-field" style="margin-bottom:1rem;">
+             <label>Photo de Couverture</label>
+             <div style="display:flex;flex-direction:column;gap:0.5rem;">
+               <img id="p-cover-preview" style="width:100%;height:100px;border-radius:12px;object-fit:cover;background:var(--surface2);">
+               <input type="file" id="p-cover-file" accept="image/*" style="display:none;" onchange="previewProfileImage(this, 'p-cover-preview')">
+               <button class="btn-o" style="padding:0.4rem 0.8rem;font-size:0.8rem;width:fit-content;" onclick="document.getElementById('p-cover-file').click()">Changer la couverture</button>
+             </div>
+          </div>
+
+          <div class="p-field"><label>Ville</label><input type="text" id="p-city" placeholder="Ex: Casablanca, Rabat..."></div>
+          <div class="p-field"><label>Spécialité</label><input type="text" id="p-specialty" placeholder="Ex: Médecine Générale, Dentaire..."></div>
+          <div class="p-field"><label>Année d'étude</label><input type="text" id="p-study-year" placeholder="Ex: 1ère année, 3ème année..."></div>
+          <div class="p-field"><label>Biographie</label><textarea id="p-bio" placeholder="Un petit mot sur vous..." style="width:100%;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:.85rem;color:var(--txt);font-family:'Outfit',sans-serif;font-size:.9rem;outline:none;transition:border-color .2s;resize:vertical;min-height:80px;"></textarea></div>
+          
+          <button class="btn-ps" id="btn-save-social" onclick="saveSocialProfil()">Mettre à jour le profil public</button>
+        </div>
+
         <div>
           <div class="p-card" style="margin-bottom:1.25rem;">
             <h3>Mes abonnements</h3>
@@ -2419,6 +2483,19 @@
       document.getElementById('p-name').value = me.name || '';
       document.getElementById('p-email').value = me.email || '';
       document.getElementById('p-phone').value = me.phone || '';
+      document.getElementById('p-city').value = me.city || '';
+      document.getElementById('p-specialty').value = me.specialty || '';
+      document.getElementById('p-study-year').value = me.study_year || '';
+      document.getElementById('p-bio').value = me.bio || '';
+      if (me.avatar_url) {
+         document.getElementById('p-avatar-preview').src = me.avatar_url;
+         document.getElementById('cp-avatar').src = me.avatar_url;
+         document.getElementById('cp-avatar').style.display = 'block';
+         document.getElementById('cp-avatar-placeholder').style.display = 'none';
+      } else {
+         document.getElementById('cp-avatar-placeholder').textContent = firstName.charAt(0);
+      }
+      if (me.cover_url) document.getElementById('p-cover-preview').src = me.cover_url;
       if (!PAID.length) { document.getElementById('no-pay-banner').style.display = 'flex'; }
 
       updateStats();
@@ -3047,6 +3124,50 @@
       localStorage.setItem('medflix_session', JSON.stringify(SESSION));
       document.getElementById('welcome-name').textContent = 'Bonjour, ' + newName.split(' ')[0] + ' 👋';
       alert('Profil sauvegardé !');
+    }
+
+    var SOCIAL_AVATAR_FILE = null;
+    var SOCIAL_COVER_FILE = null;
+
+    function previewProfileImage(input, previewId) {
+       if (input.files && input.files[0]) {
+          var file = input.files[0];
+          if (file.size > 10 * 1024 * 1024) { alert("L'image est trop volumineuse (max 10MB)."); input.value=''; return; }
+          var url = URL.createObjectURL(file);
+          document.getElementById(previewId).src = url;
+          if (previewId === 'p-avatar-preview') SOCIAL_AVATAR_FILE = file;
+          if (previewId === 'p-cover-preview') SOCIAL_COVER_FILE = file;
+       }
+    }
+
+    async function saveSocialProfil() {
+       if (!SESSION || !isStudent) return;
+       var btn = document.getElementById('btn-save-social');
+       btn.disabled = true;
+       btn.textContent = 'Sauvegarde en cours...';
+
+       var updates = {
+          city: document.getElementById('p-city').value.trim(),
+          specialty: document.getElementById('p-specialty').value.trim(),
+          study_year: document.getElementById('p-study-year').value.trim(),
+          bio: document.getElementById('p-bio').value.trim()
+       };
+
+       if (SOCIAL_AVATAR_FILE) {
+          var path = 'avatar_' + SESSION.email.replace(/[^a-zA-Z0-9]/g, '');
+          var url = await dbUploadMedia(SOCIAL_AVATAR_FILE, path);
+          if (url) updates.avatar_url = url;
+       }
+       if (SOCIAL_COVER_FILE) {
+          var path = 'cover_' + SESSION.email.replace(/[^a-zA-Z0-9]/g, '');
+          var url = await dbUploadMedia(SOCIAL_COVER_FILE, path);
+          if (url) updates.cover_url = url;
+       }
+
+       await dbUpdateUser(SESSION.email, updates);
+       btn.disabled = false;
+       btn.textContent = 'Mettre à jour le profil public';
+       alert('Profil social mis à jour avec succès !');
     }
 
     // ══ CHANGE EMAIL ══
@@ -3795,7 +3916,211 @@
       if (!SESSION || !SESSION.email) return;
       await dbVoteComment(id, SESSION.email, dir);
       await loadComments();
+    // ══════════════════════════════════
+    //  RESEAU SOCIAL (Feed, Posts, Profils)
+    // ══════════════════════════════════
+    
+    var FEED_POSTS = [];
+    var POST_MEDIA_FILE = null;
+
+    async function loadFeed() {
+      var container = document.getElementById('feed-list');
+      if (document.getElementById('page-feed').classList.contains('active')) {
+        container.innerHTML = '<div style="text-align: center; color: var(--mut); padding: 2rem;">Mise à jour du fil d\'actualité...</div>';
+      }
+      
+      var posts = await dbGetFeedPosts();
+      
+      // Algorithm: Twitter / HackerNews Gravity
+      // Score = (Likes*1 + Comments*2 + Shares*3) / (Hours_Since_Posted + 2)^1.5
+      var now = Date.now();
+      posts.forEach(function(p) {
+         var ageHours = Math.max(0.1, (now - new Date(p.created_at).getTime()) / 3600000);
+         var engagement = (p.likes_count || 0) * 1 + (p.comments_count || 0) * 2 + (p.shares_count || 0) * 3;
+         p.score = (engagement + 1) / Math.pow(ageHours + 2, 1.5);
+         
+         // If it's very new (less than 1 hour), give it a boost to be visible
+         if (ageHours < 1) p.score += 10;
+      });
+      
+      // Sort by score
+      posts.sort(function(a, b) { return b.score - a.score; });
+      FEED_POSTS = posts;
+      
+      renderPosts(FEED_POSTS, 'feed-list');
     }
+
+    function renderPosts(posts, targetId) {
+      var container = document.getElementById(targetId);
+      if (!posts || posts.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: var(--mut); padding: 2rem; background: var(--surface2); border: 1px solid var(--line); border-radius: 12px;">Aucune publication à afficher.</div>';
+        return;
+      }
+      
+      var html = '';
+      posts.forEach(function(p) {
+        var authorName = p.author ? p.author.name : p.author_email;
+        var avatarUrl = p.author && p.author.avatar_url ? p.author.avatar_url : null;
+        var avatarHtml = avatarUrl 
+           ? '<img src="'+avatarUrl+'" style="width:40px;height:40px;border-radius:50%;object-fit:cover;cursor:pointer;" onclick="openProfileModal(\''+p.author_email+'\')">'
+           : '<div style="width:40px;height:40px;border-radius:50%;background:var(--redd);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--redl);cursor:pointer;" onclick="openProfileModal(\''+p.author_email+'\')">'+authorName.charAt(0).toUpperCase()+'</div>';
+           
+        var specialty = p.author && p.author.specialty ? p.author.specialty : '';
+        var year = p.author && p.author.study_year ? p.author.study_year : '';
+        var metaTxt = [specialty, year].filter(Boolean).join(' • ');
+        
+        var mediaHtml = '';
+        if (p.media_url) {
+           if (p.media_type === 'video') {
+             mediaHtml = '<video src="'+p.media_url+'" controls style="max-width:100%;max-height:500px;border-radius:12px;margin-top:1rem;background:black;"></video>';
+           } else {
+             mediaHtml = '<img src="'+p.media_url+'" style="max-width:100%;max-height:500px;border-radius:12px;margin-top:1rem;object-fit:contain;cursor:zoom-in;" onclick="window.open(\''+p.media_url+'\')">';
+           }
+        }
+        
+        var timeAgo = cmtTimeAgo(p.created_at);
+        
+        html += '<div class="post-card" style="background:var(--surface2);border:1px solid var(--line);border-radius:16px;padding:1.25rem;">'
+             + '<div style="display:flex;gap:1rem;align-items:flex-start;">'
+             + avatarHtml
+             + '<div style="flex:1;">'
+             + '  <div style="display:flex;justify-content:space-between;align-items:flex-start;">'
+             + '    <div>'
+             + '      <div style="font-weight:700;color:var(--txt);cursor:pointer;font-size:1rem;" onclick="openProfileModal(\''+p.author_email+'\')">'+esc(authorName)+'</div>'
+             + '      <div style="color:var(--mut);font-size:0.75rem;margin-top:0.1rem;">'+metaTxt+'</div>'
+             + '    </div>'
+             + '    <div style="color:var(--mut2);font-size:0.75rem;">'+timeAgo+'</div>'
+             + '  </div>'
+             + '</div>'
+             + '</div>'
+             + '<div style="margin-top:1rem;color:var(--txt);font-size:0.95rem;line-height:1.5;word-break:break-word;white-space:pre-wrap;">'+esc(p.content)+'</div>'
+             + mediaHtml
+             + '<div style="display:flex;gap:1rem;margin-top:1.25rem;border-top:1px solid var(--line);padding-top:0.75rem;">'
+             + '  <button class="btn-o" style="flex:1;border:none;background:rgba(255,255,255,0.03);color:var(--mut);padding:0.6rem;font-size:0.9rem;border-radius:8px;" onclick="likePost(\''+p.id+'\')">❤️ '+(p.likes_count||0)+'</button>'
+             + '  <button class="btn-o" style="flex:1;border:none;background:rgba(255,255,255,0.03);color:var(--mut);padding:0.6rem;font-size:0.9rem;border-radius:8px;" onclick="alert(\'Commentaires bientot disponibles.\')">💬 '+(p.comments_count||0)+'</button>'
+             + '  <button class="btn-o" style="flex:1;border:none;background:rgba(255,255,255,0.03);color:var(--mut);padding:0.6rem;font-size:0.9rem;border-radius:8px;" onclick="sharePost(\''+p.id+'\')">🔁 '+(p.shares_count||0)+'</button>'
+             + '</div>'
+             + '</div>';
+      });
+      container.innerHTML = html;
+    }
+
+    function handlePostMediaSelect(input) {
+      if (input.files && input.files[0]) {
+        var file = input.files[0];
+        if (file.size > 50 * 1024 * 1024) { alert("Le fichier est trop volumineux (max 50MB)."); input.value=''; return; }
+        POST_MEDIA_FILE = file;
+        var url = URL.createObjectURL(file);
+        document.getElementById('cp-media-preview').style.display = 'block';
+        if (file.type.startsWith('video/')) {
+           document.getElementById('cp-preview-vid').src = url;
+           document.getElementById('cp-preview-vid').style.display = 'block';
+           document.getElementById('cp-preview-img').style.display = 'none';
+        } else {
+           document.getElementById('cp-preview-img').src = url;
+           document.getElementById('cp-preview-img').style.display = 'block';
+           document.getElementById('cp-preview-vid').style.display = 'none';
+        }
+      }
+    }
+
+    function clearPostMedia() {
+      POST_MEDIA_FILE = null;
+      document.getElementById('cp-file').value = '';
+      document.getElementById('cp-media-preview').style.display = 'none';
+      document.getElementById('cp-preview-img').src = '';
+      document.getElementById('cp-preview-vid').src = '';
+    }
+
+    async function publishPost() {
+      var content = document.getElementById('cp-content').value.trim();
+      if (!content && !POST_MEDIA_FILE) return;
+      
+      document.getElementById('cp-btn').disabled = true;
+      document.getElementById('cp-btn-txt').style.display = 'none';
+      document.getElementById('cp-spin').style.display = 'block';
+      
+      var mediaUrl = null;
+      var mediaType = null;
+      
+      if (POST_MEDIA_FILE) {
+         var path = 'post_' + SESSION.email.replace(/[^a-zA-Z0-9]/g, '');
+         mediaUrl = await dbUploadMedia(POST_MEDIA_FILE, path);
+         mediaType = POST_MEDIA_FILE.type.startsWith('video/') ? 'video' : 'image';
+      }
+      
+      await dbCreatePost({
+         author_email: SESSION.email,
+         content: content,
+         media_url: mediaUrl,
+         media_type: mediaType
+      });
+      
+      document.getElementById('cp-content').value = '';
+      clearPostMedia();
+      document.getElementById('cp-btn').disabled = false;
+      document.getElementById('cp-btn-txt').style.display = 'inline';
+      document.getElementById('cp-spin').style.display = 'none';
+      
+      await loadFeed();
+    }
+
+    async function likePost(postId) {
+       // Toggle logic handled at DB layer for simplicity in this version, 
+       // but typically we'd fetch if user liked it first. 
+       // For now, assume simple increment.
+       await dbLikePost(postId, SESSION.email);
+       loadFeed(); // Reload fully for simplicity
+    }
+
+    async function sharePost(postId) {
+       if(confirm("Partager cette publication sur votre profil ?")) {
+          await dbSharePost(postId, SESSION.email, "J'ai partagé une publication.");
+          loadFeed();
+       }
+    }
+
+    async function openProfileModal(email) {
+       document.getElementById('public-profile-modal').style.display = 'flex';
+       document.getElementById('pp-feed-list').innerHTML = '<div style="color:var(--mut);text-align:center;">Chargement...</div>';
+       
+       var user = await dbGetUser(email);
+       if (!user) return;
+       
+       document.getElementById('pp-name').textContent = user.name;
+       document.getElementById('pp-specialty').textContent = '⚕️ ' + (user.specialty || 'Spécialité inconnue');
+       document.getElementById('pp-year').textContent = '🎓 ' + (user.study_year || 'Année inconnue');
+       document.getElementById('pp-city').textContent = '📍 ' + (user.city || 'Ville inconnue');
+       document.getElementById('pp-bio').textContent = user.bio || 'Aucune bio.';
+       
+       if (user.cover_url) {
+          document.getElementById('pp-cover').style.backgroundImage = 'url('+user.cover_url+')';
+       } else {
+          document.getElementById('pp-cover').style.backgroundImage = 'none';
+       }
+       
+       if (user.avatar_url) {
+          document.getElementById('pp-avatar').src = user.avatar_url;
+          document.getElementById('pp-avatar').style.display = 'block';
+          document.getElementById('pp-avatar-placeholder').style.display = 'none';
+       } else {
+          document.getElementById('pp-avatar').style.display = 'none';
+          document.getElementById('pp-avatar-placeholder').style.display = 'flex';
+          document.getElementById('pp-avatar-placeholder').textContent = user.name.charAt(0).toUpperCase();
+       }
+       
+       var posts = await dbGetFeedPosts();
+       var userPosts = posts.filter(function(p){ return p.author_email === email; });
+       renderPosts(userPosts, 'pp-feed-list');
+    }
+
+    // Initialize Feed when navigating to it
+    var origNav = nav;
+    nav = function(name) {
+       origNav(name);
+       if (name === 'feed') loadFeed();
+    };
+
   </script>
 </body>
 

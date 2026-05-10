@@ -112,6 +112,12 @@ async function dbUpdateUser(email, updates) {
   if ('ban_expiration' in updates) mapped.ban_expiration = updates.ban_expiration;
   if ('comment_banned_until' in updates) mapped.comment_banned_until = updates.comment_banned_until;
   if ('progress' in updates) mapped.progress = updates.progress;
+  if ('avatar_url' in updates) mapped.avatar_url = updates.avatar_url;
+  if ('cover_url' in updates) mapped.cover_url = updates.cover_url;
+  if ('city' in updates) mapped.city = updates.city;
+  if ('specialty' in updates) mapped.specialty = updates.specialty;
+  if ('study_year' in updates) mapped.study_year = updates.study_year;
+  if ('bio' in updates) mapped.bio = updates.bio;
   
   var { error } = await sb.from('profiles').update(mapped).eq('email', email);
   
@@ -216,7 +222,13 @@ function dbMapUser(row) {
     date: row.created_at ? new Date(row.created_at).toLocaleDateString('fr-FR') : '',
     progress: row.progress || { cours: 0, tp: 0, quiz: 0, score: 0, latest: [] },
     ban_expiration: row.ban_expiration || null,
-    comment_banned_until: row.comment_banned_until || null
+    comment_banned_until: row.comment_banned_until || null,
+    avatar_url: row.avatar_url || null,
+    cover_url: row.cover_url || null,
+    city: row.city || null,
+    specialty: row.specialty || null,
+    study_year: row.study_year || null,
+    bio: row.bio || null
   };
 }
 
@@ -722,4 +734,97 @@ async function dbSaveAnnotations(userEmail, docId, annotations) {
     updated_at: new Date().toISOString()
   }, { onConflict: 'user_email,document_id' });
   if (error) console.error('dbSaveAnnotations:', error);
+}
+
+// ══════════════════════════════════
+//  RESEAU SOCIAL (Feed, Profils, Posts)
+// ══════════════════════════════════
+
+// Upload media to Supabase Storage Bucket 'social_media'
+async function dbUploadMedia(file, path) {
+  try {
+    var ext = file.name.split('.').pop();
+    var fileName = path + '_' + Date.now() + '.' + ext;
+    var { data, error } = await sb.storage.from('social_media').upload(fileName, file, { cacheControl: '3600', upsert: false });
+    if (error) { console.error('dbUploadMedia:', error); return null; }
+    var pubUrl = sb.storage.from('social_media').getPublicUrl(fileName);
+    return pubUrl.data.publicUrl;
+  } catch(e) { console.error('dbUploadMedia exception:', e); return null; }
+}
+
+async function dbGetFeedPosts() {
+  // We fetch posts along with author profiles to display avatar and name
+  var { data, error } = await sb.from('posts')
+    .select('*, author:profiles!posts_author_email_fkey(name, avatar_url, specialty, study_year)')
+    .order('created_at', { ascending: false })
+    .limit(100);
+  if (error) { console.error('dbGetFeedPosts:', error); return []; }
+  return data || [];
+}
+
+async function dbCreatePost(postData) {
+  var { data, error } = await sb.from('posts').insert(postData).select().single();
+  if (error) console.error('dbCreatePost:', error);
+  return data;
+}
+
+async function dbDeletePost(postId) {
+  var { error } = await sb.from('posts').delete().eq('id', postId);
+  if (error) console.error('dbDeletePost:', error);
+}
+
+// LIKES
+async function dbGetPostLikes(postId) {
+  var { data, error } = await sb.from('post_likes').select('user_email').eq('post_id', postId);
+  if (error) { console.error('dbGetPostLikes:', error); return []; }
+  return (data || []).map(function(l){ return l.user_email; });
+}
+
+async function dbLikePost(postId, email) {
+  await sb.from('post_likes').insert({ post_id: postId, user_email: email });
+  // Increment counter safely using RPC if available, otherwise just fetch and update.
+  // Standard update to keep it simple:
+  var { data } = await sb.from('posts').select('likes_count').eq('id', postId).single();
+  if (data) await sb.from('posts').update({ likes_count: (data.likes_count || 0) + 1 }).eq('id', postId);
+}
+
+async function dbUnlikePost(postId, email) {
+  await sb.from('post_likes').delete().eq('post_id', postId).eq('user_email', email);
+  var { data } = await sb.from('posts').select('likes_count').eq('id', postId).single();
+  if (data) await sb.from('posts').update({ likes_count: Math.max(0, (data.likes_count || 0) - 1) }).eq('id', postId);
+}
+
+// COMMENTS
+async function dbGetPostComments(postId) {
+  var { data, error } = await sb.from('post_comments')
+    .select('*, author:profiles!post_comments_user_email_fkey(name, avatar_url)')
+    .eq('post_id', postId)
+    .order('created_at', { ascending: true });
+  if (error) { console.error('dbGetPostComments:', error); return []; }
+  return data || [];
+}
+
+async function dbAddPostComment(postId, email, content) {
+  var { data, error } = await sb.from('post_comments').insert({ post_id: postId, user_email: email, content: content }).select().single();
+  if (error) console.error('dbAddPostComment:', error);
+  
+  var { data: pData } = await sb.from('posts').select('comments_count').eq('id', postId).single();
+  if (pData) await sb.from('posts').update({ comments_count: (pData.comments_count || 0) + 1 }).eq('id', postId);
+  
+  return data;
+}
+
+// SHARES
+async function dbSharePost(originalPostId, email, content) {
+  var { data: orig } = await sb.from('posts').select('shares_count').eq('id', originalPostId).single();
+  if (orig) await sb.from('posts').update({ shares_count: (orig.shares_count || 0) + 1 }).eq('id', originalPostId);
+  
+  var { data, error } = await sb.from('posts').insert({
+    author_email: email,
+    content: content,
+    original_post_id: originalPostId
+  }).select().single();
+  
+  if (error) console.error('dbSharePost:', error);
+  return data;
 }
