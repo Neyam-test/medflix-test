@@ -1823,7 +1823,8 @@
       <button class="ni" id="ni-quiz" onclick="nav('quiz')">✏️ Lecteur QCM Annales</button>
       <button class="ni" id="ni-ia" onclick="nav('ia')">🤖 IA de révision</button>
       <div class="ns">Compte</div>
-      <button class="ni" id="ni-profil" onclick="nav('profil')">👤 Mon profil</button>
+      <button class="ni" id="ni-public-profil" onclick="openProfilePage(SESSION.email)">👤 Mon profil</button>
+      <button class="ni" id="ni-profil" onclick="nav('profil')">⚙️ Paramètres du compte</button>
     </nav>
     <div class="sb-bot">
       <button class="btn-out" onclick="logout()">🚪 Déconnexion</button>
@@ -2100,6 +2101,38 @@
             </div>
             <button class="btn-ps" onclick="changePassword()">Modifier le mot de passe</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PUBLIC PROFIL -->
+    <div class="page" id="page-public-profil">
+      <div style="max-width: 800px; margin: 0 auto; padding-top: 1rem;">
+        <!-- Cover -->
+        <div id="pp-cover" style="width: 100%; height: 250px; background: var(--surface2); border-radius: 16px 16px 0 0; background-size: cover; background-position: center; border: 1px solid var(--line); border-bottom: none;"></div>
+        
+        <!-- Info Section -->
+        <div style="background: var(--sur); border: 1px solid var(--line); border-radius: 0 0 16px 16px; padding: 2rem; position: relative; margin-bottom: 2rem;">
+          <div style="position: absolute; top: -60px; left: 2rem; width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--sur); background: var(--surface2); overflow: hidden;">
+             <img id="pp-avatar" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+             <div id="pp-avatar-placeholder" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 3rem; font-weight: 700; color: var(--mut); background: var(--redd);">?</div>
+          </div>
+          
+          <div style="margin-top: 60px;">
+             <h2 id="pp-name" style="font-family: 'Instrument Serif', serif; font-size: 2.2rem; margin-bottom: 0.5rem; color: var(--txt);">Nom de l'étudiant</h2>
+             <div style="display: flex; gap: 1rem; color: var(--mut); font-size: 0.9rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+               <span id="pp-specialty">⚕️ Spécialité</span>
+               <span id="pp-year">🎓 Année</span>
+               <span id="pp-city">📍 Ville</span>
+             </div>
+             <p id="pp-bio" style="color: var(--txt); line-height: 1.6; font-size: 0.95rem; background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 12px; border: 1px solid var(--line);">Bio...</p>
+          </div>
+        </div>
+        
+        <!-- User's Posts -->
+        <h3 style="font-family: 'Instrument Serif', serif; font-size: 1.5rem; margin-bottom: 1rem; color: var(--txt);">Publications</h3>
+        <div id="pp-feed-list" style="display: flex; flex-direction: column; gap: 1.5rem; padding-bottom: 4rem;">
+           <div style="text-align: center; color: var(--mut); padding: 2rem;">Chargement des publications...</div>
         </div>
       </div>
     </div>
@@ -3996,8 +4029,8 @@
         var authorName = p.author ? p.author.name : p.author_email;
         var avatarUrl = p.author && p.author.avatar_url ? p.author.avatar_url : null;
         var avatarHtml = avatarUrl 
-           ? '<img src="'+avatarUrl+'" style="width:40px;height:40px;border-radius:50%;object-fit:cover;cursor:pointer;" onclick="openProfileModal(\''+p.author_email+'\')">'
-           : '<div style="width:40px;height:40px;border-radius:50%;background:var(--redd);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--redl);cursor:pointer;" onclick="openProfileModal(\''+p.author_email+'\')">'+authorName.charAt(0).toUpperCase()+'</div>';
+           ? '<img src="'+avatarUrl+'" style="width:40px;height:40px;border-radius:50%;object-fit:cover;cursor:pointer;" onclick="openProfilePage(\''+p.author_email+'\')">'
+           : '<div style="width:40px;height:40px;border-radius:50%;background:var(--redd);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--redl);cursor:pointer;" onclick="openProfilePage(\''+p.author_email+'\')">'+authorName.charAt(0).toUpperCase()+'</div>';
            
         var specialty = p.author && p.author.specialty ? p.author.specialty : '';
         var year = p.author && p.author.study_year ? p.author.study_year : '';
@@ -4175,8 +4208,8 @@
        }
     }
 
-    async function openProfileModal(email) {
-       document.getElementById('public-profile-modal').style.display = 'flex';
+    async function openProfilePage(email) {
+       nav('public-profil');
        document.getElementById('pp-feed-list').innerHTML = '<div style="color:var(--mut);text-align:center;">Chargement...</div>';
        
        var user = await dbGetUser(email);
