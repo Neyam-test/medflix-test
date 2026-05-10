@@ -1855,20 +1855,21 @@
           <div id="cp-expanded" style="display:none; margin-top: 1rem; border-top: 1px solid var(--line); padding-top: 1rem;">
             <textarea id="cp-content" placeholder="Partagez quelque chose avec la communauté..." style="width:100%; background: transparent; border: none; outline: none; resize: none; color: var(--txt); font-family: 'Outfit', sans-serif; font-size: 1.1rem; min-height: 100px; margin-bottom: 1rem;"></textarea>
             
-            <!-- Media Preview Area -->
-            <div id="cp-media-preview" style="display:none; margin-bottom: 1rem; position: relative; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #000;">
-              <img id="cp-preview-img" style="width: 100%; max-height: 450px; object-fit: contain; display: none;">
-              <video id="cp-preview-vid" controls style="width: 100%; max-height: 450px; display: none;"></video>
-              <div style="position: absolute; top: 10px; right: 10px; display: flex; gap: 8px;">
-                <button onclick="document.getElementById('cp-file').click()" style="background: rgba(255,255,255,0.9); color: #000; border: none; border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 4px;">✎ Modifier</button>
-                <button onclick="clearPostMedia()" style="background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">×</button>
-              </div>
+            <!-- Media Preview Area (Multiple) -->
+            <div id="cp-media-preview" style="display:none; margin-bottom: 1rem;">
+               <div id="cp-media-list" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px;">
+                 <!-- Multiple previews will be injected here -->
+               </div>
+               <div style="display: flex; gap: 8px; margin-top: 8px;">
+                  <button onclick="document.getElementById('cp-file').click()" style="background: rgba(255,255,255,0.08); color: var(--txt); border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 6px;">➕ Ajouter plus</button>
+                  <button onclick="clearPostMedia()" style="background: rgba(255,0,0,0.1); color: #ff4d4d; border: 1px solid rgba(255,0,0,0.2); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 0.8rem; font-weight: 600;">Tout effacer</button>
+               </div>
             </div>
 
             <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--line); border-radius: 10px; padding: 0.75rem 1rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
               <span style="font-weight: 600; font-size: 0.9rem; color: var(--txt);">Ajouter à votre publication</span>
               <div style="display: flex; gap: 0.5rem;">
-                <input type="file" id="cp-file" accept="image/*,video/*" style="display: none;" onchange="handlePostMediaSelect(this)">
+                <input type="file" id="cp-file" accept="image/*,video/*" style="display: none;" multiple onchange="handlePostMediaSelect(this)">
                 <button title="Photo/Vidéo" onclick="document.getElementById('cp-file').click()" style="background:none; border:none; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 6px; border-radius: 8px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='none'">
                   <svg viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19 3H5C3.89543 3 3 3.89543 3 5V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V5C21 3.89543 20.1046 3 19 3Z" stroke="#45BD62" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8.5 10C9.32843 10 10 9.32843 10 8.5C10 7.67157 9.32843 7 8.5 7C7.67157 7 7 7.67157 7 8.5C7 9.32843 7.67157 10 8.5 10Z" fill="#45BD62"/><path d="M21 15L16 10L5 21" stroke="#45BD62" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </button>
@@ -4003,12 +4004,24 @@
         var metaTxt = [specialty, year].filter(Boolean).join(' • ');
         
         var mediaHtml = '';
-        if (p.media_url) {
-           if (p.media_type === 'video') {
-             mediaHtml = '<video src="'+p.media_url+'" controls style="max-width:100%;max-height:500px;border-radius:12px;margin-top:1rem;background:black;"></video>';
-           } else {
-             mediaHtml = '<img src="'+p.media_url+'" style="max-width:100%;max-height:500px;border-radius:12px;margin-top:1rem;object-fit:contain;cursor:zoom-in;" onclick="window.open(\''+p.media_url+'\')">';
-           }
+        var mediaList = p.media_urls || [];
+        if (p.media_url && mediaList.length === 0) mediaList = [p.media_url]; // Fallback legacy
+        
+        if (mediaList.length > 0) {
+           var gridCols = mediaList.length === 1 ? '1fr' : (mediaList.length === 2 ? '1fr 1fr' : '1fr 1fr');
+           mediaHtml = '<div style="display:grid; grid-template-columns:'+gridCols+'; gap:4px; margin-top:1rem; border-radius:12px; overflow:hidden; border:1px solid var(--line);">';
+           mediaList.forEach(function(url, idx) {
+              var type = (p.media_types && p.media_types[idx]) ? p.media_types[idx] : (p.media_type || 'image');
+              var gridSpan = (mediaList.length === 3 && idx === 0) ? 'span 2' : 'auto';
+              var height = mediaList.length === 1 ? 'auto' : '200px';
+              
+              if (type === 'video') {
+                 mediaHtml += '<video src="'+url+'" controls style="width:100%; height:'+height+'; object-fit:cover; background:#000; grid-column:'+gridSpan+';"></video>';
+              } else {
+                 mediaHtml += '<img src="'+url+'" style="width:100%; height:'+height+'; object-fit:cover; cursor:zoom-in; grid-column:'+gridSpan+';" onclick="window.open(\''+url+'\')">';
+              }
+           });
+           mediaHtml += '</div>';
         }
         
         var timeAgo = cmtTimeAgo(p.created_at);
@@ -4038,50 +4051,53 @@
       container.innerHTML = html;
     }
 
+    var POST_MEDIA_FILES = [];
+
     function handlePostMediaSelect(input) {
-      if (input.files && input.files[0]) {
-        var file = input.files[0];
-        if (file.size > 50 * 1024 * 1024) { alert("Le fichier est trop volumineux (max 50MB)."); input.value=''; return; }
-        POST_MEDIA_FILE = file;
-        var url = URL.createObjectURL(file);
-        document.getElementById('cp-media-preview').style.display = 'block';
-        if (file.type.startsWith('video/')) {
-           document.getElementById('cp-preview-vid').src = url;
-           document.getElementById('cp-preview-vid').style.display = 'block';
-           document.getElementById('cp-preview-img').style.display = 'none';
-        } else {
-           document.getElementById('cp-preview-img').src = url;
-           document.getElementById('cp-preview-img').style.display = 'block';
-           document.getElementById('cp-preview-vid').style.display = 'none';
+      if (input.files) {
+        for (var i = 0; i < input.files.length; i++) {
+          var file = input.files[i];
+          if (file.size > 50 * 1024 * 1024) { alert("Un des fichiers est trop volumineux (max 50MB)."); continue; }
+          POST_MEDIA_FILES.push(file);
         }
+        renderMediaPreviews();
         expandPostBox();
+        input.value = ''; // Reset input to allow re-selecting same files
       }
     }
 
+    function renderMediaPreviews() {
+      var container = document.getElementById('cp-media-list');
+      if (POST_MEDIA_FILES.length === 0) {
+        document.getElementById('cp-media-preview').style.display = 'none';
+        return;
+      }
+      document.getElementById('cp-media-preview').style.display = 'block';
+      var html = '';
+      POST_MEDIA_FILES.forEach(function(file, idx) {
+        var url = URL.createObjectURL(file);
+        var isVid = file.type.startsWith('video/');
+        html += '<div style="position:relative; flex-shrink:0; width:120px; height:120px; border-radius:8px; overflow:hidden; border:1px solid var(--line); background:#000;">'
+              + (isVid ? '<video src="'+url+'" style="width:100%; height:100%; object-fit:cover;"></video>' : '<img src="'+url+'" style="width:100%; height:100%; object-fit:cover;">')
+              + '<button onclick="removeMediaFile('+idx+')" style="position:absolute; top:4px; right:4px; background:rgba(0,0,0,0.6); color:white; border:none; border-radius:50%; width:20px; height:20px; font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center;">×</button>'
+              + '</div>';
+      });
+      container.innerHTML = html;
+    }
+
+    function removeMediaFile(idx) {
+      POST_MEDIA_FILES.splice(idx, 1);
+      renderMediaPreviews();
+    }
+
     function clearPostMedia() {
-      POST_MEDIA_FILE = null;
-      document.getElementById('cp-file').value = '';
-      document.getElementById('cp-media-preview').style.display = 'none';
-      document.getElementById('cp-preview-img').src = '';
-      document.getElementById('cp-preview-vid').src = '';
-    }
-
-    function expandPostBox() {
-      document.getElementById('cp-expanded').style.display = 'block';
-      document.getElementById('cp-quick-actions').style.display = 'none';
-      document.getElementById('cp-trigger').style.display = 'none';
-      document.getElementById('cp-content').focus();
-    }
-
-    function collapsePostBox() {
-      document.getElementById('cp-expanded').style.display = 'none';
-      document.getElementById('cp-quick-actions').style.display = 'flex';
-      document.getElementById('cp-trigger').style.display = 'block';
+      POST_MEDIA_FILES = [];
+      renderMediaPreviews();
     }
 
     async function publishPost() {
       var content = document.getElementById('cp-content').value.trim();
-      if (!content && !POST_MEDIA_FILE) return;
+      if (!content && POST_MEDIA_FILES.length === 0) return;
       
       var btn = document.getElementById('cp-btn');
       var btnTxt = document.getElementById('cp-btn-txt');
@@ -4092,29 +4108,29 @@
       spin.style.display = 'block';
       
       try {
-        var mediaUrl = null;
-        var mediaType = null;
+        var mediaUrls = [];
+        var mediaTypes = [];
         
-        if (POST_MEDIA_FILE) {
-           var path = 'post_' + SESSION.email.replace(/[^a-zA-Z0-9]/g, '');
-           mediaUrl = await dbUploadMedia(POST_MEDIA_FILE, path);
-           if (!mediaUrl) {
-             throw new Error("Erreur lors de l'envoi du média. Vérifiez que vous avez bien créé le bucket 'social_media' dans Supabase Storage.");
-           }
-           mediaType = POST_MEDIA_FILE.type.startsWith('video/') ? 'video' : 'image';
+        for (var i = 0; i < POST_MEDIA_FILES.length; i++) {
+           var file = POST_MEDIA_FILES[i];
+           var path = 'post_' + SESSION.email.replace(/[^a-zA-Z0-9]/g, '') + '_' + i;
+           var url = await dbUploadMedia(file, path);
+           if (!url) throw new Error("Erreur lors de l'envoi d'un média.");
+           mediaUrls.push(url);
+           mediaTypes.push(file.type.startsWith('video/') ? 'video' : 'image');
         }
         
         var postPayload = {
            author_email: SESSION.email,
            content: content,
-           media_url: mediaUrl,
-           media_type: mediaType
+           media_urls: mediaUrls,
+           media_types: mediaTypes,
+           media_url: mediaUrls[0] || null, // Legacy support
+           media_type: mediaTypes[0] || null
         };
 
         var result = await dbCreatePost(postPayload);
-        if (!result) {
-          throw new Error("Erreur lors de la création de la publication en base de données. Vérifiez votre script SQL Supabase.");
-        }
+        if (!result) throw new Error("Erreur lors de la création de la publication.");
         
         document.getElementById('cp-content').value = '';
         clearPostMedia();
