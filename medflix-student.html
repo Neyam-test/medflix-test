@@ -1839,25 +1839,60 @@
 
     <!-- FEED ACTUALITES -->
     <div class="page" id="page-feed">
-      <div class="feed-container" style="max-width: 600px; margin: 0 auto; padding-top: 1rem;">
-        <!-- Post creation box -->
-        <div class="create-post-box" style="background: var(--surface2); border: 1px solid var(--line); border-radius: 12px; padding: 1.2rem; margin-bottom: 2rem;">
-          <div style="display: flex; gap: 1rem; align-items: flex-start;">
-            <div style="width:40px;height:40px;border-radius:50%;background:var(--redd);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--redl);flex-shrink:0;" id="cp-avatar-placeholder">?</div>
+      <div class="feed-container" style="max-width: 600px; margin: 0 auto; padding-top: 1.5rem;">
+        
+        <!-- Post creation box (Facebook style) -->
+        <div class="create-post-box" style="background: var(--surface2); border: 1px solid var(--line); border-radius: 12px; padding: 1rem; margin-bottom: 2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+          <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <div style="width:40px;height:40px;border-radius:50%;background:var(--redd);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--redl);flex-shrink:0;overflow:hidden;" id="cp-avatar-placeholder">?</div>
             <img id="cp-avatar" style="width:40px;height:40px;border-radius:50%;object-fit:cover;display:none;flex-shrink:0;">
-            <textarea id="cp-content" placeholder="Exprimez-vous, posez une question, partagez une ressource..." style="flex:1; background: transparent; border: none; outline: none; resize: none; color: var(--txt); font-family: 'Outfit', sans-serif; font-size: 0.95rem; min-height: 60px;"></textarea>
-          </div>
-          <div id="cp-media-preview" style="display:none; margin-top: 1rem; position: relative;">
-            <img id="cp-preview-img" style="max-width: 100%; max-height: 400px; object-fit: contain; border-radius: 8px; display: none;">
-            <video id="cp-preview-vid" controls style="max-width: 100%; max-height: 400px; border-radius: 8px; display: none;"></video>
-            <button onclick="clearPostMedia()" style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem;">×</button>
-          </div>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; border-top: 1px solid var(--line); padding-top: 0.8rem;">
-            <div style="display: flex; gap: 0.5rem;">
-              <input type="file" id="cp-file" accept="image/*,video/*" style="display: none;" onchange="handlePostMediaSelect(this)">
-              <button class="btn-o" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-color: var(--line); color: var(--txt);" onclick="document.getElementById('cp-file').click()">📷 Photo/Vidéo</button>
+            <div id="cp-trigger" onclick="expandPostBox()" style="flex:1; background: rgba(255,255,255,0.05); border-radius: 20px; padding: 0.6rem 1.2rem; color: var(--mut); cursor: pointer; font-size: 0.95rem; transition: background 0.2s;">
+              Quoi de neuf, <span class="cp-user-name">étudiant</span> ?
             </div>
-            <button class="btn-p" id="cp-btn" onclick="publishPost()" style="padding: 0.4rem 1.2rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem;"><span id="cp-btn-txt">Publier</span><div class="spin" id="cp-spin" style="display:none;width:14px;height:14px;"></div></button>
+          </div>
+          
+          <!-- Hidden expanded area -->
+          <div id="cp-expanded" style="display:none; margin-top: 1rem; border-top: 1px solid var(--line); padding-top: 1rem;">
+            <textarea id="cp-content" placeholder="Partagez quelque chose avec la communauté..." style="width:100%; background: transparent; border: none; outline: none; resize: none; color: var(--txt); font-family: 'Outfit', sans-serif; font-size: 1.1rem; min-height: 100px; margin-bottom: 1rem;"></textarea>
+            
+            <!-- Media Preview Area -->
+            <div id="cp-media-preview" style="display:none; margin-bottom: 1rem; position: relative; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #000;">
+              <img id="cp-preview-img" style="width: 100%; max-height: 450px; object-fit: contain; display: none;">
+              <video id="cp-preview-vid" controls style="width: 100%; max-height: 450px; display: none;"></video>
+              <div style="position: absolute; top: 10px; right: 10px; display: flex; gap: 8px;">
+                <button onclick="document.getElementById('cp-file').click()" style="background: rgba(255,255,255,0.9); color: #000; border: none; border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 4px;">✎ Modifier</button>
+                <button onclick="clearPostMedia()" style="background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">×</button>
+              </div>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--line); border-radius: 10px; padding: 0.75rem 1rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <span style="font-weight: 600; font-size: 0.9rem; color: var(--txt);">Ajouter à votre publication</span>
+              <div style="display: flex; gap: 0.5rem;">
+                <input type="file" id="cp-file" accept="image/*,video/*" style="display: none;" onchange="handlePostMediaSelect(this)">
+                <button title="Photo/Vidéo" onclick="document.getElementById('cp-file').click()" style="background:none; border:none; font-size: 1.4rem; cursor: pointer; filter: grayscale(1) brightness(1.5);">🖼️</button>
+                <button title="Taguer" style="background:none; border:none; font-size: 1.4rem; cursor: pointer; opacity: 0.5; cursor: not-allowed;">👥</button>
+                <button title="Humeur" style="background:none; border:none; font-size: 1.4rem; cursor: pointer; opacity: 0.5; cursor: not-allowed;">😀</button>
+              </div>
+            </div>
+
+            <button class="btn-p" id="cp-btn" onclick="publishPost()" style="width: 100%; padding: 0.75rem; border-radius: 8px; font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 0.6rem;">
+              <span id="cp-btn-txt">Publier</span>
+              <div class="spin" id="cp-spin" style="display:none; width:16px; height:16px;"></div>
+            </button>
+            <button class="btn-o" onclick="collapsePostBox()" style="width: 100%; margin-top: 0.5rem; background: transparent; border: none; color: var(--mut); font-size: 0.85rem; cursor: pointer;">Annuler</button>
+          </div>
+          
+          <!-- Quick actions (when collapsed) -->
+          <div id="cp-quick-actions" style="display: flex; margin-top: 0.75rem; border-top: 1px solid var(--line); padding-top: 0.75rem;">
+            <button onclick="expandPostBox(); document.getElementById('cp-file').click();" style="flex: 1; background: none; border: none; color: var(--mut); font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 8px; transition: background 0.2s;">
+              <span style="font-size: 1.2rem;">🖼️</span> Photo/vidéo
+            </button>
+            <button style="flex: 1; background: none; border: none; color: var(--mut); font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; cursor: not-allowed; opacity: 0.5; padding: 0.5rem;">
+              <span style="font-size: 1.2rem;">🏷️</span> Identifier
+            </button>
+            <button style="flex: 1; background: none; border: none; color: var(--mut); font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; cursor: not-allowed; opacity: 0.5; padding: 0.5rem;">
+              <span style="font-size: 1.2rem;">😀</span> Humeur
+            </button>
           </div>
         </div>
 
@@ -2495,6 +2530,7 @@
       } else {
          document.getElementById('cp-avatar-placeholder').textContent = firstName.charAt(0);
       }
+      document.querySelectorAll('.cp-user-name').forEach(function(el) { el.textContent = firstName; });
       if (me.cover_url) document.getElementById('p-cover-preview').src = me.cover_url;
       if (!PAID.length) { document.getElementById('no-pay-banner').style.display = 'flex'; }
 
@@ -4021,6 +4057,7 @@
            document.getElementById('cp-preview-img').style.display = 'block';
            document.getElementById('cp-preview-vid').style.display = 'none';
         }
+        expandPostBox();
       }
     }
 
@@ -4032,37 +4069,69 @@
       document.getElementById('cp-preview-vid').src = '';
     }
 
+    function expandPostBox() {
+      document.getElementById('cp-expanded').style.display = 'block';
+      document.getElementById('cp-quick-actions').style.display = 'none';
+      document.getElementById('cp-trigger').style.display = 'none';
+      document.getElementById('cp-content').focus();
+    }
+
+    function collapsePostBox() {
+      document.getElementById('cp-expanded').style.display = 'none';
+      document.getElementById('cp-quick-actions').style.display = 'flex';
+      document.getElementById('cp-trigger').style.display = 'block';
+    }
+
     async function publishPost() {
       var content = document.getElementById('cp-content').value.trim();
       if (!content && !POST_MEDIA_FILE) return;
       
-      document.getElementById('cp-btn').disabled = true;
-      document.getElementById('cp-btn-txt').style.display = 'none';
-      document.getElementById('cp-spin').style.display = 'block';
+      var btn = document.getElementById('cp-btn');
+      var btnTxt = document.getElementById('cp-btn-txt');
+      var spin = document.getElementById('cp-spin');
+
+      btn.disabled = true;
+      btnTxt.style.display = 'none';
+      spin.style.display = 'block';
       
-      var mediaUrl = null;
-      var mediaType = null;
-      
-      if (POST_MEDIA_FILE) {
-         var path = 'post_' + SESSION.email.replace(/[^a-zA-Z0-9]/g, '');
-         mediaUrl = await dbUploadMedia(POST_MEDIA_FILE, path);
-         mediaType = POST_MEDIA_FILE.type.startsWith('video/') ? 'video' : 'image';
+      try {
+        var mediaUrl = null;
+        var mediaType = null;
+        
+        if (POST_MEDIA_FILE) {
+           var path = 'post_' + SESSION.email.replace(/[^a-zA-Z0-9]/g, '');
+           mediaUrl = await dbUploadMedia(POST_MEDIA_FILE, path);
+           if (!mediaUrl) {
+             throw new Error("Erreur lors de l'envoi du média. Vérifiez que vous avez bien créé le bucket 'social_media' dans Supabase Storage.");
+           }
+           mediaType = POST_MEDIA_FILE.type.startsWith('video/') ? 'video' : 'image';
+        }
+        
+        var postPayload = {
+           author_email: SESSION.email,
+           content: content,
+           media_url: mediaUrl,
+           media_type: mediaType
+        };
+
+        var result = await dbCreatePost(postPayload);
+        if (!result) {
+          throw new Error("Erreur lors de la création de la publication en base de données. Vérifiez votre script SQL Supabase.");
+        }
+        
+        document.getElementById('cp-content').value = '';
+        clearPostMedia();
+        collapsePostBox();
+        await loadFeed();
+        
+      } catch (err) {
+        console.error('Publish error:', err);
+        alert('Erreur : ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btnTxt.style.display = 'inline';
+        spin.style.display = 'none';
       }
-      
-      await dbCreatePost({
-         author_email: SESSION.email,
-         content: content,
-         media_url: mediaUrl,
-         media_type: mediaType
-      });
-      
-      document.getElementById('cp-content').value = '';
-      clearPostMedia();
-      document.getElementById('cp-btn').disabled = false;
-      document.getElementById('cp-btn-txt').style.display = 'inline';
-      document.getElementById('cp-spin').style.display = 'none';
-      
-      await loadFeed();
     }
 
     async function likePost(postId) {
