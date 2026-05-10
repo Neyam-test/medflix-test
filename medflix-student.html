@@ -4095,6 +4095,19 @@
       renderMediaPreviews();
     }
 
+    function expandPostBox() {
+      document.getElementById('cp-expanded').style.display = 'block';
+      document.getElementById('cp-quick-actions').style.display = 'none';
+      document.getElementById('cp-trigger').style.display = 'none';
+      document.getElementById('cp-content').focus();
+    }
+
+    function collapsePostBox() {
+      document.getElementById('cp-expanded').style.display = 'none';
+      document.getElementById('cp-quick-actions').style.display = 'flex';
+      document.getElementById('cp-trigger').style.display = 'block';
+    }
+
     async function publishPost() {
       var content = document.getElementById('cp-content').value.trim();
       if (!content && POST_MEDIA_FILES.length === 0) return;
