@@ -1854,6 +1854,13 @@
           
           <!-- Hidden expanded area -->
           <div id="cp-expanded" style="display:none; margin-top: 1rem; border-top: 1px solid var(--line); padding-top: 1rem;">
+            <div id="cp-quote-preview" style="display:none; margin-bottom:1rem; padding:1rem; background:rgba(255,255,255,0.02); border:1px solid var(--line); border-radius:8px; font-size:0.85rem; color:var(--mut);">
+               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+                 <span style="font-weight:600;color:var(--txt);">Citer la publication :</span>
+                 <button onclick="clearQuote()" style="background:none;border:none;color:var(--red);cursor:pointer;font-weight:700;">✕</button>
+               </div>
+               <div id="cp-quote-text" style="color:var(--mut2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+            </div>
             <textarea id="cp-content" placeholder="Partagez quelque chose avec la communauté..." style="width:100%; background: transparent; border: none; outline: none; resize: none; color: var(--txt); font-family: 'Outfit', sans-serif; font-size: 1.1rem; min-height: 100px; margin-bottom: 1rem;"></textarea>
             
             <!-- Media Preview Area (Multiple) -->
@@ -4114,7 +4121,17 @@
              + '      <div style="font-weight:700;color:var(--txt);cursor:pointer;font-size:1rem;" onclick="openProfileModal(\''+p.author_email+'\')">'+esc(authorName)+'</div>'
              + '      <div style="color:var(--mut);font-size:0.75rem;margin-top:0.1rem;">'+metaTxt+'</div>'
              + '    </div>'
-             + '    <div style="color:var(--mut2);font-size:0.75rem;">'+timeAgo+'</div>'
+             + '    <div style="display:flex;align-items:center;gap:0.5rem;">'
+             + '      <div style="color:var(--mut2);font-size:0.75rem;">'+timeAgo+'</div>'
+             + '      <div style="position:relative;">'
+             + '        <button onclick="togglePostMenu(\'opt-menu-'+p.id+'\', event)" style="background:none;border:none;color:var(--mut);cursor:pointer;font-size:1.2rem;line-height:1;padding:0 0.5rem;">⋮</button>'
+             + '        <div id="opt-menu-'+p.id+'" class="post-opt-menu" style="display:none; position:absolute; right:0; top:100%; margin-top:0.2rem; background:var(--sur); border:1px solid var(--line); border-radius:8px; padding:0.4rem; z-index:10; box-shadow:0 4px 12px rgba(0,0,0,0.5); min-width:150px; flex-direction:column; gap:0.2rem;">'
+             + (p.author_email === SESSION.email 
+                 ? '          <button onclick="deletePost(\''+p.id+'\')" style="background:transparent;border:none;color:var(--txt);text-align:left;padding:0.5rem 0.8rem;cursor:pointer;border-radius:6px;font-size:0.85rem;width:100%;" onmouseover="this.style.background=\'rgba(248,113,113,0.1)\';this.style.color=\'#f87171\'" onmouseout="this.style.background=\'transparent\';this.style.color=\'var(--txt)\'">🗑️ Supprimer</button>'
+                 : '          <button onclick="reportPost(\''+p.id+'\')" style="background:transparent;border:none;color:var(--txt);text-align:left;padding:0.5rem 0.8rem;cursor:pointer;border-radius:6px;font-size:0.85rem;width:100%;" onmouseover="this.style.background=\'rgba(255,170,0,0.1)\';this.style.color=\'#ffaa00\'" onmouseout="this.style.background=\'transparent\';this.style.color=\'var(--txt)\'">⚠️ Signaler</button>')
+             + '        </div>'
+             + '      </div>'
+             + '    </div>'
              + '  </div>'
              + '</div>'
              + '</div>'
@@ -4124,7 +4141,13 @@
              + '<div style="display:flex;gap:1rem;margin-top:1.25rem;border-top:1px solid var(--line);padding-top:0.75rem;">'
              + '  <button class="btn-o" style="flex:1;border:none;background:rgba(255,255,255,0.03);color:var(--mut);padding:0.6rem;font-size:0.9rem;border-radius:8px;" onclick="likePost(\''+p.id+'\')">❤️ '+(p.likes_count||0)+'</button>'
              + '  <button class="btn-o" style="flex:1;border:none;background:rgba(255,255,255,0.03);color:var(--mut);padding:0.6rem;font-size:0.9rem;border-radius:8px;" onclick="alert(\'Commentaires bientot disponibles.\')">💬 '+(p.comments_count||0)+'</button>'
-             + '  <button class="btn-o" style="flex:1;border:none;background:rgba(255,255,255,0.03);color:var(--mut);padding:0.6rem;font-size:0.9rem;border-radius:8px;" onclick="sharePost(\''+p.id+'\')">🔁 '+(p.shares_count||0)+'</button>'
+             + '  <div style="flex:1;position:relative;display:flex;">'
+             + '    <button class="btn-o" style="width:100%;border:none;background:rgba(255,255,255,0.03);color:var(--mut);padding:0.6rem;font-size:0.9rem;border-radius:8px;" onclick="togglePostMenu(\'share-menu-'+p.id+'\', event)">🔁 '+(p.shares_count||0)+'</button>'
+             + '    <div id="share-menu-'+p.id+'" class="post-opt-menu" style="display:none; position:absolute; bottom:100%; left:50%; transform:translateX(-50%); margin-bottom:0.4rem; background:var(--sur); border:1px solid var(--line); border-radius:8px; padding:0.4rem; z-index:10; box-shadow:0 4px 12px rgba(0,0,0,0.5); min-width:140px; flex-direction:column; gap:0.2rem;">'
+             + '      <button onclick="directRepost(\''+p.id+'\')" style="background:transparent;border:none;color:var(--txt);text-align:left;padding:0.5rem 0.8rem;cursor:pointer;border-radius:6px;font-size:0.85rem;width:100%;" onmouseover="this.style.background=\'rgba(255,255,255,0.05)\'" onmouseout="this.style.background=\'transparent\'">🔁 Reposter</button>'
+             + '      <button onclick="quoteRepost(\''+p.id+'\')" style="background:transparent;border:none;color:var(--txt);text-align:left;padding:0.5rem 0.8rem;cursor:pointer;border-radius:6px;font-size:0.85rem;width:100%;" onmouseover="this.style.background=\'rgba(255,255,255,0.05)\'" onmouseout="this.style.background=\'transparent\'">💬 Citer le post</button>'
+             + '    </div>'
+             + '  </div>'
              + '</div>'
              + '</div>';
       });
@@ -4175,6 +4198,13 @@
       renderMediaPreviews();
     }
 
+    var QUOTE_POST_ID = null;
+
+    function clearQuote() {
+       QUOTE_POST_ID = null;
+       document.getElementById('cp-quote-preview').style.display = 'none';
+    }
+
     function expandPostBox() {
       document.getElementById('cp-expanded').style.display = 'block';
       document.getElementById('cp-quick-actions').style.display = 'none';
@@ -4186,6 +4216,7 @@
       document.getElementById('cp-expanded').style.display = 'none';
       document.getElementById('cp-quick-actions').style.display = 'flex';
       document.getElementById('cp-trigger').style.display = 'block';
+      clearQuote();
     }
 
     async function publishPost() {
@@ -4219,7 +4250,8 @@
            media_urls: mediaUrls,
            media_types: mediaTypes,
            media_url: mediaUrls[0] || null, // Legacy support
-           media_type: mediaTypes[0] || null
+           media_type: mediaTypes[0] || null,
+           original_post_id: QUOTE_POST_ID
         };
 
         var result = await dbCreatePost(postPayload);
@@ -4248,10 +4280,62 @@
        loadFeed(); // Reload fully for simplicity
     }
 
-    async function sharePost(postId) {
-       if(confirm("Partager cette publication sur votre profil ?")) {
+    // Document click to close menus
+    document.addEventListener('click', function(e) {
+       document.querySelectorAll('.post-opt-menu').forEach(function(m){
+          if (!m.contains(e.target) && !m.previousElementSibling.contains(e.target)) {
+             m.style.display = 'none';
+          }
+       });
+    });
+
+    function togglePostMenu(id, e) {
+       e.stopPropagation();
+       var el = document.getElementById(id);
+       var isDisp = el.style.display === 'flex';
+       document.querySelectorAll('.post-opt-menu').forEach(function(m){ m.style.display = 'none'; });
+       if (!isDisp) el.style.display = 'flex';
+    }
+
+    async function directRepost(postId) {
+       document.querySelectorAll('.post-opt-menu').forEach(function(m){ m.style.display = 'none'; });
+       var existing = FEED_POSTS.find(function(post){ return post.author_email === SESSION.email && post.original_post_id === postId && !post.content; });
+       if (existing) {
+          alert("Tu as déjà reposté cette publication.");
+          return;
+       }
+       if(confirm("Reposter cette publication sur ton profil ?")) {
           await dbSharePost(postId, SESSION.email, "");
           loadFeed();
+       }
+    }
+
+    function quoteRepost(postId) {
+       document.querySelectorAll('.post-opt-menu').forEach(function(m){ m.style.display = 'none'; });
+       var p = FEED_POSTS.find(function(post){ return post.id === postId; });
+       if (!p) return;
+       QUOTE_POST_ID = postId;
+       var text = p.content || 'Média partagé';
+       document.getElementById('cp-quote-text').textContent = text;
+       document.getElementById('cp-quote-preview').style.display = 'block';
+       expandPostBox();
+       window.scrollTo({top: 0, behavior: 'smooth'});
+       document.getElementById('cp-content').focus();
+    }
+
+    async function deletePost(postId) {
+       document.querySelectorAll('.post-opt-menu').forEach(function(m){ m.style.display = 'none'; });
+       if(confirm("Êtes-vous sûr de vouloir supprimer cette publication ?")) {
+          await dbDeletePost(postId);
+          loadFeed();
+       }
+    }
+
+    async function reportPost(postId) {
+       document.querySelectorAll('.post-opt-menu').forEach(function(m){ m.style.display = 'none'; });
+       if(confirm("Voulez-vous signaler cette publication pour contenu inapproprié ?")) {
+          await dbReportPost(postId, SESSION.email);
+          alert("Merci, la publication a été signalée à l'administrateur.");
        }
     }
 

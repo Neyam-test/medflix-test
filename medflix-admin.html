@@ -196,6 +196,10 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
       💬 Commentaires
       <span class="ni-badge" id="nb-comments" style="background:var(--redb);color:var(--redl);"></span>
     </button>
+    <button class="ni" id="ni-reports" onclick="nav('reports')">
+      🚨 Signalements
+      <span class="ni-badge" id="nb-reports" style="background:var(--ambd);color:var(--amb);"></span>
+    </button>
 
     <div class="ns">Facturation</div>
     <button class="ni" id="ni-abonnements" onclick="nav('abonnements')">💳 Abonnements</button>
@@ -783,6 +787,23 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
     </div>
   </div>
 
+  <!-- ════ SIGNALEMENTS ════ -->
+  <div class="page" id="page-reports">
+    <h1 class="ptitle">🚨 Signalements de Posts</h1>
+    <p class="psub">Modération des publications signalées par les étudiants</p>
+
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-head">
+        <span class="card-title">🚨 Publications Signalées</span>
+        <button class="btn-ghost" onclick="loadReportsAdmin()" style="padding:.4rem .8rem;">&#x21bb; Rafraîchir</button>
+      </div>
+      <table>
+        <thead><tr><th>Date</th><th>Auteur du Post</th><th>Contenu</th><th>Signalé par</th><th>Actions</th></tr></thead>
+        <tbody id="reports-admin-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- ════ PARAMÈTRES ════ -->
   <div class="page" id="page-parametres">
     <h1 class="ptitle">Paramètres</h1>
@@ -1327,7 +1348,7 @@ function nav(name) {
     updateDataLists();
   }
   
-  var renders = { dashboard:refreshDashboard, activation:renderActivation, etudiants:renderAllStudents, cours:renderCours, tp:renderTP, qcm:renderQCMList, abonnements:renderAbonnements, renouvellements:loadRenewalsAdmin, parametres:renderParametres, backup:renderBackup, comments:loadCommentsAdmin };
+  var renders = { dashboard:refreshDashboard, activation:renderActivation, etudiants:renderAllStudents, cours:renderCours, tp:renderTP, qcm:renderQCMList, abonnements:renderAbonnements, renouvellements:loadRenewalsAdmin, parametres:renderParametres, backup:renderBackup, comments:loadCommentsAdmin, reports:loadReportsAdmin };
   if (renders[name]) renders[name]();
 }
 
@@ -3697,6 +3718,64 @@ function closeModerationHistory() {
 
 // adminDeleteComment redundant copy removed to use the main version with history logging.
 
+
+// ══════════════════════════════════
+//  REPORTS (SIGNALEMENTS)
+// ══════════════════════════════════
+var ADMIN_REPORTS = [];
+
+async function loadReportsAdmin() {
+  ADMIN_REPORTS = await dbGetReportedPosts();
+  var count = ADMIN_REPORTS.length;
+  var badge = document.getElementById('nb-reports');
+  if(count > 0) {
+    badge.textContent = count;
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
+  }
+  renderReportsAdmin();
+}
+
+function renderReportsAdmin() {
+  var tbody = document.getElementById('reports-admin-tbody');
+  if(!tbody) return;
+  
+  if(ADMIN_REPORTS.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--mut);padding:2rem;">Aucun signalement.</td></tr>';
+    return;
+  }
+  
+  var html = '';
+  ADMIN_REPORTS.forEach(function(r) {
+    var p = r.post;
+    if(!p) return; // Post might have been deleted already
+    var dStr = new Date(r.created_at).toLocaleDateString('fr-FR') + ' ' + new Date(r.created_at).toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'});
+    var contentPreview = p.content ? (p.content.substring(0, 100) + (p.content.length > 100 ? '...' : '')) : '<em>(Aucun texte)</em>';
+    if(p.media_urls && p.media_urls.length > 0) contentPreview += ' <br><span style="color:var(--amb);">[Contient des médias]</span>';
+    
+    html += '<tr>'
+         + '<td>' + dStr + '</td>'
+         + '<td><div style="font-weight:600;color:var(--txt);">' + (p.author ? p.author.name : p.author_email) + '</div><div style="font-size:.75rem;color:var(--mut);">' + p.author_email + '</div></td>'
+         + '<td style="max-width:300px;white-space:normal;word-break:break-word;">' + contentPreview + '</td>'
+         + '<td><div style="font-size:.8rem;color:var(--mut);">' + r.reporter_email + '</div></td>'
+         + '<td>'
+         + '  <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">'
+         + '    <button class="btn-red" onclick="adminDeleteReportedPost(\'' + p.id + '\')" style="padding:0.4rem 0.6rem;font-size:0.75rem;">🗑️ Supprimer Post</button>'
+         + '    <button class="btn-p" onclick="openModerationModal(\'' + p.author_email + '\', \'' + (p.author ? p.author.name : p.author_email) + '\')" style="padding:0.4rem 0.6rem;font-size:0.75rem;background:var(--amb);color:white;border:none;">🔨 Modérer Utilisateur</button>'
+         + '  </div>'
+         + '</td>'
+         + '</tr>';
+  });
+  
+  tbody.innerHTML = html;
+}
+
+async function adminDeleteReportedPost(postId) {
+  if(!confirm("Supprimer définitivement cette publication ?")) return;
+  await dbDeletePost(postId);
+  loadReportsAdmin();
+}
 
 </script>
 </body>

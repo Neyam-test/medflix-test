@@ -843,3 +843,16 @@ async function dbSharePost(originalPostId, email, content) {
   if (error) console.error('dbSharePost:', error);
   return data;
 }
+
+// REPORTS
+async function dbReportPost(postId, email) {
+  var { error } = await sb.from('post_reports').insert({ post_id: postId, reporter_email: email });
+  if (error && error.code !== '23505') console.error('dbReportPost:', error);
+}
+
+async function dbGetReportedPosts() {
+  var { data, error } = await sb.from('post_reports')
+     .select('*, post:posts!inner(*, author:profiles!posts_author_email_fkey(name, avatar_url))');
+  if (error) { console.error('dbGetReportedPosts:', error); return []; }
+  return data || [];
+}
