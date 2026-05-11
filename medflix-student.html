@@ -4203,7 +4203,7 @@
 
     async function sharePost(postId) {
        if(confirm("Partager cette publication sur votre profil ?")) {
-          await dbSharePost(postId, SESSION.email, "J'ai partagé une publication.");
+          await dbSharePost(postId, SESSION.email, "");
           loadFeed();
        }
     }
