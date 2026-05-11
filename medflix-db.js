@@ -759,7 +759,22 @@ async function dbGetFeedPosts() {
     .order('created_at', { ascending: false })
     .limit(100);
   if (error) { console.error('dbGetFeedPosts:', error); return []; }
-  return data || [];
+  
+  var posts = data || [];
+  
+  // Fetch missing original posts for shares
+  var origIds = posts.filter(function(p) { return p.original_post_id && !posts.find(function(op){ return op.id === p.original_post_id; }); })
+                     .map(function(p) { return p.original_post_id; });
+  if (origIds.length > 0) {
+     var { data: origData } = await sb.from('posts')
+        .select('*, author:profiles!posts_author_email_fkey(name, avatar_url, specialty, study_year)')
+        .in('id', origIds);
+     if (origData) {
+        posts = posts.concat(origData);
+     }
+  }
+  
+  return posts;
 }
 
 async function dbCreatePost(postData) {

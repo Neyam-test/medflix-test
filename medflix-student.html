@@ -4059,7 +4059,53 @@
         
         var timeAgo = cmtTimeAgo(p.created_at);
         
+        var embeddedHtml = '';
+        if (p.original_post_id) {
+           var orig = FEED_POSTS.find(function(op) { return op.id === p.original_post_id; });
+           if (orig) {
+              var origAuthorName = orig.author ? orig.author.name : orig.author_email;
+              var origAvatarUrl = orig.author && orig.author.avatar_url ? orig.author.avatar_url : null;
+              var origAvatarHtml = origAvatarUrl 
+                 ? '<img src="'+origAvatarUrl+'" style="width:24px;height:24px;border-radius:50%;object-fit:cover;">'
+                 : '<div style="width:24px;height:24px;border-radius:50%;background:var(--redd);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--redl);font-size:0.7rem;">'+origAuthorName.charAt(0).toUpperCase()+'</div>';
+              
+              var origMediaHtml = '';
+              var origMediaList = orig.media_urls || [];
+              if (orig.media_url && origMediaList.length === 0) origMediaList = [orig.media_url];
+              if (origMediaList.length > 0) {
+                 var origGridCols = origMediaList.length === 1 ? '1fr' : (origMediaList.length === 2 ? '1fr 1fr' : '1fr 1fr');
+                 origMediaHtml = '<div style="display:grid; grid-template-columns:'+origGridCols+'; gap:4px; margin-top:0.75rem; border-radius:8px; overflow:hidden; border:1px solid var(--line);">';
+                 origMediaList.forEach(function(url, idx) {
+                    var type = (orig.media_types && orig.media_types[idx]) ? orig.media_types[idx] : (orig.media_type || 'image');
+                    var origGridSpan = (origMediaList.length === 3 && idx === 0) ? 'span 2' : 'auto';
+                    var height = origMediaList.length === 1 ? 'auto' : '150px';
+                    if (type === 'video') {
+                       origMediaHtml += '<video src="'+url+'" controls style="width:100%; height:'+height+'; object-fit:cover; background:#000; grid-column:'+origGridSpan+';"></video>';
+                    } else {
+                       origMediaHtml += '<img src="'+url+'" style="width:100%; height:'+height+'; object-fit:cover; cursor:zoom-in; grid-column:'+origGridSpan+';" onclick="window.open(\''+url+'\')">';
+                    }
+                 });
+                 origMediaHtml += '</div>';
+              }
+              
+              embeddedHtml = '<div style="margin-top:1rem; border:1px solid var(--line); border-radius:12px; padding:1rem; background:rgba(255,255,255,0.02); cursor:pointer;" onclick="openProfilePage(\''+orig.author_email+'\')">'
+                           + '  <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem;">'
+                           + origAvatarHtml
+                           + '    <span style="font-weight:700; font-size:0.85rem; color:var(--txt);">'+esc(origAuthorName)+'</span>'
+                           + '    <span style="color:var(--mut2); font-size:0.75rem;">• '+cmtTimeAgo(orig.created_at)+'</span>'
+                           + '  </div>'
+                           + (orig.content ? '<div style="font-size:0.9rem; color:var(--mut); line-height:1.4; margin-bottom:0.5rem;">'+esc(orig.content)+'</div>' : '')
+                           + origMediaHtml
+                           + '</div>';
+           } else {
+              embeddedHtml = '<div style="margin-top:1rem; border:1px solid var(--line); border-radius:12px; padding:1rem; background:rgba(255,255,255,0.02); color:var(--mut2); font-size:0.85rem;">Post original indisponible ou supprimé.</div>';
+           }
+        }
+        
+        var postHeaderPrefix = p.original_post_id ? '<span style="color:var(--mut2);font-size:0.8rem;margin-bottom:0.5rem;display:flex;align-items:center;gap:0.4rem;">🔁 a reposté</span>' : '';
+
         html += '<div class="post-card" style="background:var(--surface2);border:1px solid var(--line);border-radius:16px;padding:1.25rem;">'
+             + postHeaderPrefix
              + '<div style="display:flex;gap:1rem;align-items:flex-start;">'
              + avatarHtml
              + '<div style="flex:1;">'
@@ -4072,8 +4118,9 @@
              + '  </div>'
              + '</div>'
              + '</div>'
-             + '<div style="margin-top:1rem;color:var(--txt);font-size:0.95rem;line-height:1.5;word-break:break-word;white-space:pre-wrap;">'+esc(p.content)+'</div>'
+             + (p.content ? '<div style="margin-top:1rem;color:var(--txt);font-size:0.95rem;line-height:1.5;word-break:break-word;white-space:pre-wrap;">'+esc(p.content)+'</div>' : '')
              + mediaHtml
+             + embeddedHtml
              + '<div style="display:flex;gap:1rem;margin-top:1.25rem;border-top:1px solid var(--line);padding-top:0.75rem;">'
              + '  <button class="btn-o" style="flex:1;border:none;background:rgba(255,255,255,0.03);color:var(--mut);padding:0.6rem;font-size:0.9rem;border-radius:8px;" onclick="likePost(\''+p.id+'\')">❤️ '+(p.likes_count||0)+'</button>'
              + '  <button class="btn-o" style="flex:1;border:none;background:rgba(255,255,255,0.03);color:var(--mut);padding:0.6rem;font-size:0.9rem;border-radius:8px;" onclick="alert(\'Commentaires bientot disponibles.\')">💬 '+(p.comments_count||0)+'</button>'
