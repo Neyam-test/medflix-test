@@ -4021,6 +4021,9 @@
       }
       
       var posts = await dbGetFeedPosts();
+      if (SESSION && SESSION.email) {
+         USER_LIKED_POSTS = await dbGetUserLikedPosts(SESSION.email);
+      }
       
       // Algorithm: Twitter / HackerNews Gravity
       // Score = (Likes*1 + Comments*2 + Shares*3) / (Hours_Since_Posted + 2)^1.5
@@ -4397,6 +4400,9 @@
        }
        
        var posts = await dbGetFeedPosts();
+       if (SESSION && SESSION.email) {
+          USER_LIKED_POSTS = await dbGetUserLikedPosts(SESSION.email);
+       }
        var userPosts = posts.filter(function(p){ return p.author_email === email; });
        renderPosts(userPosts, 'pp-feed-list');
     }
