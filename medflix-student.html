@@ -2115,6 +2115,7 @@
     <!-- PUBLIC PROFIL -->
     <div class="page" id="page-public-profil">
       <div style="max-width: 800px; margin: 0 auto; padding-top: 1rem;">
+        <button onclick="nav('feed')" style="background:none;border:none;color:var(--mut);cursor:pointer;font-weight:600;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;font-size:0.95rem;padding:0.5rem;border-radius:8px;" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--txt)'" onmouseout="this.style.background='none';this.style.color='var(--mut)'">← Retour au fil d'actualité</button>
         <!-- Cover -->
         <div id="pp-cover" style="width: 100%; height: 250px; background: var(--surface2); border-radius: 16px 16px 0 0; background-size: cover; background-position: center; border: 1px solid var(--line); border-bottom: none;"></div>
         
@@ -2451,6 +2452,16 @@
     </div>
   </div>
 
+  <!-- MODAL POST DETAILS -->
+  <div id="post-modal" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;padding:1rem;">
+    <div style="background:var(--sur);border:1px solid var(--line);border-radius:20px;padding:2rem;width:100%;max-width:700px;animation:pop .25s ease;max-height:90vh;display:flex;flex-direction:column;position:relative;">
+      <button onclick="closePostModal()" style="position:absolute;top:1rem;right:1rem;background:none;border:none;color:var(--mut);font-size:1.5rem;cursor:pointer;z-index:10;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">✕</button>
+      <div style="overflow-y:auto;flex:1;padding-right:.5rem;padding-top:1rem;" id="post-modal-content">
+         <!-- Injected by JS -->
+      </div>
+    </div>
+  </div>
+
   <script>
     // ══ CONFIG EMAILJS ══
     var EJS_KEY = 'SruyH4Rx1G-OS-gqE';
@@ -2646,6 +2657,9 @@
     var PAGE_TITLES = { dashboard: 'Tableau de bord', cours: 'Mes Ressources', quiz: 'Lecteur QCM Annales', ia: 'IA de révision', profil: 'Mon profil' };
 
     function nav(name) {
+      if (name !== 'public-profil') {
+         if (typeof CURRENT_PROFILE_EMAIL !== 'undefined') CURRENT_PROFILE_EMAIL = null;
+      }
       document.querySelectorAll('.page').forEach(function (p) { p.classList.remove('active'); });
       document.querySelectorAll('.ni').forEach(function (n) { n.classList.remove('active'); });
       document.getElementById('page-' + name).classList.add('active');
@@ -3996,6 +4010,8 @@
     
     var FEED_POSTS = [];
     var POST_MEDIA_FILE = null;
+    var CURRENT_PROFILE_EMAIL = null;
+    var CURRENT_MODAL_POST_ID = null;
 
     async function loadFeed() {
       var container = document.getElementById('feed-list');
@@ -4022,6 +4038,15 @@
       FEED_POSTS = posts;
       
       renderPosts(FEED_POSTS, 'feed-list');
+      
+      if (document.getElementById('page-public-profil').classList.contains('active') && CURRENT_PROFILE_EMAIL) {
+         var userPosts = FEED_POSTS.filter(function(p){ return p.author_email === CURRENT_PROFILE_EMAIL; });
+         renderPosts(userPosts, 'pp-feed-list');
+      }
+      
+      if (document.getElementById('post-modal').style.display === 'flex' && CURRENT_MODAL_POST_ID) {
+         openPostModal(CURRENT_MODAL_POST_ID);
+      }
     }
 
     function renderPosts(posts, targetId) {
@@ -4095,7 +4120,7 @@
                  origMediaHtml += '</div>';
               }
               
-              embeddedHtml = '<div style="margin-top:1rem; border:1px solid var(--line); border-radius:12px; padding:1rem; background:rgba(255,255,255,0.02); cursor:pointer;" onclick="openProfilePage(\''+orig.author_email+'\')">'
+              embeddedHtml = '<div style="margin-top:1rem; border:1px solid var(--line); border-radius:12px; padding:1rem; background:rgba(255,255,255,0.02); cursor:pointer;" onclick="openPostModal(\''+orig.id+'\')">'
                            + '  <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem;">'
                            + origAvatarHtml
                            + '    <span style="font-weight:700; font-size:0.85rem; color:var(--txt);">'+esc(origAuthorName)+'</span>'
@@ -4109,7 +4134,7 @@
            }
         }
         
-        var postHeaderPrefix = p.original_post_id ? '<span style="color:var(--mut2);font-size:0.8rem;margin-bottom:0.5rem;display:flex;align-items:center;gap:0.4rem;">🔁 a reposté</span>' : '';
+        var postHeaderPrefix = p.original_post_id && !p.content ? '<span style="color:var(--mut2);font-size:0.8rem;margin-bottom:0.5rem;display:flex;align-items:center;gap:0.4rem;">🔁 a reposté</span>' : '';
 
         html += '<div class="post-card" style="background:var(--surface2);border:1px solid var(--line);border-radius:16px;padding:1.25rem;">'
              + postHeaderPrefix
@@ -4304,10 +4329,8 @@
           alert("Tu as déjà reposté cette publication.");
           return;
        }
-       if(confirm("Reposter cette publication sur ton profil ?")) {
-          await dbSharePost(postId, SESSION.email, "");
-          loadFeed();
-       }
+       await dbSharePost(postId, SESSION.email, "");
+       loadFeed();
     }
 
     function quoteRepost(postId) {
@@ -4340,7 +4363,10 @@
     }
 
     async function openProfilePage(email) {
-       nav('public-profil');
+       CURRENT_PROFILE_EMAIL = email;
+       document.querySelectorAll('.page').forEach(function (p) { p.classList.remove('active'); });
+       document.getElementById('page-public-profil').classList.add('active');
+       document.getElementById('tb-title').textContent = "Profil Étudiant";
        document.getElementById('pp-feed-list').innerHTML = '<div style="color:var(--mut);text-align:center;">Chargement...</div>';
        
        var user = await dbGetUser(email);
@@ -4379,6 +4405,90 @@
        origNav(name);
        if (name === 'feed') loadFeed();
     };
+
+    function openPostModal(postId) {
+       CURRENT_MODAL_POST_ID = postId;
+       var p = FEED_POSTS.find(function(post){ return post.id === postId; });
+       if (!p) {
+          for (var i = 0; i < FEED_POSTS.length; i++) {
+             if (FEED_POSTS[i].original_post && FEED_POSTS[i].original_post.id === postId) {
+                p = FEED_POSTS[i].original_post;
+                break;
+             }
+          }
+       }
+       if (!p) return;
+       
+       var avatarHtml = '';
+       var pAuthor = p.author || { name: p.author_name || p.author_email, avatar_url: p.author_avatar_url || null };
+       if (pAuthor.avatar_url) {
+          avatarHtml = '<img src="'+pAuthor.avatar_url+'" style="width:48px;height:48px;border-radius:50%;object-fit:cover;cursor:pointer;" onclick="openProfilePage(\''+p.author_email+'\'); closePostModal();">';
+       } else {
+          var initial = pAuthor.name ? pAuthor.name.charAt(0).toUpperCase() : p.author_email.charAt(0).toUpperCase();
+          avatarHtml = '<div style="width:48px;height:48px;border-radius:50%;background:var(--redd);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--redl);font-size:1.2rem;cursor:pointer;" onclick="openProfilePage(\''+p.author_email+'\'); closePostModal();">'+initial+'</div>';
+       }
+       
+       var authorName = pAuthor.name || p.author_email;
+       var metaTxt = pAuthor.study_year ? ((pAuthor.study_year || 'Année inconnue') + ' • ' + (pAuthor.city || 'Ville inconnue')) : 'Étudiant en médecine';
+       
+       var mediaHtml = '';
+       var mediaList = p.media_urls || [];
+       if (p.media_url && mediaList.length === 0) mediaList = [p.media_url];
+       if (mediaList.length > 0) {
+          mediaHtml = '<div style="display:flex; flex-direction:column; gap:8px; margin-top:1rem; border-radius:12px; overflow:hidden;">';
+          mediaList.forEach(function(url, idx) {
+             var type = (p.media_types && p.media_types[idx]) ? p.media_types[idx] : (p.media_type || 'image');
+             if (type === 'video') {
+                mediaHtml += '<video src="'+url+'" controls style="width:100%; max-height:500px; background:#000; border-radius:8px;"></video>';
+             } else {
+                mediaHtml += '<img src="'+url+'" style="width:100%; max-height:500px; object-fit:contain; cursor:zoom-in; background:rgba(0,0,0,0.2); border-radius:8px;" onclick="window.open(\''+url+'\')">';
+             }
+          });
+          mediaHtml += '</div>';
+       }
+       
+       var timeAgo = cmtTimeAgo(p.created_at);
+       
+       var html = '<div style="display:flex;gap:1rem;align-items:flex-start;margin-bottom:1rem;">'
+                + avatarHtml
+                + '<div style="flex:1;">'
+                + '  <div style="font-weight:700;color:var(--txt);cursor:pointer;font-size:1.1rem;" onclick="openProfilePage(\''+p.author_email+'\'); closePostModal();">'+esc(authorName)+'</div>'
+                + '  <div style="color:var(--mut);font-size:0.85rem;margin-top:0.2rem;">'+metaTxt+'</div>'
+                + '  <div style="color:var(--mut2);font-size:0.8rem;margin-top:0.2rem;">'+timeAgo+'</div>'
+                + '</div>'
+                + '</div>'
+                + (p.content ? '<div style="margin-top:1rem;color:var(--txt);font-size:1.1rem;line-height:1.6;word-break:break-word;white-space:pre-wrap;">'+esc(p.content)+'</div>' : '')
+                + mediaHtml;
+                
+       // Action Bar
+       html += '<div style="display:flex;gap:1rem;margin-top:1.25rem;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:0.75rem 0;margin-bottom:1.5rem;">'
+             + '  <button class="btn-o" style="flex:1;border:none;background:rgba(255,255,255,0.03);color:var(--mut);padding:0.6rem;font-size:0.9rem;border-radius:8px;" onclick="likePost(\''+p.id+'\')">❤️ '+(p.likes_count||0)+'</button>'
+             + '  <button class="btn-o" style="flex:1;border:none;background:rgba(255,255,255,0.03);color:var(--mut);padding:0.6rem;font-size:0.9rem;border-radius:8px;" onclick="alert(\'Commentaires bientot disponibles.\')">💬 '+(p.comments_count||0)+'</button>'
+             + '  <div style="flex:1;position:relative;display:flex;">'
+             + '    <button class="btn-o" style="width:100%;border:none;background:rgba(255,255,255,0.03);color:var(--mut);padding:0.6rem;font-size:0.9rem;border-radius:8px;" onclick="togglePostMenu(\'modal-share-menu-'+p.id+'\', event)">🔁 '+(p.shares_count||0)+'</button>'
+             + '    <div id="modal-share-menu-'+p.id+'" class="post-opt-menu" style="display:none; position:absolute; bottom:100%; left:50%; transform:translateX(-50%); margin-bottom:0.4rem; background:var(--sur); border:1px solid var(--line); border-radius:8px; padding:0.4rem; z-index:10; box-shadow:0 4px 12px rgba(0,0,0,0.5); min-width:140px; flex-direction:column; gap:0.2rem;">'
+             + '      <button onclick="directRepost(\''+p.id+'\'); closePostModal();" style="background:transparent;border:none;color:var(--txt);text-align:left;padding:0.5rem 0.8rem;cursor:pointer;border-radius:6px;font-size:0.85rem;width:100%;" onmouseover="this.style.background=\'rgba(255,255,255,0.05)\'" onmouseout="this.style.background=\'transparent\'">🔁 Reposter</button>'
+             + '      <button onclick="quoteRepost(\''+p.id+'\'); closePostModal();" style="background:transparent;border:none;color:var(--txt);text-align:left;padding:0.5rem 0.8rem;cursor:pointer;border-radius:6px;font-size:0.85rem;width:100%;" onmouseover="this.style.background=\'rgba(255,255,255,0.05)\'" onmouseout="this.style.background=\'transparent\'">💬 Citer le post</button>'
+             + '    </div>'
+             + '  </div>'
+             + '</div>';
+             
+       html += '<div style="margin-top:2rem; padding-top:0;">'
+             + '  <h3 style="margin-top:0; margin-bottom:1rem; color:var(--txt); font-size:1.1rem;">Commentaires (0)</h3>'
+             + '  <div style="background:rgba(255,255,255,0.02); padding:1.5rem; text-align:center; color:var(--mut); border-radius:12px; border:1px dashed var(--line);">'
+             + '    💬 Les commentaires sur les publications seront bientôt disponibles !'
+             + '  </div>'
+             + '</div>';
+             
+       document.getElementById('post-modal-content').innerHTML = html;
+       document.getElementById('post-modal').style.display = 'flex';
+    }
+    
+    function closePostModal() {
+       CURRENT_MODAL_POST_ID = null;
+       document.getElementById('post-modal').style.display = 'none';
+       document.getElementById('post-modal-content').innerHTML = '';
+    }
 
   </script>
 </body>

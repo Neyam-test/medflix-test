@@ -1221,6 +1221,18 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
     </div>
   </div>
 </div>
+  </div>
+</div>
+
+<!-- MODAL POST DETAILS (ADMIN) -->
+<div id="post-modal" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;padding:1rem;">
+  <div style="background:var(--sur);border:1px solid var(--line);border-radius:20px;padding:2rem;width:100%;max-width:700px;animation:pop .25s ease;max-height:90vh;display:flex;flex-direction:column;position:relative;">
+    <button onclick="closePostModal()" style="position:absolute;top:1rem;right:1rem;background:none;border:none;color:var(--mut);font-size:1.5rem;cursor:pointer;z-index:10;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">✕</button>
+    <div style="overflow-y:auto;flex:1;padding-right:.5rem;padding-top:1rem;" id="post-modal-content">
+       <!-- Injected by JS -->
+    </div>
+  </div>
+</div>
 
 <script>
 // ══════════════════════════════════
@@ -3757,7 +3769,7 @@ function renderReportsAdmin() {
     html += '<tr>'
          + '<td>' + dStr + '</td>'
          + '<td><div style="font-weight:600;color:var(--txt);">' + (p.author ? p.author.name : p.author_email) + '</div><div style="font-size:.75rem;color:var(--mut);">' + p.author_email + '</div></td>'
-         + '<td style="max-width:300px;white-space:normal;word-break:break-word;">' + contentPreview + '</td>'
+         + '<td style="max-width:300px;white-space:normal;word-break:break-word;cursor:pointer;" onclick="openPostModal(\'' + p.id + '\')">' + contentPreview + ' <br><span style="color:var(--amb);font-size:0.75rem;text-decoration:underline;">🔍 Voir le post complet</span></td>'
          + '<td><div style="font-size:.8rem;color:var(--mut);">' + r.reporter_email + '</div></td>'
          + '<td>'
          + '  <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">'
@@ -3775,6 +3787,66 @@ async function adminDeleteReportedPost(postId) {
   if(!confirm("Supprimer définitivement cette publication ?")) return;
   await dbDeletePost(postId);
   loadReportsAdmin();
+}
+
+function openPostModal(postId) {
+   var r = ADMIN_REPORTS.find(function(rep){ return rep.post_id === postId; });
+   if (!r || !r.post) return;
+   var p = r.post;
+   
+   var avatarHtml = '';
+   if (p.author && p.author.avatar_url) {
+      avatarHtml = '<img src="'+p.author.avatar_url+'" style="width:48px;height:48px;border-radius:50%;object-fit:cover;">';
+   } else {
+      var initial = p.author && p.author.name ? p.author.name.charAt(0).toUpperCase() : p.author_email.charAt(0).toUpperCase();
+      avatarHtml = '<div style="width:48px;height:48px;border-radius:50%;background:var(--redd);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--redl);font-size:1.2rem;">'+initial+'</div>';
+   }
+   
+   var authorName = p.author ? p.author.name : p.author_email;
+   var metaTxt = p.author ? ((p.author.study_year || 'Année inconnue') + ' • ' + (p.author.city || 'Ville inconnue')) : 'Étudiant en médecine';
+   
+   var mediaHtml = '';
+   var mediaList = p.media_urls || [];
+   if (p.media_url && mediaList.length === 0) mediaList = [p.media_url];
+   if (mediaList.length > 0) {
+      mediaHtml = '<div style="display:flex; flex-direction:column; gap:8px; margin-top:1rem; border-radius:12px; overflow:hidden;">';
+      mediaList.forEach(function(url, idx) {
+         var type = (p.media_types && p.media_types[idx]) ? p.media_types[idx] : (p.media_type || 'image');
+         if (type === 'video') {
+            mediaHtml += '<video src="'+url+'" controls style="width:100%; max-height:500px; background:#000; border-radius:8px;"></video>';
+         } else {
+            mediaHtml += '<img src="'+url+'" style="width:100%; max-height:500px; object-fit:contain; cursor:zoom-in; background:rgba(0,0,0,0.2); border-radius:8px;" onclick="window.open(\''+url+'\')">';
+         }
+      });
+      mediaHtml += '</div>';
+   }
+   
+   var dStr = new Date(p.created_at).toLocaleDateString('fr-FR') + ' ' + new Date(p.created_at).toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'});
+   
+   var embeddedHtml = '';
+   if (p.original_post_id) {
+      embeddedHtml = '<div style="margin-top:1rem; border:1px solid var(--line); border-radius:12px; padding:1rem; background:rgba(255,255,255,0.02); color:var(--mut2); font-size:0.85rem;">[Ceci est un repost. Le post d\'origine n\'est pas entièrement chargé dans cette vue admin pour le moment.]</div>';
+   }
+   
+   var html = '<div style="display:flex;gap:1rem;align-items:flex-start;margin-bottom:1rem;">'
+            + avatarHtml
+            + '<div style="flex:1;">'
+            + '  <div style="font-weight:700;color:var(--txt);font-size:1.1rem;">'+escAdmin(authorName)+'</div>'
+            + '  <div style="color:var(--mut);font-size:0.85rem;margin-top:0.2rem;">'+escAdmin(metaTxt)+'</div>'
+            + '  <div style="color:var(--mut2);font-size:0.8rem;margin-top:0.2rem;">'+dStr+'</div>'
+            + '</div>'
+            + '</div>'
+            + (p.content ? '<div style="margin-top:1rem;color:var(--txt);font-size:1.1rem;line-height:1.6;word-break:break-word;white-space:pre-wrap;">'+escAdmin(p.content)+'</div>' : '')
+            + mediaHtml
+            + embeddedHtml;
+            
+   document.getElementById('post-modal-content').innerHTML = html;
+   document.getElementById('post-modal').style.display = 'flex';
+}
+
+function closePostModal() {
+   document.getElementById('post-modal').style.display = 'none';
+   document.getElementById('post-modal-content').innerHTML = '';
 }
 
 </script>
