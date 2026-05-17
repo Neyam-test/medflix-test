@@ -4012,6 +4012,7 @@
     var POST_MEDIA_FILE = null;
     var CURRENT_PROFILE_EMAIL = null;
     var CURRENT_MODAL_POST_ID = null;
+    var USER_LIKED_POSTS = [];
 
     async function loadFeed() {
       var container = document.getElementById('feed-list');
@@ -4164,7 +4165,7 @@
              + mediaHtml
              + embeddedHtml
              + '<div style="display:flex;gap:1rem;margin-top:1.25rem;border-top:1px solid var(--line);padding-top:0.75rem;">'
-             + '  <button class="btn-o" style="flex:1;border:none;background:rgba(255,255,255,0.03);color:var(--mut);padding:0.6rem;font-size:0.9rem;border-radius:8px;" onclick="likePost(\''+p.id+'\')">❤️ '+(p.likes_count||0)+'</button>'
+             + '  <button class="btn-o" style="flex:1;border:none;background:rgba(255,255,255,0.03);color:var(--mut);padding:0.6rem;font-size:0.9rem;border-radius:8px;" onclick="likePost(\''+p.id+'\')">' + (USER_LIKED_POSTS.includes(p.id) ? '<span style="color:#e0245e">❤️</span>' : '🤍') + ' '+(p.likes_count||0)+'</button>'
              + '  <button class="btn-o" style="flex:1;border:none;background:rgba(255,255,255,0.03);color:var(--mut);padding:0.6rem;font-size:0.9rem;border-radius:8px;" onclick="alert(\'Commentaires bientot disponibles.\')">💬 '+(p.comments_count||0)+'</button>'
              + '  <div style="flex:1;position:relative;display:flex;">'
              + '    <button class="btn-o" style="width:100%;border:none;background:rgba(255,255,255,0.03);color:var(--mut);padding:0.6rem;font-size:0.9rem;border-radius:8px;" onclick="togglePostMenu(\'share-menu-'+p.id+'\', event)">🔁 '+(p.shares_count||0)+'</button>'
@@ -4298,11 +4299,12 @@
     }
 
     async function likePost(postId) {
-       // Toggle logic handled at DB layer for simplicity in this version, 
-       // but typically we'd fetch if user liked it first. 
-       // For now, assume simple increment.
-       await dbLikePost(postId, SESSION.email);
-       loadFeed(); // Reload fully for simplicity
+       if (USER_LIKED_POSTS.includes(postId)) {
+          await dbUnlikePost(postId, SESSION.email);
+       } else {
+          await dbLikePost(postId, SESSION.email);
+       }
+       await loadFeed();
     }
 
     // Document click to close menus
@@ -4462,7 +4464,7 @@
                 
        // Action Bar
        html += '<div style="display:flex;gap:1rem;margin-top:1.25rem;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:0.75rem 0;margin-bottom:1.5rem;">'
-             + '  <button class="btn-o" style="flex:1;border:none;background:rgba(255,255,255,0.03);color:var(--mut);padding:0.6rem;font-size:0.9rem;border-radius:8px;" onclick="likePost(\''+p.id+'\')">❤️ '+(p.likes_count||0)+'</button>'
+             + '  <button class="btn-o" style="flex:1;border:none;background:rgba(255,255,255,0.03);color:var(--mut);padding:0.6rem;font-size:0.9rem;border-radius:8px;" onclick="likePost(\''+p.id+'\')">' + (USER_LIKED_POSTS.includes(p.id) ? '<span style="color:#e0245e">❤️</span>' : '🤍') + ' '+(p.likes_count||0)+'</button>'
              + '  <button class="btn-o" style="flex:1;border:none;background:rgba(255,255,255,0.03);color:var(--mut);padding:0.6rem;font-size:0.9rem;border-radius:8px;" onclick="document.getElementById(\'modal-comment-input\').focus();">💬 '+(p.comments_count||0)+'</button>'
              + '  <div style="flex:1;position:relative;display:flex;">'
              + '    <button class="btn-o" style="width:100%;border:none;background:rgba(255,255,255,0.03);color:var(--mut);padding:0.6rem;font-size:0.9rem;border-radius:8px;" onclick="togglePostMenu(\'modal-share-menu-'+p.id+'\', event)">🔁 '+(p.shares_count||0)+'</button>'

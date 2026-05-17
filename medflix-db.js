@@ -795,6 +795,12 @@ async function dbGetPostLikes(postId) {
   return (data || []).map(function(l){ return l.user_email; });
 }
 
+async function dbGetUserLikedPosts(email) {
+  var { data, error } = await sb.from('post_likes').select('post_id').eq('user_email', email);
+  if (error) { console.error('dbGetUserLikedPosts:', error); return []; }
+  return (data || []).map(function(l){ return l.post_id; });
+}
+
 async function dbLikePost(postId, email) {
   await sb.from('post_likes').insert({ post_id: postId, user_email: email });
   // Increment counter safely using RPC if available, otherwise just fetch and update.
