@@ -4406,7 +4406,7 @@
        if (name === 'feed') loadFeed();
     };
 
-    function openPostModal(postId) {
+    async function openPostModal(postId) {
        CURRENT_MODAL_POST_ID = postId;
        var p = FEED_POSTS.find(function(post){ return post.id === postId; });
        if (!p) {
@@ -4463,7 +4463,7 @@
        // Action Bar
        html += '<div style="display:flex;gap:1rem;margin-top:1.25rem;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:0.75rem 0;margin-bottom:1.5rem;">'
              + '  <button class="btn-o" style="flex:1;border:none;background:rgba(255,255,255,0.03);color:var(--mut);padding:0.6rem;font-size:0.9rem;border-radius:8px;" onclick="likePost(\''+p.id+'\')">❤️ '+(p.likes_count||0)+'</button>'
-             + '  <button class="btn-o" style="flex:1;border:none;background:rgba(255,255,255,0.03);color:var(--mut);padding:0.6rem;font-size:0.9rem;border-radius:8px;" onclick="alert(\'Commentaires bientot disponibles.\')">💬 '+(p.comments_count||0)+'</button>'
+             + '  <button class="btn-o" style="flex:1;border:none;background:rgba(255,255,255,0.03);color:var(--mut);padding:0.6rem;font-size:0.9rem;border-radius:8px;" onclick="document.getElementById(\'modal-comment-input\').focus();">💬 '+(p.comments_count||0)+'</button>'
              + '  <div style="flex:1;position:relative;display:flex;">'
              + '    <button class="btn-o" style="width:100%;border:none;background:rgba(255,255,255,0.03);color:var(--mut);padding:0.6rem;font-size:0.9rem;border-radius:8px;" onclick="togglePostMenu(\'modal-share-menu-'+p.id+'\', event)">🔁 '+(p.shares_count||0)+'</button>'
              + '    <div id="modal-share-menu-'+p.id+'" class="post-opt-menu" style="display:none; position:absolute; bottom:100%; left:50%; transform:translateX(-50%); margin-bottom:0.4rem; background:var(--sur); border:1px solid var(--line); border-radius:8px; padding:0.4rem; z-index:10; box-shadow:0 4px 12px rgba(0,0,0,0.5); min-width:140px; flex-direction:column; gap:0.2rem;">'
@@ -4473,17 +4473,56 @@
              + '  </div>'
              + '</div>';
              
+       // Comments Section
+       var comments = await dbGetPostComments(p.id);
+       
+       var commentsHtml = '';
+       if (comments && comments.length > 0) {
+          comments.forEach(function(c) {
+             var cAuthorName = c.author ? c.author.name : c.user_email;
+             var cAvatar = (c.author && c.author.avatar_url) 
+                ? '<img src="'+c.author.avatar_url+'" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">' 
+                : '<div style="width:32px;height:32px;border-radius:50%;background:var(--redd);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--redl);font-size:0.9rem;">'+cAuthorName.charAt(0).toUpperCase()+'</div>';
+             
+             commentsHtml += '<div style="display:flex;gap:0.75rem;margin-bottom:1rem;">'
+                           + cAvatar
+                           + '<div style="flex:1;background:rgba(255,255,255,0.03);padding:0.75rem;border-radius:12px;border:1px solid var(--line);">'
+                           + '  <div style="font-weight:600;color:var(--txt);font-size:0.9rem;">'+esc(cAuthorName)+' <span style="font-weight:normal;color:var(--mut2);font-size:0.75rem;margin-left:0.5rem;">'+cmtTimeAgo(c.created_at)+'</span></div>'
+                           + '  <div style="color:var(--mut);font-size:0.9rem;margin-top:0.25rem;word-break:break-word;white-space:pre-wrap;">'+esc(c.content)+'</div>'
+                           + '</div>'
+                           + '</div>';
+          });
+       } else {
+          commentsHtml = '<div style="text-align:center;color:var(--mut);padding:1rem;">Aucun commentaire pour l\'instant. Soyez le premier !</div>';
+       }
+
+       var addCommentHtml = '<div style="display:flex;gap:0.75rem;margin-top:1.5rem;border-top:1px solid var(--line);padding-top:1.5rem;">'
+                          + '  <textarea id="modal-comment-input" placeholder="Ajouter un commentaire..." style="flex:1;background:rgba(255,255,255,0.05);border:1px solid var(--line);color:var(--txt);padding:0.75rem;border-radius:12px;resize:none;font-family:inherit;min-height:40px;"></textarea>'
+                          + '  <button class="btn" style="align-self:flex-start;" onclick="submitPostComment(\''+p.id+'\')">Publier</button>'
+                          + '</div>';
+
        html += '<div style="margin-top:2rem; padding-top:0;">'
-             + '  <h3 style="margin-top:0; margin-bottom:1rem; color:var(--txt); font-size:1.1rem;">Commentaires (0)</h3>'
-             + '  <div style="background:rgba(255,255,255,0.02); padding:1.5rem; text-align:center; color:var(--mut); border-radius:12px; border:1px dashed var(--line);">'
-             + '    💬 Les commentaires sur les publications seront bientôt disponibles !'
-             + '  </div>'
+             + '  <h3 style="margin-top:0; margin-bottom:1rem; color:var(--txt); font-size:1.1rem;">Commentaires ('+(p.comments_count||0)+')</h3>'
+             + commentsHtml
+             + addCommentHtml
              + '</div>';
              
        document.getElementById('post-modal-content').innerHTML = html;
        document.getElementById('post-modal').style.display = 'flex';
     }
     
+    async function submitPostComment(postId) {
+       var input = document.getElementById('modal-comment-input');
+       var content = input.value.trim();
+       if (!content) return;
+       var btn = event.target;
+       btn.disabled = true;
+       btn.textContent = '...';
+       await dbAddPostComment(postId, SESSION.email, content);
+       input.value = '';
+       await loadFeed();
+    }
+
     function closePostModal() {
        CURRENT_MODAL_POST_ID = null;
        document.getElementById('post-modal').style.display = 'none';
